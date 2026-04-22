@@ -31,18 +31,7 @@ export function Leaderboard({ teams }: Props) {
       const dy = prev.top - rect.top;
       if (dy === 0) continue;
       const row = tbody.querySelector<HTMLTableRowElement>(`tr[data-key="${cssEscape(key)}"]`);
-      if (!row) continue;
-      row.style.transform = `translateY(${dy}px)`;
-      row.style.transition = 'transform 0s';
-      requestAnimationFrame(() => {
-        row.style.transition = 'transform 400ms ease-out';
-        row.style.transform = '';
-        const clear = () => {
-          row.style.transition = '';
-          row.removeEventListener('transitionend', clear);
-        };
-        row.addEventListener('transitionend', clear);
-      });
+      if (row) playRowShift(row, dy);
     }
 
     prevRectsRef.current = newRects;
@@ -105,4 +94,18 @@ function measureRows(tbody: HTMLTableSectionElement | null): Map<string, DOMRect
 
 function cssEscape(s: string): string {
   return s.replace(/["\\]/g, '\\$&');
+}
+
+function playRowShift(row: HTMLTableRowElement, dy: number): void {
+  row.style.transform = `translateY(${dy}px)`;
+  row.style.transition = 'transform 0s';
+  requestAnimationFrame(() => {
+    row.style.transition = 'transform 400ms ease-out';
+    row.style.transform = '';
+    const clear = () => {
+      row.style.transition = '';
+      row.removeEventListener('transitionend', clear);
+    };
+    row.addEventListener('transitionend', clear);
+  });
 }

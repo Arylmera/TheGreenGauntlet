@@ -26,6 +26,8 @@ describe('phaseFor', () => {
   it('pre before start', () => expect(phaseFor(Date.parse('2026-05-01T08:00:00Z'), env)).toBe('pre'));
   it('live during', () => expect(phaseFor(Date.parse('2026-05-01T12:00:00Z'), env)).toBe('live'));
   it('ended after', () => expect(phaseFor(Date.parse('2026-05-01T18:00:00Z'), env)).toBe('ended'));
+  it('inclusive at start boundary', () => expect(phaseFor(Date.parse(env.EVENT_START_AT), env)).toBe('live'));
+  it('inclusive at end boundary', () => expect(phaseFor(Date.parse(env.EVENT_END_AT), env)).toBe('live'));
 });
 
 describe('rankTeams', () => {
@@ -40,6 +42,27 @@ describe('rankTeams', () => {
     const ranked = rankTeams(accounts);
     expect(ranked.map((t) => t.uuid)).toEqual(['d', 'c', 'b', 'a', 'e']);
     expect(ranked[4]?.points).toBe(0);
+  });
+
+  it('returns empty array for no accounts', () => {
+    expect(rankTeams([])).toEqual([]);
+  });
+
+  it('assigns sequential ranks starting at 1', () => {
+    const ranked = rankTeams([
+      { uuid: 'a', displayName: 'A', points: 3, lastActivityAt: null },
+      { uuid: 'b', displayName: 'B', points: 2, lastActivityAt: null },
+      { uuid: 'c', displayName: 'C', points: 1, lastActivityAt: null },
+    ]);
+    expect(ranked.map((t) => t.rank)).toEqual([1, 2, 3]);
+  });
+
+  it('falls back to displayName when points and activity tie exactly', () => {
+    const ranked = rankTeams([
+      { uuid: 'a', displayName: 'Zed', points: 5, lastActivityAt: '2026-05-01T10:00:00Z' },
+      { uuid: 'b', displayName: 'Ada', points: 5, lastActivityAt: '2026-05-01T10:00:00Z' },
+    ]);
+    expect(ranked.map((t) => t.uuid)).toEqual(['b', 'a']);
   });
 });
 
@@ -99,6 +122,118 @@ describe('LeaderboardAggregator', () => {
     await agg.init();
     await Promise.all([agg.getLeaderboard(), agg.getLeaderboard(), agg.getLeaderboard()]);
     expect(walk).toHaveBeenCalledTimes(1);
+  });
+
+  it('serves cached snapshot within TTL without re-walking upstream', async () => {
+    const walk = vi.fn(async function* () {
+      yield { uuid: 'x', displayName: 'X', points: 1, lastActivityAt: null } satisfies Account;
+    });
+    const env = baseEnv({ DATA_DIR: tmp, SNAPSHOT_TTL_MS: 60_000 });
+    let clock = Date.parse('2026-05-01T12:00:00Z');
+    const agg = new LeaderboardAggregator({
+      env,
+      client: { walkAccounts: walk } as unknown as ImmersiveLabClient,
+      now: () => clock,
+    });
+    await agg.init();
+    await agg.getLeaderboard();
+    clock += 30_000;
+    await agg.getLeaderboard();
+    expect(walk).toHaveBeenCalledTimes(1);
+  });
+
+  it('rebuilds once TTL expires', async () => {
+    const walk = vi.fn(async function* () {
+      yield { uuid: 'x', displayName: 'X', points: 1, lastActivityAt: null } satisfies Account;
+    });
+    const env = baseEnv({ DATA_DIR: tmp, SNAPSHOT_TTL_MS: 10_000 });
+    let clock = Date.parse('2026-05-01T12:00:00Z');
+    const agg = new LeaderboardAggregator({
+      env,
+      client: { walkAccounts: walk } as unknown as ImmersiveLabClient,
+      now: () => clock,
+    });
+    await agg.init();
+    await agg.getLeaderboard();
+    clock += 15_000;
+    await agg.getLeaderboard();
+    expect(walk).toHaveBeenCalledTimes(2);
+  });
+
+  it('upstream error with prior snapshot → serves stale payload', async () => {
+    const env = baseEnv({ DATA_DIR: tmp, SNAPSHOT_TTL_MS: 1 });
+    let shouldFail = false;
+    const walk = vi.fn(async function* () {
+      if (shouldFail) throw new Error('upstream down');
+      yield { uuid: 'x', displayName: 'X', points: 9, lastActivityAt: null } satisfies Account;
+    });
+    let clock = Date.parse('2026-05-01T12:00:00Z');
+    const agg = new LeaderboardAggregator({
+      env,
+      client: { walkAccounts: walk } as unknown as ImmersiveLabClient,
+      now: () => clock,
+    });
+    await agg.init();
+    await agg.getLeaderboard();
+    shouldFail = true;
+    clock += 10_000;
+    const stale = await agg.getLeaderboard();
+    expect(stale.teams[0]?.points).toBe(9);
+  });
+
+  it('upstream error with no snapshot → throws', async () => {
+    const env = baseEnv({ DATA_DIR: tmp });
+    const agg = new LeaderboardAggregator({
+      env,
+      client: {
+        async *walkAccounts() {
+          throw new Error('upstream down');
+        },
+      } as unknown as ImmersiveLabClient,
+      now: () => Date.parse('2026-05-01T12:00:00Z'),
+    });
+    await agg.init();
+    await expect(agg.getLeaderboard()).rejects.toThrow('upstream down');
+  });
+
+  it('init loads persisted snapshot from disk', async () => {
+    const env = baseEnv({ DATA_DIR: tmp });
+    const first = new LeaderboardAggregator({
+      env,
+      client: makeClient([{ uuid: 'x', displayName: 'X', points: 11, lastActivityAt: null }]),
+      now: () => Date.parse('2026-05-01T12:00:00Z'),
+    });
+    await first.init();
+    await first.getLeaderboard();
+
+    const walk = vi.fn(async function* () {
+      yield { uuid: 'never', displayName: 'N', points: 0, lastActivityAt: null } satisfies Account;
+    });
+    const second = new LeaderboardAggregator({
+      env,
+      client: { walkAccounts: walk } as unknown as ImmersiveLabClient,
+      now: () => Date.parse('2026-05-01T18:00:00Z'),
+    });
+    await second.init();
+    const payload = await second.getLeaderboard();
+    expect(payload.phase).toBe('ended');
+    expect(payload.teams[0]?.points).toBe(11);
+    expect(walk).not.toHaveBeenCalled();
+  });
+
+  it('snapshotAgeMs is null before first build, reflects elapsed time after', async () => {
+    const env = baseEnv({ DATA_DIR: tmp });
+    let clock = Date.parse('2026-05-01T12:00:00Z');
+    const agg = new LeaderboardAggregator({
+      env,
+      client: makeClient([{ uuid: 'x', displayName: 'X', points: 1, lastActivityAt: null }]),
+      now: () => clock,
+    });
+    await agg.init();
+    expect(agg.snapshotAgeMs()).toBeNull();
+    await agg.getLeaderboard();
+    clock += 4_200;
+    expect(agg.snapshotAgeMs()).toBe(4_200);
   });
 
   it('ended → serves last pre-end snapshot, skips upstream', async () => {
