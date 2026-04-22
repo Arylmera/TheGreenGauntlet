@@ -25,9 +25,9 @@ const PODIUM_ALT: Record<Rank, string> = {
 };
 
 const HEIGHT: Record<Rank, string> = {
-  1: 'h-40 sm:h-48 lg:h-60 2xl:h-72',
-  2: 'h-32 sm:h-40 lg:h-52 2xl:h-64',
-  3: 'h-32 sm:h-40 lg:h-48 2xl:h-60',
+  1: 'h-52 sm:h-60 lg:h-72 2xl:h-96',
+  2: 'h-44 sm:h-52 lg:h-64 2xl:h-80',
+  3: 'h-44 sm:h-52 lg:h-60 2xl:h-72',
 };
 
 const WIDTH: Record<Rank, string> = {
@@ -43,9 +43,9 @@ const SHADOW: Record<Rank, string> = {
 };
 
 const MEDAL_SIZE: Record<Rank, string> = {
-  1: 'w-14 h-14 sm:w-16 sm:h-16 lg:w-[72px] lg:h-[72px] 2xl:w-24 2xl:h-24',
-  2: 'w-11 h-11 sm:w-14 sm:h-14 lg:w-16 lg:h-16 2xl:w-20 2xl:h-20',
-  3: 'w-11 h-11 sm:w-14 sm:h-14 lg:w-16 lg:h-16 2xl:w-20 2xl:h-20',
+  1: 'w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 2xl:w-36 2xl:h-36',
+  2: 'w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 2xl:w-28 2xl:h-28',
+  3: 'w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 2xl:w-28 2xl:h-28',
 };
 
 const NAME_TEXT: Record<Rank, string> = {

@@ -13,6 +13,12 @@ export function Leaderboard({ teams }: Props) {
   const prevRectsRef = useRef<Map<string, DOMRect>>(new Map());
   const prevPointsRef = useRef<Map<string, number>>(new Map());
   const [flashed, setFlashed] = useState<Set<string>>(new Set());
+  const [query, setQuery] = useState('');
+
+  const q = query.trim().toLowerCase();
+  const visibleTeams = q
+    ? teams.filter((t) => t.displayName.toLowerCase().includes(q))
+    : teams;
 
   useLayoutEffect(() => {
     if (REDUCED_MOTION) {
@@ -62,6 +68,18 @@ export function Leaderboard({ teams }: Props) {
 
   return (
     <section aria-label="Leaderboard" className="bg-surface-white dark:bg-dark-card rounded-comfy border border-line-light dark:border-dark-line shadow-lvl-1 overflow-hidden">
+      <div className="px-2 sm:px-4 py-2 sm:py-3 border-b border-line-light dark:border-dark-line bg-surface-off dark:bg-dark-hover">
+        <label className="relative block">
+          <span className="sr-only">Search team</span>
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search team…"
+            className="w-full sm:max-w-xs px-3 py-2 rounded-standard border border-line-light dark:border-dark-line bg-surface-white dark:bg-dark-card text-ink-black dark:text-dark-text text-sm placeholder:text-ink-mid dark:placeholder:text-dark-dim focus:outline-none focus:ring-2 focus:ring-brand-green"
+          />
+        </label>
+      </div>
       <table className="w-full table-fixed">
         <thead>
           <tr className="bg-surface-off dark:bg-dark-hover text-ink-black dark:text-dark-text text-left text-xs sm:text-sm 2xl:text-base font-semibold">
@@ -73,9 +91,16 @@ export function Leaderboard({ teams }: Props) {
           </tr>
         </thead>
         <tbody ref={tbodyRef}>
-          {teams.map((t) => (
+          {visibleTeams.map((t) => (
             <TeamRow key={t.displayName} team={t} flashed={flashed.has(t.displayName)} />
           ))}
+          {visibleTeams.length === 0 && (
+            <tr>
+              <td colSpan={5} className="px-4 py-6 text-center text-ink-mid dark:text-dark-dim text-sm">
+                No teams match “{query}”.
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
     </section>
