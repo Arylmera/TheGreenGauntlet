@@ -1,6 +1,8 @@
 # Data Flow: Account Points → Public Dashboard
 
-Site is public. Browser never sees an IL token. A backend proxy holds the secret, exchanges for an access token, walks the IL API, aggregates, and returns a scrubbed leaderboard.
+Site is public. Browser never sees an IL token. A backend proxy holds the secret, exchanges for an access token, walks the IL API, aggregates a per-account leaderboard, and returns a scrubbed snapshot.
+
+> **Note:** a prior per-account dashboard (`devops-day-leaderboard`) already implements the auth + IL-client + sync layers and persists to SQLite with cron-driven sync (attempts every 1–2 min, full sync nightly). We reuse those layers here. Points can be read from `Account.points` (cheap, one walk) or recomputed from `attempts` (prior-project path, enables time-spent + per-activity detail). Choice tracked in [../TODO.md](../TODO.md).
 
 ## Sequence
 
@@ -22,23 +24,20 @@ sequenceDiagram
                 PX->>IL: POST /v1/public/tokens (access_key + secret)
                 IL-->>PX: accessToken ~30 min
             end
-            par accounts walk
-                PX->>IL: GET /v2/accounts?page_token=...
-                IL-->>PX: page + nextPageToken
-                Note over PX,IL: repeat until null
-            and teams walk
-                PX->>IL: GET /v2/teams?page_token=...
-                IL-->>PX: page + nextPageToken
-                loop each team
-                    PX->>IL: GET /v2/teams/{id}/memberships
-                    IL-->>PX: memberships
-                end
+            PX->>IL: GET /v2/accounts?page_token=...
+            IL-->>PX: page + nextPageToken
+            Note over PX,IL: repeat until null
+            opt attempts path if adopted
+                PX->>IL: GET /v2/activities paginated
+                PX->>IL: GET /v2/attempts paginated
+                PX->>PX: per account per activity keep best attempt, account total is sum of bests
             end
-            PX->>PX: aggregate — sum Account.points per team (null to 0, skip grouping if teams empty)
+            PX->>PX: sort accounts desc by points, tie-break by lastActivityAt, then name
+            PX->>PX: scrub PII (drop email by default)
             PX->>PX: cache snapshot
-            PX-->>FE: { teams[], updatedAt }
+            PX-->>FE: { accounts[], updatedAt }
         end
-        FE->>U: render Leaderboard + AccountList
+        FE->>U: render Leaderboard
         alt IL returns 401
             PX->>IL: POST /v1/public/tokens (refresh)
             PX->>IL: retry request
@@ -51,28 +50,28 @@ sequenceDiagram
 ```mermaid
 flowchart LR
     subgraph Browser
-      UI["Leaderboard + AccountList"]
+      UI[Leaderboard]
     end
     subgraph Proxy
       CACHE[("10s snapshot cache")]
       TOK[("access token cache")]
-      AGG[Aggregate]
+      AGG[Aggregate + sort]
     end
     subgraph IL_API
       A["GET /v2/accounts (paginated)"]
-      T["GET /v2/teams (paginated)"]
-      M["GET /v2/teams/id/memberships"]
+      ACT["GET /v2/activities (optional)"]
+      AT["GET /v2/attempts (optional)"]
     end
 
     UI -->|"GET /api/leaderboard"| CACHE
     CACHE -.miss.-> AGG
     AGG --> A
-    AGG --> T
-    AGG --> M
+    AGG -.optional.-> ACT
+    AGG -.optional.-> AT
     TOK -.->|"Bearer"| A
-    TOK -.->|"Bearer"| T
-    TOK -.->|"Bearer"| M
-    AGG -->|"teams totals members"| CACHE
+    TOK -.->|"Bearer"| ACT
+    TOK -.->|"Bearer"| AT
+    AGG -->|"ranked accounts"| CACHE
     CACHE -->|"scrubbed JSON"| UI
 ```
 
@@ -93,25 +92,24 @@ flowchart TD
 
 ## Aggregation rules
 - `Account.points: null` → treat as `0`.
-- Team total = sum of member `Account.points`.
-- If IL `/v2/teams` returns empty → no team grouping; `teams: []` in payload.
-- Sort teams desc by total; tie-break by member count then name.
+- Leaderboard total = `Account.points` (v1 minimal) **or**, on the attempts path: for each activity the account has tackled, take the **best** (highest-scoring) attempt only, then sum those per account. Retries do not stack.
+- Sort accounts desc by total. Tie-break: `lastActivityAt` asc (earlier finisher wins), then display name.
+- Attempts path only: `totalDuration` read with `??` (not `||`) — `0 s` is valid. Orphan attempts (activity 404) are skipped, not fatal.
 - Snapshot cached for ~10 s to protect IL rate limits regardless of viewer count.
 
 ## Endpoints
 **Proxy → browser (public, read-only)**
-- `GET /api/leaderboard` — aggregated snapshot.
-- `GET /api/accounts` *(optional)* — scrubbed account list for drill-down.
+- `GET /api/leaderboard` — ranked account snapshot `{ accounts: [...], updatedAt }`.
 - `GET /api/health` — proxy + token status.
 
 **Proxy → IL (server-side, authenticated)**
 - `POST /v1/public/tokens` — token exchange.
 - `GET /v2/accounts` — paginated.
-- `GET /v2/teams` — paginated.
-- `GET /v2/teams/{team_id}/memberships`.
-- Not used: `GET /v2/accounts/{id}/teams` (redundant), deprecated `Account.teams`.
+- `GET /v2/activities` — paginated (attempts path only).
+- `GET /v2/attempts` — paginated (attempts path only).
+- Not used: `/v2/teams`, `/v2/teams/{id}/memberships`, deprecated `Account.teams`.
 
 ## Security invariants
 - No IL credentials or tokens in the JS bundle, HTML, or any response the browser receives.
 - No passthrough endpoint that forwards arbitrary IL paths.
-- Responses scrubbed: drop PII fields not needed by the UI (e.g. keep `displayName` + `points`; consider dropping `email` unless the drill-down shows it).
+- Responses scrubbed: drop PII fields not needed by the UI (keep `displayName`; drop `email` by default).

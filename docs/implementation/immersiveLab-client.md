@@ -12,6 +12,7 @@ Server-side IL API wrapper. Holds secret, caches token, walks pages.
   - Else `POST /v1/public/tokens` form-encoded `username=IL_ACCESS_KEY&password=IL_SECRET_TOKEN`.
   - Parse `accessToken` + `expiresIn`. Store.
 - `invalidateToken()` on 401. Caller retries once.
+- Optional: persist to `token.json` (prior-project pattern) so restarts don't always re-auth.
 
 ## HTTP helper
 - `ilFetch(path, opts)` — adds `Authorization: Bearer <token>`, base `IL_BASE_URL`.
@@ -20,17 +21,22 @@ Server-side IL API wrapper. Holds secret, caches token, walks pages.
 
 ## Paginated walkers
 - `walkAccounts()` → `AsyncIterable<Account>`. Loops `GET /v2/accounts?page_token=...` until `meta.hasNextPage === false`. Do not change page size mid-walk.
-- `walkTeams()` → `AsyncIterable<Team>` over `/v2/teams`.
-- `listMemberships(teamId)` → walks `/v2/teams/{team_id}/memberships`.
+- **Attempts path only:**
+  - `walkActivities()` → `AsyncIterable<Activity>` over `/v2/activities`.
+  - `walkAttempts()` → `AsyncIterable<Attempt>` over `/v2/attempts`.
+- Not used: `/v2/teams`, `/v2/teams/{id}/memberships`, deprecated `Account.teams`.
 
 ## Types
-- Narrow IL response shapes to only fields used: `Account { uuid, displayName, email, points, lastActivityAt }`, `Team { uuid, name }`, `Membership { accountUuid, teamUuid }`.
+- Narrow IL response shapes to only fields used:
+  - `Account { uuid, displayName, email, points, lastActivityAt }`
+  - `Activity { uuid, title }` (attempts path)
+  - `Attempt { uuid, accountUuid, activityUuid, points, totalDuration, completedAt }` (attempts path)
 
 ## Steps
 1. Implement `getToken` + unit test around expiry math.
 2. Implement `ilFetch` with retry.
 3. Implement `walkAccounts` with page cursor.
-4. Implement `walkTeams` + `listMemberships`.
+4. (Attempts path) `walkActivities` + `walkAttempts`.
 5. Log token refresh events.
 
 ## Verification

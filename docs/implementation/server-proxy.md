@@ -12,8 +12,7 @@ Single Node process. Serves React `dist/` + `/api/*`. No separate backend.
 
 ## Routes
 - `GET /api/health` → `{ ok, tokenExpiresIn, snapshotAgeMs }`.
-- `GET /api/leaderboard` → aggregated snapshot (see [aggregation.md](aggregation.md)).
-- `GET /api/accounts` *(optional)* → scrubbed account list.
+- `GET /api/leaderboard` → per-account ranked snapshot (see [aggregation.md](aggregation.md)).
 - `GET /assets/*` → static from `dist/assets`.
 - `GET /*` non-`/api` → `dist/index.html` (SPA fallback).
 
@@ -32,6 +31,6 @@ Single Node process. Serves React `dist/` + `/api/*`. No separate backend.
 
 ## Verification
 - `curl :3000/api/health` → 200.
-- `curl :3000/api/leaderboard` → non-empty teams.
+- `curl :3000/api/leaderboard` → non-empty `accounts[]` sorted by points desc.
 - Unknown `/foo` → `index.html`.
 - Unknown `/api/foo` → 404.
