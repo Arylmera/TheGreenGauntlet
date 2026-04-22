@@ -12,7 +12,7 @@
     "build": "npm run build:client && npm run build:server",
     "start": "node dist-server/index.js",
     "preview": "vite preview",
-    "lint": "tsc -b --noEmit && tsc -p tsconfig.server.json --noEmit",
+    "lint": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.server.json",
     "test": "vitest run",
     "test:watch": "vitest"
   },
