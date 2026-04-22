@@ -1,7 +1,7 @@
 services:
   gauntlet:
-    build: .
-    image: green-gauntlet:local
+    image: ghcr.io/arylmera/thegreengauntlet:latest
+    pull_policy: always
     container_name: green-gauntlet
     restart: unless-stopped
     ports:
