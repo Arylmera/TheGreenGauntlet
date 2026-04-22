@@ -12,7 +12,7 @@ Single Node process. Serves React `dist/` + `/api/*`. No separate backend.
 
 ## Routes
 - `GET /api/health` → `{ ok, tokenExpiresIn, snapshotAgeMs, eventWindow: { startAt, endAt, phase } }`.
-- `GET /api/leaderboard` → per-account ranked snapshot with `phase` + `eventWindow` (see [aggregation.md](aggregation.md)).
+- `GET /api/leaderboard` → per-team ranked snapshot `{ teams[], phase, eventWindow, updatedAt }` (see [aggregation.md](aggregation.md)).
 - `GET /assets/*` → static from `dist/assets`.
 - `GET /*` non-`/api` → `dist/index.html` (SPA fallback).
 
@@ -31,6 +31,6 @@ Single Node process. Serves React `dist/` + `/api/*`. No separate backend.
 
 ## Verification
 - `curl :3000/api/health` → 200.
-- `curl :3000/api/leaderboard` → non-empty `accounts[]` sorted by points desc.
+- `curl :3000/api/leaderboard` → non-empty `teams[]` sorted by points desc; `phase` matches clock vs event window.
 - Unknown `/foo` → `index.html`.
 - Unknown `/api/foo` → 404.

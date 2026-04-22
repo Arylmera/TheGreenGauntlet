@@ -7,6 +7,9 @@ See [docs/project.md](docs/project.md) for goals, API details, and decisions.
 - `project.md` — overview, API base URL, goals
 - `immersivelab-api.json` — full OpenAPI 3.1 spec for the Immersive Labs API
 - `dashboard-plan.md` — leaderboard dashboard architecture, API usage, verification steps
+- `data-flow.md` — sequence + aggregation rules + security invariants
+- `V1V2Scope.md` — scope split vs `devops-day-leaderboard`
+- `implementation/` — per-module build plans. **Start with `dashboard-storage-plan.md`** (scope decisions for 30-team / 8-hour event: fresh accounts, `Account.points` scoring, named-volume persistence, reduced role of `EVENT_START_AT` / `EVENT_END_AT`).
 - `guidelines/` — stack conventions (React, TS, Node proxy, styling, testing, security, git).
 
 ## Guidelines policy (mandatory)

@@ -22,12 +22,12 @@ That project is **per-account**, not per-team, so the team-aggregation layer is 
 
 ## Goals
 - Visualize event data from the Immersive Labs API.
-- **Per-account leaderboard** (one row per Immersive Labs account, ranked by points) — same format as the prior project.
+- **Per-team leaderboard** (30 rows — 1 fresh Immersive Labs account per team, ranked by points). See [implementation/dashboard-storage-plan.md](implementation/dashboard-storage-plan.md).
 - **Display language: English only.** All UI copy, labels, and formatted output render in EN regardless of browser locale or account settings.
 
 ## Caveats / known limits
-- **Event window scoping requires the attempts path.** `Account.points` is cumulative lifetime with no timestamp, so it cannot be filtered by `EVENT_START_AT` / `EVENT_END_AT`. The minimal path (trust `Account.points`) will include points earned before/after the event. If event-window accuracy matters, aggregation must walk `/v2/attempts` and filter by `completedAt`. Revisit once creds land and we can inspect real data.
-- **No `Event` entity in the API.** Event bounds are supplied out-of-band via env vars. See [data-flow.md](data-flow.md) and [implementation/aggregation.md](implementation/aggregation.md).
+- **Fresh accounts per event.** Teams receive credentials at `EVENT_START_AT`; each account has zero lifetime points at the start. This makes `Account.points` event-scoped by construction and removes the need to walk `/v2/attempts` or filter by `completedAt`. If this assumption ever breaks (reused accounts, prefilled points), switch to the attempts path — see [implementation/aggregation.md](implementation/aggregation.md).
+- **No `Event` entity in the API.** Event bounds are supplied out-of-band via env vars. Since scoring no longer filters by `completedAt`, `EVENT_START_AT` / `EVENT_END_AT` drive **phase** (pre/live/ended) and **post-event freeze** only. See [data-flow.md](data-flow.md) and [implementation/aggregation.md](implementation/aggregation.md).
 
 ## Plans
 - [dashboard-plan.md](dashboard-plan.md) — leaderboard dashboard architecture (React + Vite, 30 s polling).

@@ -9,13 +9,13 @@
 
 ## Overview
 
-Single-process Node/Express service that proxies the [Immersive Labs API](https://api.immersivelabs.online), aggregates per-account scores for the event window, and serves a React dashboard for live display (TV wall or laptop).
+Single-process Node/Express service that proxies the [Immersive Labs API](https://api.immersivelabs.online), aggregates per-team scores, and serves a React dashboard for live display (TV wall or laptop).
 
-- **Format:** per-account leaderboard (no teams).
-- **Scoring:** best attempt per activity, summed per account. Retries do not stack.
+- **Format:** per-team leaderboard — 30 rows, 1 fresh Immersive Labs account per team.
+- **Scoring:** `Account.points` trusted directly. Teams receive new accounts at `EVENT_START_AT`, so lifetime points = event points by construction.
 - **Tie-break:** points desc → `lastActivityAt` asc (earlier finisher wins) → `displayName`.
-- **Event scoping:** attempts filtered by `completedAt ∈ [EVENT_START_AT, EVENT_END_AT]`.
-- **Refresh:** client polls every 30 s; server caches ~10 s.
+- **Event scoping:** `EVENT_START_AT` / `EVENT_END_AT` drive **phase** (pre/live/ended) and **post-event freeze** (stop rebuilds, keep last snapshot). Not used for attempt filtering.
+- **Refresh:** client polls every 30 s; server caches ~10 s. Snapshot persisted to disk so restarts serve stale instantly.
 - **Language:** English only (UI copy independent of browser/account locale).
 
 ## Architecture
@@ -43,8 +43,8 @@ See:
 
 - **Backend:** Node 20+, Express, native `fetch`.
 - **Frontend:** React + Vite (served as static bundle by the same Node process).
-- **Persistence:** in-memory snapshot (v1) — SQLite optional (v2, survives restart + enables historical snapshots).
-- **Deploy:** single Docker image, port 3000.
+- **Persistence:** in-memory snapshot (10 s TTL) backed by two JSON files on a Docker named volume — `snapshot.json` + `token.json`. Atomic tmp + rename on write; loaded on boot.
+- **Deploy:** single Docker image, port 3000, named volume mounted at `/app/data`.
 
 ## Configuration
 
@@ -54,8 +54,9 @@ All config via environment variables. Secrets live only in the backend — never
 |---|---|
 | `IMMERSIVELAB_ACCESS_KEY` | OAuth2 username for `POST /v1/public/tokens`. |
 | `IMMERSIVELAB_SECRET_TOKEN` | OAuth2 password. |
-| `EVENT_START_AT` | ISO 8601 — event window lower bound (inclusive). |
-| `EVENT_END_AT` | ISO 8601 — event window upper bound (inclusive). |
+| `EVENT_START_AT` | ISO 8601 — drives `phase = "pre"` + pre-event gate. |
+| `EVENT_END_AT` | ISO 8601 — drives `phase = "ended"` + post-event freeze. |
+| `DATA_DIR` | Directory for `snapshot.json` + `token.json` (default `/app/data`, must be a named volume in prod). |
 | `PORT` | HTTP listen port (default `3000`). |
 
 ## Local development
@@ -75,7 +76,7 @@ npm start            # production single-process
 
 # docker
 docker build -t greengauntlet .
-docker run -p 3000:3000 --env-file .env greengauntlet
+docker run -p 3000:3000 -v greengauntlet-data:/app/data --env-file .env greengauntlet
 ```
 
 ## Prior art

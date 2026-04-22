@@ -2,38 +2,40 @@
 
 Build the `/api/leaderboard` payload. Runs server-side, shields ImmersiveLab schema from browser.
 
+## Scoring model
+Teams receive fresh Immersive Labs accounts at `EVENT_START_AT`. Every account has zero lifetime points at the start of the event, so `Account.points` equals event-scoped points by construction. We trust it directly — no attempts walk, no `completedAt` filter, no best-attempt dedup.
+
+If this assumption ever breaks (accounts reused across events, or lifetime points prefilled by the provider), switch to the attempts path. That path is out of scope for v1 and is not implemented.
+
+See [dashboard-storage-plan.md](dashboard-storage-plan.md) §1 for why.
+
 ## File
 - `server/aggregate.ts` (called from `server/index.ts`).
 
 ## Snapshot cache
-- In-memory `{ payload, builtAt }`.
+- In-memory `{ payload, builtAt }`, persisted to `/app/data/snapshot.json` on every successful rebuild (atomic tmp + rename). Loaded from disk on boot.
 - TTL ~10 s (`SNAPSHOT_TTL_MS`).
 - On request:
-  - If fresh → return cached.
-  - Else rebuild, update `builtAt`.
+  - If `phase === "ended"` → return last snapshot, skip rebuild (freeze).
+  - Else if fresh → return cached.
+  - Else rebuild, update `builtAt`, persist.
   - On rebuild failure → serve stale if present, else 503.
 - Single-flight: concurrent callers share one rebuild promise.
 
 ## Build steps
-**Minimal path (trust `Account.points`):**
 1. `walkAccounts()` → `accounts[]`. Treat `points: null` as 0.
-2. Sort desc by `points`. Tie-break: `lastActivityAt` asc (earlier-finisher wins), then `displayName`.
-3. Scrub: drop `email` and any field not listed in payload schema.
+2. Sort desc by `points`. Tie-break: `lastActivityAt` asc (earlier finisher wins), then `displayName` asc.
+3. Scrub: drop `email` and any field not listed in the payload schema.
+4. Relabel for payload: `accounts` → `teams` (1 IL account per team; see [dashboard-storage-plan.md](dashboard-storage-plan.md) §4).
 
-**Attempts path (optional, richer):**
-1. `walkAccounts()` → base list.
-2. `walkActivities()` + `walkAttempts()` → attempts grouped by `(accountUuid, activityUuid)`.
-3. **Event-window filter:** drop any attempt where `completedAt < EVENT_START_AT` or `completedAt > EVENT_END_AT`. Attempts with null `completedAt` (not finished) are also dropped. Applied before best-attempt selection so an out-of-window high score cannot shadow an in-window valid one.
-4. For each `(account, activity)` keep the **best** attempt only (highest score; on tie, earliest `completedAt`). Retries do not stack.
-5. Per account: `total = Σ best.points`, `timeSpent = Σ best.totalDuration ?? 0` (use `??`, not `||`), `completedCount`, `lastActivityAt = max(best.completedAt)`.
-6. Skip orphan attempts whose activity 404s — don't fail the batch.
-7. Sort + scrub as above.
+No activity walk. No attempts walk. Retries naturally shadow because `Account.points` reflects current state.
 
 ## Event phase
-Computed once per snapshot from `now` vs env bounds:
-- `now < EVENT_START_AT` → `phase = "pre"`. Return empty `accounts: []` with `phase` flag; UI shows "not started".
+Computed once per snapshot from `now` vs env bounds. Phase drives UI state and the freeze behavior in §Snapshot cache; it no longer filters score contributions (accounts are fresh → all points are in-window by construction).
+
+- `now < EVENT_START_AT` → `phase = "pre"`. Return empty `teams: []` with `phase` flag; UI shows "not started". Protects against cred leaks that might let a team earn points before the official start.
 - `EVENT_START_AT <= now <= EVENT_END_AT` → `phase = "live"`. Normal aggregation.
-- `now > EVENT_END_AT` → `phase = "ended"`. Aggregation still runs but the window filter naturally freezes results; UI shows "event over". Snapshot TTL may be extended post-event (optional).
+- `now > EVENT_END_AT` → `phase = "ended"`. **Freeze**: serve the last snapshot built before `EVENT_END_AT`; skip further rebuilds. Prevents teams that keep playing after the end from continuing to move up the board.
 
 ## Payload
 ```json
@@ -41,26 +43,24 @@ Computed once per snapshot from `now` vs env bounds:
   "updatedAt": "ISO-8601",
   "phase": "pre" | "live" | "ended",
   "eventWindow": { "startAt": "ISO-8601", "endAt": "ISO-8601" },
-  "accounts": [
+  "teams": [
     {
       "uuid": "...",
       "displayName": "...",
       "points": 123,
-      "lastActivityAt": "...",
-      "timeSpent": 3600,
-      "completedCount": 7
+      "lastActivityAt": "..."
     }
   ]
 }
 ```
-`timeSpent` and `completedCount` present only on the attempts path.
+
+`timeSpent` / `completedCount` are **not** emitted (they were attempts-path fields).
 
 ## Verification
 - Two concurrent `/api/leaderboard` hits → one upstream rebuild (log once).
 - Ranked order stable across consecutive polls when underlying data unchanged.
-- Completing a lab → delta visible within 10 s cache + 30 s poll.
-- Retrying an already-completed lab with a lower score → total **unchanged** (best-attempt rule).
-- Attempt completed **before** `EVENT_START_AT` → excluded from totals.
-- Attempt completed **after** `EVENT_END_AT` → excluded from totals. Leaderboard frozen at `EVENT_END_AT`.
-- Set `EVENT_START_AT` in the future → `/api/leaderboard` returns `phase: "pre"`, empty `accounts`.
+- A team completing a lab → delta visible within 10 s cache + 30 s poll.
+- **Pre-event gate**: `EVENT_START_AT` in future, inject nonzero `Account.points` → payload has `phase: "pre"`, `teams: []`.
+- **Post-event freeze**: cross `EVENT_END_AT` while a team keeps playing → its points continue to rise in the upstream API, but the leaderboard stays pinned to the last pre-end snapshot (`phase: "ended"`, no rebuild log entries).
+- Tie-break: equal points → earlier `lastActivityAt` wins; equal `lastActivityAt` → `displayName` asc.
 - ImmersiveLab outage mid-cache → stale response, health flag.
