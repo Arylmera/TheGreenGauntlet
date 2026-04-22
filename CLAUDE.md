@@ -11,13 +11,13 @@ See [docs/project.md](docs/project.md) for goals, API details, and decisions.
 
 ## Guidelines policy (mandatory)
 Before writing or modifying code, **read the relevant file(s) in `docs/guidelines/`** and follow them:
-- React/JSX/hooks → [docs/guidelines/react.md](docs/guidelines/react.md)
-- `.ts`/`.tsx` anywhere → [docs/guidelines/typescript.md](docs/guidelines/typescript.md)
-- `server/**`, proxy, ImmersiveLab client → [docs/guidelines/node-api.md](docs/guidelines/node-api.md)
-- CSS, Tailwind, layout, responsive → [docs/guidelines/styling.md](docs/guidelines/styling.md)
-- `*.test.*`, `*.spec.*`, vitest, supertest → [docs/guidelines/testing.md](docs/guidelines/testing.md)
-- auth, secrets, env, PII, CORS, rate-limit → [docs/guidelines/security.md](docs/guidelines/security.md)
-- branches, commits, PRs → [docs/guidelines/git.md](docs/guidelines/git.md)
+- React/JSX/hooks → [docs/guidelines/REACT.md](docs/guidelines/REACT.md)
+- `.ts`/`.tsx` anywhere → [docs/guidelines/TYPESCRIPT.md](docs/guidelines/TYPESCRIPT.md)
+- `server/**`, proxy, ImmersiveLab client → [docs/guidelines/NODE-API.md](docs/guidelines/NODE-API.md)
+- CSS, Tailwind, layout, responsive → [docs/guidelines/STYLING.md](docs/guidelines/STYLING.md)
+- `*.test.*`, `*.spec.*`, vitest, supertest → [docs/guidelines/TESTING.md](docs/guidelines/TESTING.md)
+- auth, secrets, env, PII, CORS, rate-limit → [docs/guidelines/SECURITY.md](docs/guidelines/SECURITY.md)
+- branches, commits, PRs → [docs/guidelines/GIT.md](docs/guidelines/GIT.md)
 
 Rules:
 1. If a guideline conflicts with a user request, surface the conflict before acting — don't silently violate.
