@@ -10,8 +10,8 @@ Public React SPA. No auth UI. Polls `/api/leaderboard` every 30 s.
 - `index.html`, `src/main.tsx`, `src/App.tsx`.
 - `src/api/client.ts` — `fetchLeaderboard()` calling `/api/leaderboard`.
 - `src/hooks/useLeaderboard.ts` — 30 s poll, pause on `document.hidden`, exponential backoff on error.
-- `src/components/Leaderboard.tsx` — ranked account list.
-- `src/components/AccountRow.tsx` — single row (rank, display name, points, optional time spent + completed count).
+- `src/components/Leaderboard.tsx` — ranked team list (30 rows).
+- `src/components/TeamRow.tsx` — single row (rank, display name, points, `lastActivityAt`).
 - `src/styles.css` or Tailwind (decide).
 
 ## Hook contract
@@ -36,7 +36,7 @@ useLeaderboard(): { data, updatedAt, loading, error, refresh }
 1. Scaffold Vite app + TS config.
 2. Implement `client.ts` with typed response.
 3. Implement hook with polling + visibility + backoff.
-4. Build `Leaderboard` composed of `AccountRow`.
+4. Build `Leaderboard` composed of `TeamRow`.
 5. Compose in `App.tsx` with header + footer.
 6. Add dev proxy rule `/api → localhost:3000` in `vite.config.ts`.
 

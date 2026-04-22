@@ -7,28 +7,29 @@ Owners in `[brackets]`. Resolved items pruned; see git history for context.
 - [ ] `IMMERSIVELAB_SECRET_TOKEN` provisioned for this event. `[ImmersiveLab admin]`
 - [ ] ImmersiveLab API rate limits — informs cache TTL + sync cadence. `[ImmersiveLab admin]`
 - [ ] `EVENT_START_AT` / `EVENT_END_AT` ISO 8601 values. `[event owner]`
+- [ ] **Confirm 30 fresh IL accounts are provisioned with zero lifetime points at `EVENT_START_AT`.** Whole scoring model ([aggregation.md](docs/implementation/aggregation.md)) rests on this. `[ImmersiveLab admin]`
+- [ ] Credentials distribution process (who hands creds to teams at start). `[event owner]`
 
 ## Event / business rules
-- [ ] Weighting rules (per-lab difficulty, time bonus, penalties) on top of attempt score? `[event owner]`
+- [ ] Weighting rules (per-lab difficulty, time bonus, penalties) on top of `Account.points`? `[event owner]`
 - [ ] v1 scope: public leaderboard only, or also admin panel (visibility toggle, custom challenges, display-name overrides)? `[event owner]`
-- [ ] PII override: default is `displayName` public / `email` hidden — confirm or override. `[event owner + legal]`
+- [ ] PII override: default is `displayName` public / `email` scrubbed — confirm or override. `[event owner + legal]`
 
 ## Ops / deploy
-- [ ] Hosting target (Fly, Render, Railway, internal VM). Affects Dockerfile, TLS, domain. `[ops]`
+- [ ] Hosting target (Fly, Render, Railway, internal VM). Affects Dockerfile, TLS, domain, volume driver. `[ops]`
 - [ ] Public domain / URL. `[ops]`
 - [ ] Secret store for ImmersiveLab creds. `[ops]`
-- [ ] Expected concurrent viewers — validates 10 s cache + sync cadence vs ImmersiveLab rate limits. `[event owner + ops]`
+- [ ] Expected concurrent viewers — validates 10 s cache vs ImmersiveLab rate limits. `[event owner + ops]`
 - [ ] Logging / monitoring target. `[ops]`
-- [ ] Persistence: in-memory 10 s snapshot vs SQLite (survives restart, enables historical snapshots). `[tech lead]`
+- [x] Persistence: JSON (`snapshot.json` + `token.json`) on a Docker named volume. No SQLite in v1. See [dashboard-storage-plan.md](docs/implementation/dashboard-storage-plan.md).
 
 ## UX
-- [ ] Visual design / mockup: layout, typography, refresh indicator, offline/error state. `[design]`
+- [ ] Visual design / mockup: layout, typography, refresh indicator, offline/error state, phase banners. `[design]`
 
 ## API spec — verify against live API once creds land
 - [ ] Token TTL exact value (assumed ~30 min).
-- [ ] Pagination default + max page size.
-- [ ] `Attempt` shape: `score`, `totalDuration`, `completedAt`, `accountUuid`, `activityUuid` — confirm names.
-- [ ] `Account.points` semantics — cumulative lifetime, or scopable to event window? If lifetime only, attempts path is mandatory.
+- [ ] Pagination default + max page size on `/v2/accounts`.
+- [x] `Account.points` semantics — confirmed lifetime cumulative. Event-scoped by giving teams fresh accounts at `EVENT_START_AT` (see fresh-accounts blocker above). Attempts path no longer needed in v1.
 
 ## Next step
-Turn credentials + points-source + v1-scope into a short questionnaire for event owner and ImmersiveLab admin. Block coding until credentials and points-source resolve.
+Confirm fresh-account provisioning + credentials with ImmersiveLab admin. Block coding until credentials and fresh-account confirmation resolve.

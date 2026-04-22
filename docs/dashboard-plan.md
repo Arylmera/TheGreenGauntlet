@@ -1,7 +1,7 @@
-# Plan: Account-Based Leaderboard Dashboard
+# Plan: Team-Based Leaderboard Dashboard
 
 ## Context
-Event where pre-created Immersive Labs accounts compete **individually**. Dashboard is **publicly viewable** — anyone who opens the URL sees live standings, no login. Per-account standings refresh every **30 s**.
+8-hour live event. 30 teams, 1 fresh Immersive Labs account per team, credentials handed out at `EVENT_START_AT`. Dashboard is **publicly viewable** — anyone who opens the URL sees live standings, no login. Per-team standings refresh every **30 s**. See [implementation/dashboard-storage-plan.md](implementation/dashboard-storage-plan.md) for persistence + scoring decisions.
 
 **Deployment shape:** single Node service. One process serves the built React bundle as static files **and** the `/api/*` proxy endpoints. One container, one port, one deploy. No separate frontend/backend service, no Docker compose multi-service orchestration.
 
@@ -21,14 +21,11 @@ No token ever reaches the browser.
 ## Relevant API facts (from `docs/immersivelab-api.json` + prior project)
 - **Base URL**: `https://api.immersivelabs.online`.
 - **Auth**: `POST /v1/public/tokens` form-encoded `username={access_key}&password={secret_token}` → `accessToken` valid ~30 min. **Proxy only.**
-- **Accounts**: `GET /v2/accounts` (scope `account:read`). `Account.points: integer | null`. Fields used: `uuid`, `displayName`, `email`, `points`, `lastActivityAt`.
-- **Activities + attempts**: if we adopt attempt-level scoring, points per account = sum over activities of the **best** (highest-scoring) attempt on that activity — **not** the sum of all attempts. Multiple attempts on the same activity do not stack. `totalDuration` likewise comes from the best attempt (or the completed one).
-- **No event-window in the API**: the OpenAPI spec has no `Event` entity with start/end timestamps. The event window is supplied out-of-band via `EVENT_START_AT` / `EVENT_END_AT` env vars; the proxy filters attempts by `completedAt` against that window before best-attempt selection.
+- **Accounts**: `GET /v2/accounts` (scope `account:read`). `Account.points: integer | null`. Fields used: `uuid`, `displayName`, `points`, `lastActivityAt`. `email` is read-and-dropped (scrubbed before response).
+- **Fresh accounts per event**: teams get new accounts at start, so `Account.points` is event-scoped by construction. We trust it directly — no activities/attempts walk, no `completedAt` filter. Fallback (attempts path) is documented in [implementation/aggregation.md](implementation/aggregation.md) but not implemented in v1.
+- **No event-window in the API**: the OpenAPI spec has no `Event` entity with start/end timestamps. The event window is supplied out-of-band via `EVENT_START_AT` / `EVENT_END_AT` env vars. These drive **phase** (pre/live/ended) and **post-event freeze**, not scoring filters.
 - **Pagination**: `{ page: [...], meta: { nextPageToken, hasNextPage } }`. Pass `?page_token=...`. Do not change page size mid-walk.
-- **No leaderboard endpoint** — leaderboard is computed from accounts (or attempts) server-side.
-- **Gotchas carried over**:
-  - Use `??` not `||` when reading `attempt.totalDuration` — `0` is a valid value.
-  - Sync must skip orphan attempts whose activity 404s, not abort the batch.
+- **No leaderboard endpoint** — leaderboard is computed from `/v2/accounts` server-side.
 
 ## Architecture
 
@@ -39,19 +36,21 @@ No token ever reaches the browser.
 ```
 
 ### Endpoints exposed by the proxy
-- `GET /api/leaderboard` — returns `{ accounts: [{ uuid, displayName, points, lastActivityAt, timeSpent?, completedCount? }], updatedAt }`, sorted by points desc. Aggregation + sorting happens server-side.
-- `GET /api/health` — proxy + token status.
+- `GET /api/leaderboard` — returns `{ teams: [{ uuid, displayName, points, lastActivityAt }], phase, eventWindow, updatedAt }`, sorted by points desc. Aggregation + sorting happens server-side.
+- `GET /api/health` — proxy + token status + `eventWindow`.
 
 ### Proxy internals
 - Single Node server (Express, aligned with prior project). Same process serves `dist/` (the Vite build output) as static assets. SPA fallback: unknown non-`/api` routes return `index.html`.
-- In-memory token cache with expiry (+ optional `token.json` persistence).
-- On each `/api/leaderboard` request (throttled to once per ~10 s via a simple cache):
-  1. Ensure fresh token.
-  2. Walk `/v2/accounts`, paginated.
-  3. (If attempts path chosen) walk `/v2/activities` + `/v2/attempts`. **Filter attempts by `completedAt` ∈ [`EVENT_START_AT`, `EVENT_END_AT`]** before best-attempt selection. For each `(account, activity)` pair, keep only the best-scoring in-window attempt; account total = sum of those bests.
-  4. Sort accounts desc by total points. Tie-break by `lastActivityAt` asc (earlier-finisher wins), then display name.
-  5. Scrub PII: keep `displayName`, drop `email` by default.
-  6. Return + cache snapshot.
+- Token cache in memory + `token.json` on named volume.
+- Leaderboard cache in memory + `snapshot.json` on named volume (atomic tmp + rename). Loaded on boot → stale slot.
+- On each `/api/leaderboard` request:
+  1. If `phase === "ended"` → return last snapshot, skip rebuild.
+  2. If fresh (< `SNAPSHOT_TTL_MS`) → return cached.
+  3. Else ensure fresh token, walk `/v2/accounts` paginated.
+  4. Sort teams desc by `points`. Tie-break: `lastActivityAt` asc, then `displayName` asc.
+  5. Scrub PII: keep `displayName`, drop `email`.
+  6. Persist snapshot + return.
+- Single-flight: concurrent callers during rebuild share one promise.
 
 ### Frontend (React + Vite)
 ```
@@ -59,17 +58,17 @@ src/
   api/
     client.ts          // fetch('/api/leaderboard'), no auth
   hooks/
-    useLeaderboard.ts  // polls every 30s, returns {accounts, updatedAt}
+    useLeaderboard.ts  // polls every 30s, returns {teams, phase, eventWindow, updatedAt}
   components/
-    Leaderboard.tsx    // ranked list of accounts
-    AccountRow.tsx     // single row (rank, name, points, time spent)
+    Leaderboard.tsx    // ranked list of teams
+    TeamRow.tsx        // single row (rank, name, points, last activity)
   App.tsx
   main.tsx
 ```
 
 - **`client.ts`**: just `fetch('/api/leaderboard')` — no headers, no token logic. Throws on non-2xx.
 - **`useLeaderboard`**: mount + every 30 s. `AbortController` on unmount. Pauses polling when `document.hidden`.
-- **`Leaderboard.tsx`**: ranked list of accounts (rank, display name, points, optional time spent, optional completed count).
+- **`Leaderboard.tsx`**: ranked list of 30 team rows. Renders phase-aware states (`"pre"` → "Event starts at …"; `"ended"` → "Final standings" banner + frozen list).
 
 ## Responsive UX (mobile, laptop, big screen)
 The dashboard is public and will be viewed on phones, laptops, **and event-room TVs/projectors**. Design mobile-first, scale up, never horizontal-scroll.
@@ -83,7 +82,7 @@ The dashboard is public and will be viewed on phones, laptops, **and event-room 
 
 **Layout rules**:
 - Use CSS Grid / Flexbox with `clamp()` for typography (e.g. `font-size: clamp(14px, 1.2vw, 22px)`). No fixed pixel widths on containers — use `max-width` + `margin: auto`.
-- Leaderboard row collapses on narrow viewports: on `< sm`, hide `timeSpent` and `completedCount` columns, keep rank / name / points. On `≥ md`, show all columns.
+- Leaderboard row collapses on narrow viewports: on `< sm`, hide `lastActivityAt`, keep rank / name / points. On `≥ md`, show all columns.
 - Long display names truncate with `text-overflow: ellipsis` + tooltip on hover; never wrap to push layout.
 - Rank badge + points are always visible — they are the primary information.
 - Touch targets ≥ 44×44 px on mobile (WCAG 2.5.5).
@@ -105,19 +104,21 @@ Browser only talks to the proxy at same origin, so no ImmersiveLab-side CORS con
 - `IMMERSIVELAB_ACCESS_KEY`
 - `IMMERSIVELAB_SECRET_TOKEN`
 - `IMMERSIVELAB_BASE_URL` (default `https://api.immersivelabs.online`)
-- `EVENT_START_AT` (ISO 8601, required — attempts before this are excluded)
-- `EVENT_END_AT` (ISO 8601, required — attempts after this are excluded; leaderboard freezes)
-- `LEADERBOARD_CACHE_MS` (default `10000`)
+- `EVENT_START_AT` (ISO 8601, required — drives `phase = "pre"` + pre-event gate)
+- `EVENT_END_AT` (ISO 8601, required — drives `phase = "ended"` + post-event freeze)
+- `SNAPSHOT_TTL_MS` (default `10000`)
+- `DATA_DIR` (default `/app/data` — holds `snapshot.json` + `token.json`)
 - `PORT` (default `3000`)
 
 ## Files to create / modify
 - `package.json`, `vite.config.ts`, `tsconfig.json`, `index.html`
 - `server/index.ts` — Express app, static serving, SPA fallback
-- `server/immersiveLab.ts` — token cache + paginated ImmersiveLab walkers (port of prior `immersiveLabsClient.js`)
+- `server/immersiveLab.ts` — token cache + paginated `/v2/accounts` walker (port of prior `immersiveLabsClient.js`, minus activities/attempts)
 - `server/auth.ts` — token exchange + refresh (port of prior `immersiveLabsAuth.js`)
-- `server/leaderboard.ts` — aggregation + 10 s snapshot cache
+- `server/aggregate.ts` — aggregation + 10 s snapshot cache + phase + freeze
+- `server/snapshotStore.ts` — atomic load/save for `snapshot.json` + `token.json`
 - `src/api/client.ts`, `src/hooks/useLeaderboard.ts`
-- `src/components/{Leaderboard,AccountRow}.tsx`
+- `src/components/{Leaderboard,TeamRow}.tsx`
 - `src/App.tsx`, `src/main.tsx`
 - `.env.example` with proxy vars
 - `README.md` with deployment + runbook
@@ -125,7 +126,7 @@ Browser only talks to the proxy at same origin, so no ImmersiveLab-side CORS con
 ## Verification
 1. `npm run dev` starts Vite + proxy (concurrently or via Vite middleware).
 2. `curl localhost:5173/api/health` → `{ ok: true, tokenExpiresIn: N }`.
-3. `curl localhost:5173/api/leaderboard` → non-empty `accounts[]`, sorted by points desc.
+3. `curl localhost:5173/api/leaderboard` → non-empty `teams[]`, sorted by points desc, `phase` matches clock vs event window.
 4. Open the site in an **incognito window with no credentials** → leaderboard renders.
 5. Complete one lab on a test account → within 30 s + cache window the dashboard reflects the delta.
 6. Force token expiry (restart proxy or wait 30 min) → next request transparently refreshes, no user-visible error.
