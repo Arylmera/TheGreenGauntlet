@@ -23,6 +23,7 @@ That project is **per-account**, not per-team, so the team-aggregation layer is 
 ## Goals
 - Visualize event data from the Immersive Labs API.
 - **Per-account leaderboard** (one row per Immersive Labs account, ranked by points) — same format as the prior project.
+- **Display language: English only.** All UI copy, labels, and formatted output render in EN regardless of browser locale or account settings.
 
 ## Caveats / known limits
 - **Event window scoping requires the attempts path.** `Account.points` is cumulative lifetime with no timestamp, so it cannot be filtered by `EVENT_START_AT` / `EVENT_END_AT`. The minimal path (trust `Account.points`) will include points earned before/after the event. If event-window accuracy matters, aggregation must walk `/v2/attempts` and filter by `completedAt`. Revisit once creds land and we can inspect real data.

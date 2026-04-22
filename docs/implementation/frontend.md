@@ -23,6 +23,7 @@ useLeaderboard(): { data, updatedAt, loading, error, refresh }
 - `visibilitychange` → pause when hidden, refetch on visible.
 
 ## UX
+- **Language: English only.** All copy hard-coded in EN. Set `<html lang="en">`. Use `Intl` formatters with explicit `"en-US"` locale (never default to browser locale) for dates, times, and numbers.
 - Skeleton rows on first load.
 - Subtle "updated Xs ago" label bound to `updatedAt`.
 - **Phase-driven states** (from payload `phase`):

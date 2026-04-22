@@ -71,6 +71,33 @@ src/
 - **`useLeaderboard`**: mount + every 30 s. `AbortController` on unmount. Pauses polling when `document.hidden`.
 - **`Leaderboard.tsx`**: ranked list of accounts (rank, display name, points, optional time spent, optional completed count).
 
+## Responsive UX (mobile, laptop, big screen)
+The dashboard is public and will be viewed on phones, laptops, **and event-room TVs/projectors**. Design mobile-first, scale up, never horizontal-scroll.
+
+**Breakpoints** (Tailwind-style, single source of truth):
+- `sm` ≥ 640 px — phone landscape
+- `md` ≥ 768 px — tablet
+- `lg` ≥ 1024 px — laptop (default design target)
+- `xl` ≥ 1280 px — desktop
+- `2xl` ≥ 1536 px — big screen / TV (increase font sizes and row density, not content)
+
+**Layout rules**:
+- Use CSS Grid / Flexbox with `clamp()` for typography (e.g. `font-size: clamp(14px, 1.2vw, 22px)`). No fixed pixel widths on containers — use `max-width` + `margin: auto`.
+- Leaderboard row collapses on narrow viewports: on `< sm`, hide `timeSpent` and `completedCount` columns, keep rank / name / points. On `≥ md`, show all columns.
+- Long display names truncate with `text-overflow: ellipsis` + tooltip on hover; never wrap to push layout.
+- Rank badge + points are always visible — they are the primary information.
+- Touch targets ≥ 44×44 px on mobile (WCAG 2.5.5).
+- Respect `prefers-reduced-motion` for any row transitions / rank-change animations.
+- Respect `prefers-color-scheme` or ship a single high-contrast dark theme suited to projected/TV display.
+
+**Big-screen (TV) mode** (`2xl`+ or `?tv=1` query param):
+- Bump base font size (~1.5–2×), show top N rows that fit the viewport, hide chrome (header nav, footer) so standings fill the screen.
+- No hover-only interactions — TVs have no cursor.
+
+**Verification additions**:
+- Chrome DevTools device toolbar: iPhone SE (375 px), iPad (768 px), 1080p laptop, 4K TV (3840 px) — no horizontal scroll, all primary columns legible.
+- Lighthouse mobile score ≥ 90 for Performance and Accessibility.
+
 ## CORS
 Browser only talks to the proxy at same origin, so no ImmersiveLab-side CORS concern. Proxy → ImmersiveLab is server-to-server.
 
