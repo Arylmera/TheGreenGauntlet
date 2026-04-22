@@ -1,0 +1,12 @@
+node_modules
+dist
+dist-server
+.git
+.env
+.env.local
+data
+*.log
+*.tsbuildinfo
+.vscode
+.idea
+coverage
