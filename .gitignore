@@ -1,7 +1,10 @@
 .claude/
 node_modules
 dist
+dist-server
 dist-ssr
+data
+coverage
 *.local
 .env
 .env.local

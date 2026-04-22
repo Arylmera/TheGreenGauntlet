@@ -1,0 +1,23 @@
+services:
+  gauntlet:
+    build: .
+    image: green-gauntlet:local
+    container_name: green-gauntlet
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      DATA_DIR: /app/data
+    volumes:
+      - greengauntlet-data:/app/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  greengauntlet-data:

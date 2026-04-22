@@ -10,7 +10,7 @@ stage 1 — builder
   COPY package*.json ./
   RUN npm ci
   COPY . .
-  RUN npm run build          # vite build → dist/, tsc → server/*.js
+  RUN npm run build          # vite build → dist/, tsc → dist-server/*.js
 
 stage 2 — runtime
   FROM node:20-alpine
@@ -18,11 +18,11 @@ stage 2 — runtime
   COPY package*.json ./
   RUN npm ci --omit=dev
   COPY --from=builder /app/dist ./dist
-  COPY --from=builder /app/server ./server
+  COPY --from=builder /app/dist-server ./dist-server
   RUN mkdir -p /app/data
   VOLUME ["/app/data"]
   EXPOSE 3000
-  CMD ["node", "server/index.js"]
+  CMD ["node", "dist-server/index.js"]
 ```
 
 ## Volume
@@ -57,7 +57,7 @@ stage 2 — runtime
 
 ## Steps
 1. Add Dockerfile + `.dockerignore`.
-2. Add `start` script → `node server/index.js`.
+2. Add `start` script → `node dist-server/index.js`.
 3. Add `dev` script (concurrently vite + tsx server).
 4. CI: build image, run health probe against container.
 
