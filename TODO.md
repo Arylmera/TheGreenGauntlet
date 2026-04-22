@@ -15,7 +15,7 @@ Several items were resolved by reviewing the prior dashboard at `C:\Users\guill\
 ## Resolved in this session
 - ✅ Format: **per-account** leaderboard (no teams). Plan, data-flow, and implementation docs updated.
 - ✅ Scoring rule on attempts path: **best attempt per activity**, summed per account. Retries do not stack.
-- ✅ Default tie-break: points desc → `lastActivityAt` asc → `displayName`.
+- ✅ Tie-break: points desc → `lastActivityAt` asc (earlier finisher wins) → `displayName`. Confirmed by event owner.
 
 ## Credentials / env
 - [ ] `IMMERSIVELAB_ACCESS_KEY` provisioned for this event. `[ImmersiveLab admin]`
@@ -26,7 +26,6 @@ Several items were resolved by reviewing the prior dashboard at `C:\Users\guill\
 - [x] Event start/end timestamps — hard-coded via `EVENT_START_AT` / `EVENT_END_AT` env vars (ISO 8601). Attempts with `completedAt` outside `[EVENT_START_AT, EVENT_END_AT]` are excluded from aggregation. "Not started" / "frozen" UI states derived from these bounds. `[event owner to supply values]`
 - [ ] Points source: trust `Account.points` (minimal path, one walk) vs attempts-derived with best-attempt rule (richer, enables Time Spent + completed count). `[event owner + tech lead]`
 - [ ] Are there weighting rules (per-lab difficulty, time bonus, penalties) on top of attempt score? `[event owner]`
-- [ ] Tie-break confirmation — accept default or override? `[event owner]`
 - [ ] v1 scope: public leaderboard only, or also admin panel (visibility toggle, custom challenges, display-name overrides) like prior project? `[event owner]`
 - [ ] PII confirmation: default is `displayName` public / `email` hidden — any override? `[event owner + legal]`
 
