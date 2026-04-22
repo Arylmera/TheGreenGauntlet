@@ -25,6 +25,10 @@ useLeaderboard(): { data, updatedAt, loading, error, refresh }
 ## UX
 - Skeleton rows on first load.
 - Subtle "updated Xs ago" label bound to `updatedAt`.
+- **Phase-driven states** (from payload `phase`):
+  - `"pre"` → "Event starts at {EVENT_START_AT}" placeholder, no rows.
+  - `"live"` → normal ranked list.
+  - `"ended"` → "Event ended {EVENT_END_AT} — final standings" banner, list frozen.
 - Error banner on sustained failure (3 consecutive errors).
 
 ## Steps
@@ -37,6 +41,8 @@ useLeaderboard(): { data, updatedAt, loading, error, refresh }
 
 ## Verification
 - Incognito load → leaderboard renders within first fetch.
-- DevTools network: only same-origin `/api/*`. No IL domain. No secrets in JS bundle.
+- DevTools network: only same-origin `/api/*`. No ImmersiveLab domain. No secrets in JS bundle.
 - Tab hidden 2 min → no polling. On focus → immediate fetch.
 - Server down → backoff, error banner; recovers on return.
+- Set `EVENT_START_AT` to future → UI shows "pre" state.
+- Set `EVENT_END_AT` to past → UI shows "ended" banner, standings frozen.

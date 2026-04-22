@@ -5,16 +5,16 @@ Event where pre-created Immersive Labs accounts compete **individually**. Dashbo
 
 **Deployment shape:** single Node service. One process serves the built React bundle as static files **and** the `/api/*` proxy endpoints. One container, one port, one deploy. No separate frontend/backend service, no Docker compose multi-service orchestration.
 
-**Prior art:** `devops-day-leaderboard` is the account-based version of this dashboard, running in production for a previous event. We reuse its auth, IL client, and sync service modules directly. This plan is essentially a rebuild of that project on a cleaner React + Vite frontend, keeping the proven backend.
+**Prior art:** `devops-day-leaderboard` is the account-based version of this dashboard, running in production for a previous event. We reuse its auth, ImmersiveLab client, and sync service modules directly. This plan is essentially a rebuild of that project on a cleaner React + Vite frontend, keeping the proven backend.
 
 ## Auth model — proxy is mandatory
-The site is public, so the browser cannot hold the IL access key or secret token. All IL calls go through our proxy:
+The site is public, so the browser cannot hold the ImmersiveLab access key or secret token. All ImmersiveLab calls go through our proxy:
 
-- Proxy stores `IL_ACCESS_KEY` + `IL_SECRET_TOKEN` in server-side env.
+- Proxy stores `IMMERSIVELAB_ACCESS_KEY` + `IMMERSIVELAB_SECRET_TOKEN` in server-side env.
 - Proxy exchanges them at `POST /v1/public/tokens` for a ~30 min `accessToken` and caches it in memory (persisted to `token.json` like the prior project, so restarts don't always re-auth).
 - Proxy refreshes the token on 401 or a few minutes before expiry.
 - Proxy exposes a **minimal, read-only** surface to the browser — only the endpoints the dashboard needs. No passthrough of arbitrary `/v2/*` paths.
-- Cache aggregated leaderboard response for ~10 s to protect IL rate limits when many viewers are watching.
+- Cache aggregated leaderboard response for ~10 s to protect ImmersiveLab rate limits when many viewers are watching.
 
 No token ever reaches the browser.
 
@@ -23,6 +23,7 @@ No token ever reaches the browser.
 - **Auth**: `POST /v1/public/tokens` form-encoded `username={access_key}&password={secret_token}` → `accessToken` valid ~30 min. **Proxy only.**
 - **Accounts**: `GET /v2/accounts` (scope `account:read`). `Account.points: integer | null`. Fields used: `uuid`, `displayName`, `email`, `points`, `lastActivityAt`.
 - **Activities + attempts**: if we adopt attempt-level scoring, points per account = sum over activities of the **best** (highest-scoring) attempt on that activity — **not** the sum of all attempts. Multiple attempts on the same activity do not stack. `totalDuration` likewise comes from the best attempt (or the completed one).
+- **No event-window in the API**: the OpenAPI spec has no `Event` entity with start/end timestamps. The event window is supplied out-of-band via `EVENT_START_AT` / `EVENT_END_AT` env vars; the proxy filters attempts by `completedAt` against that window before best-attempt selection.
 - **Pagination**: `{ page: [...], meta: { nextPageToken, hasNextPage } }`. Pass `?page_token=...`. Do not change page size mid-walk.
 - **No leaderboard endpoint** — leaderboard is computed from accounts (or attempts) server-side.
 - **Gotchas carried over**:
@@ -32,7 +33,7 @@ No token ever reaches the browser.
 ## Architecture
 
 ```
-[ public browser ]  --fetch-->  [ our proxy ]  --Bearer-->  [ IL API ]
+[ public browser ]  --fetch-->  [ our proxy ]  --Bearer-->  [ ImmersiveLab API ]
      no token                    holds secret,
                                  caches token
 ```
@@ -47,7 +48,7 @@ No token ever reaches the browser.
 - On each `/api/leaderboard` request (throttled to once per ~10 s via a simple cache):
   1. Ensure fresh token.
   2. Walk `/v2/accounts`, paginated.
-  3. (If attempts path chosen) walk `/v2/activities` + `/v2/attempts`. For each `(account, activity)` pair, keep only the best-scoring attempt; account total = sum of those bests.
+  3. (If attempts path chosen) walk `/v2/activities` + `/v2/attempts`. **Filter attempts by `completedAt` ∈ [`EVENT_START_AT`, `EVENT_END_AT`]** before best-attempt selection. For each `(account, activity)` pair, keep only the best-scoring in-window attempt; account total = sum of those bests.
   4. Sort accounts desc by total points. Tie-break by `lastActivityAt` asc (earlier-finisher wins), then display name.
   5. Scrub PII: keep `displayName`, drop `email` by default.
   6. Return + cache snapshot.
@@ -71,19 +72,21 @@ src/
 - **`Leaderboard.tsx`**: ranked list of accounts (rank, display name, points, optional time spent, optional completed count).
 
 ## CORS
-Browser only talks to the proxy at same origin, so no IL-side CORS concern. Proxy → IL is server-to-server.
+Browser only talks to the proxy at same origin, so no ImmersiveLab-side CORS concern. Proxy → ImmersiveLab is server-to-server.
 
 ## Env (proxy side, never exposed)
-- `IL_ACCESS_KEY`
-- `IL_SECRET_TOKEN`
-- `IL_BASE_URL` (default `https://api.immersivelabs.online`)
+- `IMMERSIVELAB_ACCESS_KEY`
+- `IMMERSIVELAB_SECRET_TOKEN`
+- `IMMERSIVELAB_BASE_URL` (default `https://api.immersivelabs.online`)
+- `EVENT_START_AT` (ISO 8601, required — attempts before this are excluded)
+- `EVENT_END_AT` (ISO 8601, required — attempts after this are excluded; leaderboard freezes)
 - `LEADERBOARD_CACHE_MS` (default `10000`)
 - `PORT` (default `3000`)
 
 ## Files to create / modify
 - `package.json`, `vite.config.ts`, `tsconfig.json`, `index.html`
 - `server/index.ts` — Express app, static serving, SPA fallback
-- `server/il.ts` — token cache + paginated IL walkers (port of prior `immersiveLabsClient.js`)
+- `server/immersiveLab.ts` — token cache + paginated ImmersiveLab walkers (port of prior `immersiveLabsClient.js`)
 - `server/auth.ts` — token exchange + refresh (port of prior `immersiveLabsAuth.js`)
 - `server/leaderboard.ts` — aggregation + 10 s snapshot cache
 - `src/api/client.ts`, `src/hooks/useLeaderboard.ts`
@@ -100,7 +103,7 @@ Browser only talks to the proxy at same origin, so no IL-side CORS concern. Prox
 5. Complete one lab on a test account → within 30 s + cache window the dashboard reflects the delta.
 6. Force token expiry (restart proxy or wait 30 min) → next request transparently refreshes, no user-visible error.
 7. Open two browsers → identical standings within one poll cycle.
-8. Inspect browser devtools → **no IL domain in network tab, no secrets in JS bundle, no emails in response**.
+8. Inspect browser devtools → **no ImmersiveLab domain in network tab, no secrets in JS bundle, no emails in response**.
 
 ## Runtime layout
 ```
@@ -115,9 +118,5 @@ Dockerfile (multi-stage)
 
 Dev: `npm run dev` runs Vite (5173) with a proxy rule forwarding `/api` to the Node server (3000) run in parallel (`concurrently` or `npm-run-all`).
 
-## Open items to confirm before coding
-- Points source: trust `Account.points` (cheap, one walk) vs derive from `attempts` (prior-project path, more calls, enables Time Spent + per-activity breakdown).
-- Persistence: in-memory 10 s snapshot (simpler) vs SQLite (prior-project path, survives restart, enables historical snapshots + custom challenges).
-- Admin surface: do we need the prior project's admin panel (visibility toggle, custom challenges, display-name overrides), or is v1 view-only?
-- Tie-break rule (default: points desc → `lastActivityAt` asc → name) — confirm with event owner.
-- PII: default drops `email` from public payload. Confirm.
+## Open items
+Tracked in [../TODO.md](../TODO.md) — single source of truth for credentials, event rules, ops, UX, and points-source / persistence / admin-scope decisions.

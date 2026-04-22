@@ -18,12 +18,12 @@ Several items were resolved by reviewing the prior dashboard at `C:\Users\guill\
 - ✅ Default tie-break: points desc → `lastActivityAt` asc → `displayName`.
 
 ## Credentials / env
-- [ ] `IL_ACCESS_KEY` provisioned for this event. `[IL admin]`
-- [ ] `IL_SECRET_TOKEN` provisioned for this event. `[IL admin]`
-- [ ] IL API rate limits — informs cache TTL + sync cadence. `[IL admin]`
+- [ ] `IMMERSIVELAB_ACCESS_KEY` provisioned for this event. `[ImmersiveLab admin]`
+- [ ] `IMMERSIVELAB_SECRET_TOKEN` provisioned for this event. `[ImmersiveLab admin]`
+- [ ] ImmersiveLab API rate limits — informs cache TTL + sync cadence. `[ImmersiveLab admin]`
 
 ## Event / business rules
-- [ ] Event start/end timestamps — "not started" and "event over / frozen" states. `[event owner]`
+- [x] Event start/end timestamps — hard-coded via `EVENT_START_AT` / `EVENT_END_AT` env vars (ISO 8601). Attempts with `completedAt` outside `[EVENT_START_AT, EVENT_END_AT]` are excluded from aggregation. "Not started" / "frozen" UI states derived from these bounds. `[event owner to supply values]`
 - [ ] Points source: trust `Account.points` (minimal path, one walk) vs attempts-derived with best-attempt rule (richer, enables Time Spent + completed count). `[event owner + tech lead]`
 - [ ] Are there weighting rules (per-lab difficulty, time bonus, penalties) on top of attempt score? `[event owner]`
 - [ ] Tie-break confirmation — accept default or override? `[event owner]`
@@ -33,8 +33,8 @@ Several items were resolved by reviewing the prior dashboard at `C:\Users\guill\
 ## Ops / deploy
 - [ ] Hosting target (Fly, Render, Railway, internal VM). Affects Dockerfile, TLS, domain. `[ops]`
 - [ ] Public domain / URL. `[ops]`
-- [ ] Secret store for IL creds. `[ops]`
-- [ ] Expected concurrent viewers — validates 10 s cache + sync cadence vs IL rate limits. `[event owner + ops]`
+- [ ] Secret store for ImmersiveLab creds. `[ops]`
+- [ ] Expected concurrent viewers — validates 10 s cache + sync cadence vs ImmersiveLab rate limits. `[event owner + ops]`
 - [ ] Logging / monitoring target. `[ops]`
 - [ ] Persistence: in-memory 10 s snapshot (simpler) vs SQLite (prior-project path, survives restart, enables historical snapshots). `[tech lead]`
 
@@ -50,4 +50,4 @@ Several items were resolved by reviewing the prior dashboard at `C:\Users\guill\
 - [ ] `Account.points` semantics — cumulative lifetime, or scopable to the event window? If lifetime only, must use attempts path to scope to the event.
 
 ## Next step
-Turn credentials + points-source + v1-scope into a short questionnaire for the event owner and IL admin. Block coding until credentials and points-source resolve.
+Turn credentials + points-source + v1-scope into a short questionnaire for the event owner and ImmersiveLab admin. Block coding until credentials and points-source resolve.

@@ -11,15 +11,15 @@ Single Node process. Serves React `dist/` + `/api/*`. No separate backend.
 - Node 20 alpine runtime.
 
 ## Routes
-- `GET /api/health` → `{ ok, tokenExpiresIn, snapshotAgeMs }`.
-- `GET /api/leaderboard` → per-account ranked snapshot (see [aggregation.md](aggregation.md)).
+- `GET /api/health` → `{ ok, tokenExpiresIn, snapshotAgeMs, eventWindow: { startAt, endAt, phase } }`.
+- `GET /api/leaderboard` → per-account ranked snapshot with `phase` + `eventWindow` (see [aggregation.md](aggregation.md)).
 - `GET /assets/*` → static from `dist/assets`.
 - `GET /*` non-`/api` → `dist/index.html` (SPA fallback).
 
 ## Behaviors
 - Listens on `PORT` (default 3000).
-- Logs request id, path, IL upstream latency, cache hit/miss.
-- Error handler: maps IL 401 → trigger refresh + retry once; IL 5xx/timeout → 503 with stale snapshot if available.
+- Logs request id, path, ImmersiveLab upstream latency, cache hit/miss.
+- Error handler: maps ImmersiveLab 401 → trigger refresh + retry once; ImmersiveLab 5xx/timeout → 503 with stale snapshot if available.
 - No CORS headers needed (same origin). Deny unknown `/api/*` with 404.
 
 ## Steps

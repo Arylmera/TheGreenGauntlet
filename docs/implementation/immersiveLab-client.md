@@ -1,21 +1,21 @@
-# IL Client
+# ImmersiveLab Client
 
-Server-side IL API wrapper. Holds secret, caches token, walks pages.
+Server-side ImmersiveLab API wrapper. Holds secret, caches token, walks pages.
 
 ## File
-- `server/il.ts`.
+- `server/immersiveLab.ts`.
 
 ## Token cache
 - In-memory `{ accessToken, expiresAt }`.
 - `getToken()`:
   - If cached and `now < expiresAt - 60s` → return.
-  - Else `POST /v1/public/tokens` form-encoded `username=IL_ACCESS_KEY&password=IL_SECRET_TOKEN`.
+  - Else `POST /v1/public/tokens` form-encoded `username=IMMERSIVELAB_ACCESS_KEY&password=IMMERSIVELAB_SECRET_TOKEN`.
   - Parse `accessToken` + `expiresIn`. Store.
 - `invalidateToken()` on 401. Caller retries once.
 - Optional: persist to `token.json` (prior-project pattern) so restarts don't always re-auth.
 
 ## HTTP helper
-- `ilFetch(path, opts)` — adds `Authorization: Bearer <token>`, base `IL_BASE_URL`.
+- `immersiveLabFetch(path, opts)` — adds `Authorization: Bearer <token>`, base `IMMERSIVELAB_BASE_URL`.
 - Retry policy: one retry on 401 (refresh token), one retry on 429/5xx with backoff.
 - Timeout 10 s per request.
 
@@ -27,14 +27,14 @@ Server-side IL API wrapper. Holds secret, caches token, walks pages.
 - Not used: `/v2/teams`, `/v2/teams/{id}/memberships`, deprecated `Account.teams`.
 
 ## Types
-- Narrow IL response shapes to only fields used:
+- Narrow ImmersiveLab response shapes to only fields used:
   - `Account { uuid, displayName, email, points, lastActivityAt }`
   - `Activity { uuid, title }` (attempts path)
   - `Attempt { uuid, accountUuid, activityUuid, points, totalDuration, completedAt }` (attempts path)
 
 ## Steps
 1. Implement `getToken` + unit test around expiry math.
-2. Implement `ilFetch` with retry.
+2. Implement `immersiveLabFetch` with retry.
 3. Implement `walkAccounts` with page cursor.
 4. (Attempts path) `walkActivities` + `walkAttempts`.
 5. Log token refresh events.

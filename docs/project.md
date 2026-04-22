@@ -11,7 +11,7 @@ Dashboard for an event, sourcing data from the Immersive Labs API.
 ## Prior art — reuse
 A previous dashboard for a similar event exists at `C:\Users\guill\Documents\git\devops-day-leaderboard` (Immersive Lab Leaderboard v2.1, per-account). Reusable components:
 - `src/services/immersiveLabsAuth.js` — OAuth2 + token persistence.
-- `src/services/immersiveLabsClient.js` — IL API wrapper.
+- `src/services/immersiveLabsClient.js` — ImmersiveLab API wrapper.
 - `src/services/syncService.js` — paginated walk + SQLite persistence.
 - Schema covers `accounts`, `activities`, `attempts` (with `totalDuration`), snapshots, custom challenges.
 - Cron cadence: attempts sync every 1–2 min, full sync daily at 2 AM, daily snapshot at 3 AM.
@@ -23,6 +23,10 @@ That project is **per-account**, not per-team, so the team-aggregation layer is 
 ## Goals
 - Visualize event data from the Immersive Labs API.
 - **Per-account leaderboard** (one row per Immersive Labs account, ranked by points) — same format as the prior project.
+
+## Caveats / known limits
+- **Event window scoping requires the attempts path.** `Account.points` is cumulative lifetime with no timestamp, so it cannot be filtered by `EVENT_START_AT` / `EVENT_END_AT`. The minimal path (trust `Account.points`) will include points earned before/after the event. If event-window accuracy matters, aggregation must walk `/v2/attempts` and filter by `completedAt`. Revisit once creds land and we can inspect real data.
+- **No `Event` entity in the API.** Event bounds are supplied out-of-band via env vars. See [data-flow.md](data-flow.md) and [implementation/aggregation.md](implementation/aggregation.md).
 
 ## Plans
 - [dashboard-plan.md](dashboard-plan.md) — leaderboard dashboard architecture (React + Vite, 30 s polling).
