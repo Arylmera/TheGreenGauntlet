@@ -24,7 +24,7 @@ Several items were resolved by reviewing the prior dashboard at `C:\Users\guill\
 
 ## Event / business rules
 - [x] Event start/end timestamps — hard-coded via `EVENT_START_AT` / `EVENT_END_AT` env vars (ISO 8601). Attempts with `completedAt` outside `[EVENT_START_AT, EVENT_END_AT]` are excluded from aggregation. "Not started" / "frozen" UI states derived from these bounds. `[event owner to supply values]`
-- [ ] Points source: trust `Account.points` (minimal path, one walk) vs attempts-derived with best-attempt rule (richer, enables Time Spent + completed count). `[event owner + tech lead]`
+- [x] Points source: trust `Account.points` (minimal path, one walk) vs attempts-derived with best-attempt rule (richer, enables Time Spent + completed count). `[event owner + tech lead]`
 - [ ] Are there weighting rules (per-lab difficulty, time bonus, penalties) on top of attempt score? `[event owner]`
 - [ ] v1 scope: public leaderboard only, or also admin panel (visibility toggle, custom challenges, display-name overrides) like prior project? `[event owner]`
 - [ ] PII confirmation: default is `displayName` public / `email` hidden — any override? `[event owner + legal]`
@@ -39,8 +39,8 @@ Several items were resolved by reviewing the prior dashboard at `C:\Users\guill\
 
 ## UX
 - [ ] Visual design / mockup: layout, typography, refresh indicator, offline/error state. `[design]`
-- [ ] Display language (EN / FR / both). `[event owner]`
-- [ ] Screen context: TV wall display vs laptop. Drives font sizes, auto-scroll, density. `[event owner]`
+- [x] Display language (EN / FR / both). `[event owner]`
+- [x] Screen context: TV wall display vs laptop. Drives font sizes, auto-scroll, density. `[event owner]`
 
 ## API spec items to verify against live API (once creds land)
 - [ ] Token TTL exact value (assumed ~30 min).
