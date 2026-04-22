@@ -82,14 +82,13 @@ export class ImmersiveLabClient {
   }
 
   private async refreshToken(): Promise<string> {
-    const body = new URLSearchParams({
-      username: this.env.IMMERSIVELAB_ACCESS_KEY,
-      password: this.env.IMMERSIVELAB_SECRET_TOKEN,
-    });
     const res = await this.fetchImpl(`${this.env.IMMERSIVELAB_BASE_URL}/v1/public/tokens`, {
       method: 'POST',
-      headers: { 'content-type': 'application/x-www-form-urlencoded' },
-      body,
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        username: this.env.IMMERSIVELAB_ACCESS_KEY,
+        password: this.env.IMMERSIVELAB_SECRET_TOKEN,
+      }),
     });
     if (!res.ok) {
       const text = await res.text().catch(() => '');
