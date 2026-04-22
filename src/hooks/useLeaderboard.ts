@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { fetchLeaderboard } from '../api/client';
 import type { LeaderboardPayload } from '../types';
+import { exponentialBackoff } from '../utils/backoff';
+import { usePageVisible } from './usePageVisible';
 
 const POLL_MS = 30_000;
 const MAX_BACKOFF_MS = 120_000;
@@ -22,7 +24,6 @@ export function useLeaderboard(): State & { refresh: () => void } {
     consecutiveErrors: 0,
   });
 
-  const timerRef = useRef<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {
@@ -50,33 +51,23 @@ export function useLeaderboard(): State & { refresh: () => void } {
     }
   }, []);
 
-  const schedule = useCallback((delay: number) => {
-    if (timerRef.current) window.clearTimeout(timerRef.current);
-    timerRef.current = window.setTimeout(() => {
-      if (!document.hidden) void load();
-    }, delay);
-  }, [load]);
-
   useEffect(() => {
     void load();
-    const onVisibility = () => {
-      if (!document.hidden) void load();
-    };
-    document.addEventListener('visibilitychange', onVisibility);
-    return () => {
-      document.removeEventListener('visibilitychange', onVisibility);
-      abortRef.current?.abort();
-      if (timerRef.current) window.clearTimeout(timerRef.current);
-    };
+    return () => abortRef.current?.abort();
   }, [load]);
+
+  usePageVisible(load);
 
   useEffect(() => {
     if (state.loading) return;
     const delay = state.error
-      ? Math.min(POLL_MS * 2 ** (state.consecutiveErrors - 1), MAX_BACKOFF_MS)
+      ? exponentialBackoff(POLL_MS, state.consecutiveErrors, MAX_BACKOFF_MS)
       : POLL_MS;
-    schedule(delay);
-  }, [state.loading, state.error, state.consecutiveErrors, schedule]);
+    const id = window.setTimeout(() => {
+      if (!document.hidden) void load();
+    }, delay);
+    return () => window.clearTimeout(id);
+  }, [state.loading, state.error, state.consecutiveErrors, load]);
 
   return { ...state, refresh: () => void load() };
 }

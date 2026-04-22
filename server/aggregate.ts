@@ -17,12 +17,23 @@ export type AccountSource = {
   walkAccounts(): AsyncIterable<Account>;
 };
 
+export type EventWindow = { startAt: string; endAt: string };
+
 export type LeaderboardPayload = {
   updatedAt: string;
   phase: Phase;
-  eventWindow: { startAt: string; endAt: string };
+  eventWindow: EventWindow;
   teams: Team[];
 };
+
+export type AggregatorDeps = {
+  env: Env;
+  client: AccountSource;
+  now?: () => number;
+};
+
+type TeamDraft = Omit<Team, 'rank'>;
+type Snapshot = { payload: LeaderboardPayload; builtAt: number };
 
 export function phaseFor(now: number, env: Env): Phase {
   const start = Date.parse(env.EVENT_START_AT);
@@ -33,30 +44,34 @@ export function phaseFor(now: number, env: Env): Phase {
 }
 
 export function rankTeams(accounts: Account[]): Team[] {
-  const sorted = accounts
-    .map((a) => ({
-      uuid: a.uuid,
-      displayName: a.displayName,
-      points: a.points ?? 0,
-      lastActivityAt: a.lastActivityAt ?? null,
-    }))
-    .sort((a, b) => {
-      if (b.points !== a.points) return b.points - a.points;
-      const aLast = a.lastActivityAt ? Date.parse(a.lastActivityAt) : Number.POSITIVE_INFINITY;
-      const bLast = b.lastActivityAt ? Date.parse(b.lastActivityAt) : Number.POSITIVE_INFINITY;
-      if (aLast !== bLast) return aLast - bLast;
-      return a.displayName.localeCompare(b.displayName);
-    });
-  return sorted.map((t, i) => ({ rank: i + 1, ...t }));
+  return accounts.map(toTeamDraft).sort(compareTeams).map(assignRank);
 }
 
-export type AggregatorDeps = {
-  env: Env;
-  client: AccountSource;
-  now?: () => number;
-};
+function toTeamDraft(a: Account): TeamDraft {
+  return {
+    uuid: a.uuid,
+    displayName: a.displayName,
+    points: a.points ?? 0,
+    lastActivityAt: a.lastActivityAt ?? null,
+  };
+}
 
-type Snapshot = { payload: LeaderboardPayload; builtAt: number };
+// Higher points first; earlier activity breaks ties; null activity sorts last.
+function compareTeams(a: TeamDraft, b: TeamDraft): number {
+  if (b.points !== a.points) return b.points - a.points;
+  const aLast = parseActivity(a.lastActivityAt);
+  const bLast = parseActivity(b.lastActivityAt);
+  if (aLast !== bLast) return aLast - bLast;
+  return a.displayName.localeCompare(b.displayName);
+}
+
+function parseActivity(iso: string | null): number {
+  return iso ? Date.parse(iso) : Number.POSITIVE_INFINITY;
+}
+
+function assignRank(draft: TeamDraft, i: number): Team {
+  return { rank: i + 1, ...draft };
+}
 
 export class LeaderboardAggregator {
   private readonly env: Env;
@@ -84,24 +99,24 @@ export class LeaderboardAggregator {
   async getLeaderboard(): Promise<LeaderboardPayload> {
     const phase = phaseFor(this.now(), this.env);
 
-    if (phase === 'pre') {
-      return this.emptyPayload('pre');
-    }
-
+    if (phase === 'pre') return this.emptyPayload('pre');
     if (phase === 'ended' && this.snapshot) {
       return { ...this.snapshot.payload, phase: 'ended' };
     }
+    if (this.isSnapshotFresh()) return this.snapshot!.payload;
 
-    if (this.snapshot && this.now() - this.snapshot.builtAt < this.env.SNAPSHOT_TTL_MS) {
-      return this.snapshot.payload;
-    }
+    return this.rebuildWithFallback();
+  }
 
-    if (this.inflight) return this.inflight;
+  private isSnapshotFresh(): boolean {
+    if (!this.snapshot) return false;
+    return this.now() - this.snapshot.builtAt < this.env.SNAPSHOT_TTL_MS;
+  }
 
-    this.inflight = this.rebuild().finally(() => {
+  private async rebuildWithFallback(): Promise<LeaderboardPayload> {
+    this.inflight ??= this.rebuild().finally(() => {
       this.inflight = null;
     });
-
     try {
       return await this.inflight;
     } catch (err) {
@@ -111,14 +126,12 @@ export class LeaderboardAggregator {
   }
 
   private async rebuild(): Promise<LeaderboardPayload> {
-    const accounts: Account[] = [];
-    for await (const account of this.client.walkAccounts()) accounts.push(account);
-    const teams = rankTeams(accounts);
+    const accounts = await this.collectAccounts();
     const payload: LeaderboardPayload = {
       updatedAt: new Date(this.now()).toISOString(),
       phase: phaseFor(this.now(), this.env),
-      eventWindow: { startAt: this.env.EVENT_START_AT, endAt: this.env.EVENT_END_AT },
-      teams,
+      eventWindow: this.eventWindow(),
+      teams: rankTeams(accounts),
     };
     const snapshot: Snapshot = { payload, builtAt: this.now() };
     this.snapshot = snapshot;
@@ -126,12 +139,22 @@ export class LeaderboardAggregator {
     return payload;
   }
 
+  private async collectAccounts(): Promise<Account[]> {
+    const accounts: Account[] = [];
+    for await (const account of this.client.walkAccounts()) accounts.push(account);
+    return accounts;
+  }
+
   private emptyPayload(phase: Phase): LeaderboardPayload {
     return {
       updatedAt: new Date(this.now()).toISOString(),
       phase,
-      eventWindow: { startAt: this.env.EVENT_START_AT, endAt: this.env.EVENT_END_AT },
+      eventWindow: this.eventWindow(),
       teams: [],
     };
+  }
+
+  private eventWindow(): EventWindow {
+    return { startAt: this.env.EVENT_START_AT, endAt: this.env.EVENT_END_AT };
   }
 }
