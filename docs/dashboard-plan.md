@@ -26,8 +26,7 @@ No token ever reaches the browser. No TokenGate UI.
 - `Account.teams` field deprecated; don't rely on it.
 
 ## Team model
-- **Primary**: `/v2/teams` + memberships. If non-empty, use them.
-- **Fallback**: `teams.json` on the proxy (`{ teamName: [accountEmail, ...] }`). Loader picks local mapping when API returns zero teams.
+- `/v2/teams` + memberships. If empty → no team grouping; payload `teams: []`.
 
 ## Architecture
 
@@ -49,8 +48,7 @@ No token ever reaches the browser. No TokenGate UI.
   1. Ensure fresh token.
   2. Walk `/v2/accounts` and `/v2/teams` in parallel, paginated.
   3. Per team, fetch `/v2/teams/{id}/memberships`.
-  4. If teams empty → load `teams.json`.
-  5. Build `teamUuid → { name, total, members }`, sort desc, return.
+  4. Build `teamUuid → { name, total, members }`, sort desc, return. If no teams → `teams: []`.
 
 ### Frontend (React + Vite)
 ```
@@ -83,7 +81,6 @@ Browser only talks to the proxy at same origin, so no IL-side CORS concern. Prox
 - `package.json`, `vite.config.ts`, `tsconfig.json`, `index.html`
 - `server/index.ts` (or `api/leaderboard.ts` if serverless) — proxy + aggregation
 - `server/il.ts` — token cache + paginated IL walkers
-- `server/teams.json` — fallback mapping (optional)
 - `src/api/client.ts`, `src/hooks/useLeaderboard.ts`
 - `src/components/{Leaderboard,AccountList}.tsx`
 - `src/App.tsx`, `src/main.tsx`

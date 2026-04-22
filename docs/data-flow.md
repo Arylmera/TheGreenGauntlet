@@ -34,10 +34,7 @@ sequenceDiagram
                     IL-->>PX: memberships
                 end
             end
-            alt teams empty
-                PX->>PX: load server-side teams.json fallback
-            end
-            PX->>PX: aggregate — sum Account.points per team (null to 0)
+            PX->>PX: aggregate — sum Account.points per team (null to 0, skip grouping if teams empty)
             PX->>PX: cache snapshot
             PX-->>FE: { teams[], updatedAt }
         end
@@ -66,14 +63,12 @@ flowchart LR
       T["GET /v2/teams (paginated)"]
       M["GET /v2/teams/id/memberships"]
     end
-    FB[("server teams.json fallback")]
 
     UI -->|"GET /api/leaderboard"| CACHE
     CACHE -.miss.-> AGG
     AGG --> A
     AGG --> T
     AGG --> M
-    FB -.->|"if teams empty"| AGG
     TOK -.->|"Bearer"| A
     TOK -.->|"Bearer"| T
     TOK -.->|"Bearer"| M
@@ -99,7 +94,7 @@ flowchart TD
 ## Aggregation rules
 - `Account.points: null` → treat as `0`.
 - Team total = sum of member `Account.points`.
-- Account without team → bucket `Unassigned` (shown only if non-empty).
+- If IL `/v2/teams` returns empty → no team grouping; `teams: []` in payload.
 - Sort teams desc by total; tie-break by member count then name.
 - Snapshot cached for ~10 s to protect IL rate limits regardless of viewer count.
 
