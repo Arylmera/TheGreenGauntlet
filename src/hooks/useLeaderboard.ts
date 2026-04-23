@@ -58,6 +58,22 @@ export function useLeaderboard(): State & { refresh: () => void } {
 
   usePageVisible(load);
 
+  // Subscribe to server-sent `leaderboard-updated` events for near-instant refresh.
+  useEffect(() => {
+    let es: EventSource | null = null;
+    try {
+      es = new EventSource('/api/leaderboard/stream');
+      es.addEventListener('leaderboard-updated', () => {
+        void load();
+      });
+    } catch {
+      // SSE unsupported or blocked — 30 s poll below is the fallback.
+    }
+    return () => {
+      es?.close();
+    };
+  }, [load]);
+
   useEffect(() => {
     if (state.loading) return;
     const delay = state.error

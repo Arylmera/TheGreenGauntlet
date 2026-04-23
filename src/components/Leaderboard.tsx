@@ -46,16 +46,16 @@ export function Leaderboard({ teams }: Props) {
   useEffect(() => {
     if (REDUCED_MOTION) {
       const next = new Map<string, number>();
-      for (const t of teams) next.set(t.displayName, t.points);
+      for (const t of teams) next.set(t.displayName, t.total);
       prevPointsRef.current = next;
       return;
     }
     const next = new Map<string, number>();
     const newlyFlashed = new Set<string>();
     for (const t of teams) {
-      next.set(t.displayName, t.points);
+      next.set(t.displayName, t.total);
       const prev = prevPointsRef.current.get(t.displayName);
-      if (prev !== undefined && t.points > prev) newlyFlashed.add(t.displayName);
+      if (prev !== undefined && t.total > prev) newlyFlashed.add(t.displayName);
     }
     prevPointsRef.current = next;
     if (newlyFlashed.size) {
@@ -86,7 +86,9 @@ export function Leaderboard({ teams }: Props) {
             <th className="px-2 sm:px-4 py-2 sm:py-3 w-12 sm:w-16 lg:w-20 text-center">#</th>
             <th className="hidden sm:table-cell px-2 py-3 w-14" aria-label="Team avatar" />
             <th className="px-2 sm:px-4 py-2 sm:py-3">Team</th>
-            <th className="px-2 sm:px-4 py-2 sm:py-3 text-right w-24 sm:w-32">Points</th>
+            <th className="hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-3 text-right w-24">IL</th>
+            <th className="hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-3 text-right w-24">Bonus</th>
+            <th className="px-2 sm:px-4 py-2 sm:py-3 text-right w-24 sm:w-32">Total</th>
             <th className="hidden md:table-cell px-4 py-3 text-right w-40">Last activity</th>
           </tr>
         </thead>
@@ -96,7 +98,7 @@ export function Leaderboard({ teams }: Props) {
           ))}
           {visibleTeams.length === 0 && (
             <tr>
-              <td colSpan={5} className="px-4 py-6 text-center text-ink-mid dark:text-dark-dim text-sm">
+              <td colSpan={7} className="px-4 py-6 text-center text-ink-mid dark:text-dark-dim text-sm">
                 No teams match “{query}”.
               </td>
             </tr>
