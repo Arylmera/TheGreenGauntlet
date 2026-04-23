@@ -22,6 +22,12 @@ const schema = z
       .enum(['true', 'false'])
       .default('false')
       .transform((v) => v === 'true'),
+    ADMIN_PASSWORD: z.string().min(1, 'ADMIN_PASSWORD is required'),
+    ADMIN_SESSION_SECRET: z
+      .string()
+      .min(32, 'ADMIN_SESSION_SECRET must be at least 32 characters'),
+    ADMIN_SESSION_TTL_MS: z.coerce.number().int().positive().default(172_800_000),
+    BONUS_DB_PATH: z.string().optional(),
   })
   .refine((e) => Date.parse(e.EVENT_START_AT) < Date.parse(e.EVENT_END_AT), {
     message: 'EVENT_START_AT must be before EVENT_END_AT',

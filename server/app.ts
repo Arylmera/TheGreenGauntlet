@@ -6,11 +6,17 @@ import type { Env } from './env.js';
 import { LeaderboardAggregator, type AccountSource } from './aggregate.js';
 import { registerHealthRoute } from './routes/health.js';
 import { registerLeaderboardRoute } from './routes/leaderboard.js';
+import { registerAdminAuthRoutes } from './routes/admin/auth.js';
+import { registerAdminBonusRoutes } from './routes/admin/bonus.js';
+import type { BonusDb } from './bonusDb.js';
+import type { LeaderboardEvents } from './leaderboardEvents.js';
 
 export type AppDeps = {
   env: Env;
   client: AccountSource;
   aggregator: LeaderboardAggregator;
+  bonusDb?: BonusDb;
+  events?: LeaderboardEvents;
   serveStatic?: boolean;
 };
 
@@ -21,7 +27,15 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   });
 
   registerHealthRoute(app, deps.env, deps.aggregator);
-  registerLeaderboardRoute(app, deps.aggregator);
+  registerLeaderboardRoute(app, deps.aggregator, deps.events);
+  registerAdminAuthRoutes(app, deps.env);
+  if (deps.bonusDb) {
+    registerAdminBonusRoutes(app, {
+      env: deps.env,
+      bonusDb: deps.bonusDb,
+      aggregator: deps.aggregator,
+    });
+  }
 
   app.setNotFoundHandler((req, reply) => {
     if (req.url.startsWith('/api/')) return reply.code(404).send({ error: 'not_found' });

@@ -19,6 +19,10 @@ const env = (dir: string, overrides: Partial<Env> = {}): Env => ({
   DATA_DIR: dir,
   LOG_LEVEL: 'silent',
   NODE_ENV: 'test',
+  USE_STUB_UPSTREAM: false,
+  ADMIN_PASSWORD: 'admin-pass',
+  ADMIN_SESSION_SECRET: 'a'.repeat(32),
+  ADMIN_SESSION_TTL_MS: 172_800_000,
   ...overrides,
 });
 
