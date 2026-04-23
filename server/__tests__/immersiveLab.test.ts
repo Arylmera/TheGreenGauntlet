@@ -83,17 +83,18 @@ describe('ImmersiveLabClient', () => {
           displayName: id.toUpperCase(),
           points: id === 'a' ? 1 : 2,
           lastActivityAt: '2026-05-01T10:00:00Z',
+          email: id === 'a' ? 'a@immersivelabs.pro' : 'b@immersivelabs.pro',
         });
       }
       listCall++;
       if (listCall === 1) {
         return jsonRes({
-          page: [{ uuid: 'a', points: 1 }],
+          page: [{ uuid: 'a', email: 'a@immersivelabs.pro', points: 1 }],
           meta: { hasNextPage: true, nextPageToken: 'p2' },
         });
       }
       return jsonRes({
-        page: [{ uuid: 'b', points: 2 }],
+        page: [{ uuid: 'b', email: 'b@immersivelabs.pro', points: 2 }],
         meta: { hasNextPage: false },
       });
     }) as unknown as typeof fetch;
