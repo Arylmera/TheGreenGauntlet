@@ -143,9 +143,10 @@ export class ImmersiveLabClient {
     return this.fetchJson(`/v2/accounts/${encodeURIComponent(uuid)}`, AccountDetailedSchema);
   }
 
-  async *walkAccounts(): AsyncIterable<Account> {
-    for await (const item of this.walkAccountList()) {
-      const detail = await this.getAccountDetailed(item.uuid);
+async *walkAccounts(): AsyncIterable<Account> {
+  for await (const item of this.walkAccountList()) {
+    const detail = await this.getAccountDetailed(item.uuid);
+    if (detail.email && detail.email.includes('@immersivelabs.pro')) {
       yield {
         uuid: detail.uuid,
         displayName: detail.displayName ?? buildFallbackName(detail) ?? item.uuid,
