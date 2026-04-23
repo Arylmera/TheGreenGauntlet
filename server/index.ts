@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { loadEnv } from './env.js';
 import { createLogger } from './logger.js';
 import { ensureWritableDir } from './snapshotStore.js';
@@ -5,6 +6,8 @@ import { ImmersiveLabClient } from './immersiveLab.js';
 import { StubAccountSource } from './stubClient.js';
 import { LeaderboardAggregator, type AccountSource } from './aggregate.js';
 import { buildApp } from './app.js';
+import { BonusDb } from './bonusDb.js';
+import { LeaderboardEvents } from './leaderboardEvents.js';
 
 const env = loadEnv();
 const logger = createLogger(env.LOG_LEVEL);
@@ -33,14 +36,19 @@ async function main(): Promise<void> {
     client = real;
   }
 
-  const aggregator = new LeaderboardAggregator({ env, client });
+  const bonusDbPath = env.BONUS_DB_PATH ?? path.join(env.DATA_DIR, 'bonus.sqlite');
+  const bonusDb = new BonusDb(bonusDbPath);
+  const events = new LeaderboardEvents();
+
+  const aggregator = new LeaderboardAggregator({ env, client, bonusDb, events });
   await aggregator.init();
 
-  const app = await buildApp({ env, client, aggregator, serveStatic: true });
+  const app = await buildApp({ env, client, aggregator, bonusDb, events, serveStatic: true });
 
   const shutdown = async (signal: string): Promise<void> => {
     logger.info({ signal }, 'shutting down');
     await app.close();
+    bonusDb.close();
     process.exit(0);
   };
   process.on('SIGTERM', () => void shutdown('SIGTERM'));

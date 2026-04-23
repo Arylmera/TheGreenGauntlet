@@ -2,6 +2,8 @@ import path from 'node:path';
 import type { Env } from './env.js';
 import type { Account } from './immersiveLab.js';
 import { JsonStore } from './snapshotStore.js';
+import type { BonusDb, TeamBonusRow } from './bonusDb.js';
+import type { LeaderboardEvents } from './leaderboardEvents.js';
 
 export type Phase = 'pre' | 'live' | 'ended';
 
@@ -10,6 +12,9 @@ export type Team = {
   uuid: string;
   displayName: string;
   points: number;
+  il_points: number;
+  bonus_points: number;
+  total: number;
   lastActivityAt: string | null;
 };
 
@@ -30,6 +35,8 @@ export type AggregatorDeps = {
   env: Env;
   client: AccountSource;
   now?: () => number;
+  bonusDb?: BonusDb;
+  events?: LeaderboardEvents;
 };
 
 type TeamDraft = Omit<Team, 'rank'>;
@@ -43,22 +50,33 @@ export function phaseFor(now: number, env: Env): Phase {
   return 'live';
 }
 
-export function rankTeams(accounts: Account[]): Team[] {
-  return accounts.map(toTeamDraft).sort(compareTeams).map(assignRank);
+export function rankTeams(
+  accounts: Account[],
+  bonusByTeamId: ReadonlyMap<string, TeamBonusRow> = new Map(),
+): Team[] {
+  const drafts: TeamDraft[] = [];
+  for (const a of accounts) {
+    const bonus = bonusByTeamId.get(a.uuid);
+    // Exclude inactive teams entirely.
+    if (bonus && bonus.active === 0) continue;
+    const il = a.points ?? 0;
+    const bp = bonus ? bonus.points : 0;
+    drafts.push({
+      uuid: a.uuid,
+      displayName: a.displayName,
+      points: il + bp,
+      il_points: il,
+      bonus_points: bp,
+      total: il + bp,
+      lastActivityAt: a.lastActivityAt ?? null,
+    });
+  }
+  return drafts.sort(compareTeams).map(assignRank);
 }
 
-function toTeamDraft(a: Account): TeamDraft {
-  return {
-    uuid: a.uuid,
-    displayName: a.displayName,
-    points: a.points ?? 0,
-    lastActivityAt: a.lastActivityAt ?? null,
-  };
-}
-
-// Higher points first; earlier activity breaks ties; null activity sorts last.
+// Higher total first; earlier activity breaks ties; null activity sorts last.
 function compareTeams(a: TeamDraft, b: TeamDraft): number {
-  if (b.points !== a.points) return b.points - a.points;
+  if (b.total !== a.total) return b.total - a.total;
   const aLast = parseActivity(a.lastActivityAt);
   const bLast = parseActivity(b.lastActivityAt);
   if (aLast !== bLast) return aLast - bLast;
@@ -78,6 +96,8 @@ export class LeaderboardAggregator {
   private readonly client: AccountSource;
   private readonly now: () => number;
   private readonly store: JsonStore<Snapshot>;
+  private readonly bonusDb: BonusDb | undefined;
+  private readonly events: LeaderboardEvents | undefined;
   private snapshot: Snapshot | null = null;
   private inflight: Promise<LeaderboardPayload> | null = null;
 
@@ -86,6 +106,8 @@ export class LeaderboardAggregator {
     this.client = deps.client;
     this.now = deps.now ?? (() => Date.now());
     this.store = new JsonStore<Snapshot>(path.join(this.env.DATA_DIR, 'snapshot.json'));
+    this.bonusDb = deps.bonusDb;
+    this.events = deps.events;
   }
 
   async init(): Promise<void> {
@@ -94,6 +116,12 @@ export class LeaderboardAggregator {
 
   snapshotAgeMs(): number | null {
     return this.snapshot ? this.now() - this.snapshot.builtAt : null;
+  }
+
+  /** Bust cached snapshot and emit SSE update. Called after admin writes. */
+  invalidate(): void {
+    this.snapshot = null;
+    this.events?.emitUpdate();
   }
 
   async getLeaderboard(): Promise<LeaderboardPayload> {
@@ -127,11 +155,23 @@ export class LeaderboardAggregator {
 
   private async rebuild(): Promise<LeaderboardPayload> {
     const accounts = await this.collectAccounts();
+
+    // Seed bonus rows for all known teams on every tick.
+    if (this.bonusDb) {
+      this.bonusDb.upsertTeamSeeds(
+        accounts.map((a) => ({ teamId: a.uuid, teamName: a.displayName })),
+      );
+    }
+    const bonusByTeamId = new Map<string, TeamBonusRow>();
+    if (this.bonusDb) {
+      for (const row of this.bonusDb.getAll()) bonusByTeamId.set(row.team_id, row);
+    }
+
     const payload: LeaderboardPayload = {
       updatedAt: new Date(this.now()).toISOString(),
       phase: phaseFor(this.now(), this.env),
       eventWindow: this.eventWindow(),
-      teams: rankTeams(accounts),
+      teams: rankTeams(accounts, bonusByTeamId),
     };
     const snapshot: Snapshot = { payload, builtAt: this.now() };
     this.snapshot = snapshot;
