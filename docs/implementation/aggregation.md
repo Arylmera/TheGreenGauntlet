@@ -24,9 +24,13 @@ See [dashboard-storage-plan.md](dashboard-storage-plan.md) §1 for why.
 
 ## Build steps
 1. `walkAccounts()` → `accounts[]`. Treat `points: null` as 0. Email-based filter (`@immersivelabs.pro`) is applied inside the client walker; see [immersiveLab-client.md](immersiveLab-client.md).
-2. Sort desc by `points`. Tie-break: `lastActivityAt` asc (earlier finisher wins), then `displayName` asc.
-3. Scrub: drop any field not listed in the payload schema (email is already not yielded by the walker).
-4. Relabel for payload: `accounts` → `teams` (1 IL account per team; see [dashboard-storage-plan.md](dashboard-storage-plan.md) §4).
+2. **Team-bonus seeding + merge** (see [admin-bonus-plan.md](admin-bonus-plan.md)):
+   - `INSERT OR IGNORE` one row per walked team into `team_bonus (team_id, team_name, points=0, active=1)`. Guarantees bonus rows exist as soon as a team is seen, independent of the admin UI.
+   - LEFT JOIN each team to `team_bonus`: `il_points = Account.points`, `bonus_points = team_bonus.points ?? 0`, `total = il_points + bonus_points`.
+   - Drop teams where `team_bonus.active = 0` (hidden/DQ) — they are not rendered, not ranked.
+3. Sort desc by `total`. Tie-break: `lastActivityAt` asc (earlier finisher wins), then `displayName` asc.
+4. Scrub: drop any field not listed in the payload schema (email is already not yielded by the walker).
+5. Relabel for payload: `accounts` → `teams` (1 IL account per team; see [dashboard-storage-plan.md](dashboard-storage-plan.md) §4). Emit `il_points`, `bonus_points`, `total` (aliased as `points` for backwards-compatible sorting consumers if needed).
 
 No activity walk. No attempts walk. Retries naturally shadow because `Account.points` reflects current state.
 
@@ -47,14 +51,19 @@ Computed once per snapshot from `now` vs env bounds. Phase drives UI state and t
     {
       "uuid": "...",
       "displayName": "...",
-      "points": 123,
+      "il_points": 1200,
+      "bonus_points": 150,
+      "total": 1350,
       "lastActivityAt": "..."
     }
   ]
 }
 ```
 
-`timeSpent` / `completedCount` are **not** emitted (they were attempts-path fields).
+Inactive teams (`team_bonus.active = 0`) are excluded from `teams[]`. `timeSpent` / `completedCount` are **not** emitted (they were attempts-path fields).
+
+## Cache invalidation + SSE
+Admin bonus writes (batch commit, active toggle) invalidate the in-memory snapshot and emit a `leaderboard-updated` event on `GET /api/leaderboard/stream` (SSE). Public clients refetch `/api/leaderboard` on event, so bonus changes propagate within ~100 ms instead of waiting for the 30 s client poll. See [admin-bonus-plan.md](admin-bonus-plan.md) Discussion C.
 
 ## Verification
 - Two concurrent `/api/leaderboard` hits → one upstream rebuild (log once).
@@ -62,5 +71,7 @@ Computed once per snapshot from `now` vs env bounds. Phase drives UI state and t
 - A team completing a lab → delta visible within 10 s cache + 30 s poll.
 - **Pre-event gate**: `EVENT_START_AT` in future, inject nonzero `Account.points` → payload has `phase: "pre"`, `teams: []`.
 - **Post-event freeze**: cross `EVENT_END_AT` while a team keeps playing → its points continue to rise in the upstream API, but the leaderboard stays pinned to the last pre-end snapshot (`phase: "ended"`, no rebuild log entries).
-- Tie-break: equal points → earlier `lastActivityAt` wins; equal `lastActivityAt` → `displayName` asc.
+- Tie-break: equal `total` → earlier `lastActivityAt` wins; equal `lastActivityAt` → `displayName` asc.
+- Admin batch commit → public client receives SSE push and refetches within ~100 ms; leaderboard reflects new `total` without waiting for the 30 s poll.
+- Toggle team to inactive → team disappears from `/api/leaderboard` on next rebuild; ranks of remaining teams recompute.
 - ImmersiveLab outage mid-cache → stale response, health flag.

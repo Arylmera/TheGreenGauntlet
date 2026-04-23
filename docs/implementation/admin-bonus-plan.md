@@ -2,7 +2,7 @@
 
 On-site (offline) challenges during the event award points that the Immersive Labs API cannot know about. An authenticated admin page lets organisers add/edit per-team bonus points during the day; these are merged into the leaderboard total alongside `Account.points`.
 
-Status: **draft — open for discussion, not yet implemented.**
+Status: **approved — open decisions resolved (see Discussion section), ready to build.**
 
 ## Goals
 
@@ -28,28 +28,18 @@ CREATE TABLE team_bonus (
   team_id     TEXT PRIMARY KEY,
   team_name   TEXT NOT NULL,
   points      INTEGER NOT NULL DEFAULT 0,
+  active      INTEGER NOT NULL DEFAULT 1,  -- 0 = hidden from public leaderboard
   updated_at  TEXT NOT NULL,       -- ISO-8601 UTC
   updated_by  TEXT                  -- admin identifier (e.g. "admin")
 );
 
--- Append-only history for audit + undo reference.
-CREATE TABLE bonus_history (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  team_id     TEXT NOT NULL,
-  delta       INTEGER NOT NULL,    -- signed change applied
-  new_total   INTEGER NOT NULL,    -- team_bonus.points after change
-  reason      TEXT,
-  admin       TEXT NOT NULL,
-  created_at  TEXT NOT NULL
-);
-CREATE INDEX idx_bonus_history_team ON bonus_history(team_id, created_at DESC);
 ```
 
-Rationale: one editable row per team keeps the merge trivial (single JOIN), while `bonus_history` preserves the "who did what" trail that a one-day live event needs when someone questions a score.
+Rationale: one editable row per team keeps the merge trivial (single JOIN). No history table in v1 — the live `team_bonus` state is the only record, plus server logs for admin writes.
 
 ## Team sync
 
-On admin page load, the proxy upserts one row per IL team into `team_bonus` (INSERT … ON CONFLICT DO NOTHING), seeded with `points = 0`. Teams come from the IL team list already fetched during aggregation — no extra API call. This guarantees all 30 teams show up even before anyone scores a bonus.
+On every aggregator run, the proxy upserts one row per IL team into `team_bonus` (`INSERT OR IGNORE`), seeded with `points = 0`. Teams come from the IL team list already fetched during aggregation — no extra API call. This guarantees all 30 teams show up even before anyone opens the admin page, and new teams added mid-event appear on the next tick.
 
 If a team is renamed in IL, the next sync updates `team_name`.
 
@@ -86,7 +76,7 @@ Single shared credential, env-configured:
 
 Flow:
 
-1. `POST /api/admin/login` with `{ password }`. Compare with `crypto.timingSafeEqual` against `ADMIN_PASSWORD`. On success, set signed httpOnly cookie `gg_admin` (SameSite=Strict, Secure, 8 h TTL).
+1. `POST /api/admin/login` with `{ password }`. Compare with `crypto.timingSafeEqual` against `ADMIN_PASSWORD`. On success, set signed httpOnly cookie `gg_admin` (SameSite=Strict, Secure, 48 h TTL).
 2. All `/api/admin/*` routes require a valid cookie; otherwise 401.
 3. `POST /api/admin/logout` clears the cookie.
 4. Rate-limit login to e.g. 5 attempts / 15 min per IP (reuse the existing rate-limit middleware from [server-proxy.md](server-proxy.md)).
@@ -104,17 +94,17 @@ All under `/api/admin/*`, JSON in/out, cookie-auth.
 | POST   | `/api/admin/login`                | `{ password }` → sets cookie                         |
 | POST   | `/api/admin/logout`               | clears cookie                                        |
 | GET    | `/api/admin/bonus`                | list all teams with `il_points`, `bonus_points`, `total`, `updated_at` |
-| PUT    | `/api/admin/bonus/:teamId`        | `{ points, reason }` — set absolute bonus total, logs delta |
-| POST   | `/api/admin/bonus/:teamId/delta`  | `{ delta, reason }` — add/subtract (quick `+10` buttons)      |
-| GET    | `/api/admin/bonus/:teamId/history`| last N history rows for that team                    |
+| POST   | `/api/admin/bonus/batch`          | `{ updates: [{ teamId, delta }, ...] }` — batch apply multiple signed deltas in a single transaction. Rejects the whole batch if any resulting total would be < 0. Single cache invalidation at the end. |
+| PATCH  | `/api/admin/bonus/:teamId/active` | `{ active: boolean }` — show/hide team on public leaderboard. Invalidates cache + emits SSE. |
+| GET    | `/api/admin/export.csv`           | final standings CSV (see Q5 decision)                |
 
-Both mutating endpoints:
+Batch commit endpoint:
 
-1. Read current `points` for team.
-2. Compute new total (bounded ≥ 0 — negative totals rejected).
-3. UPDATE `team_bonus`, INSERT `bonus_history` row in one transaction.
-4. Invalidate leaderboard snapshot cache.
-5. Return updated row.
+1. For each `{ teamId, delta }` in the payload, read current `points`, compute new total.
+2. Reject the whole batch if any resulting total would be < 0.
+3. UPDATE all `team_bonus` rows in a single transaction.
+4. Invalidate leaderboard snapshot cache and emit SSE `leaderboard-updated`.
+5. Return updated rows.
 
 ## Admin UI
 
@@ -123,15 +113,15 @@ New React route `/admin`:
 - **Unauthenticated** → centred login card, password field, error message on 401.
 - **Authenticated** → table:
 
-| Team          | IL points | Bonus (editable) | Total | Last edit       | Actions |
-| ------------- | --------- | ---------------- | ----- | --------------- | ------- |
-| Team Oak      | 1200      | [150]            | 1350  | 14:22 by admin  | `+5` `+10` `−10` `History` |
+| Team      | Active | IL points | Bonus total | Delta input | Total |
+| --------- | ------ | --------- | ----------- | ----------- | ----- |
+| Team Oak  | [x]    | 1200      | 150         | [    ]      | 1350  |
 
 Behaviour:
 
-- Inline edit on the bonus cell → blur or Enter → prompt for `reason` → PUT.
-- Quick-delta buttons next to the cell → POST delta with `reason` collected in a small popover.
-- "History" opens a drawer with the last 50 changes for that team.
+- Delta input per row, but **one shared "Apply" button** at the top of the table commits all pending deltas at once via `POST /api/admin/bonus/batch`. Positive adds, negative subtracts. No per-row submit, no quick `+5 / +10 / −10` buttons.
+- Admin fills deltas for any subset of teams, reviews, then clicks Apply. Single transaction — if any row would go negative, the whole batch is rejected and nothing is written.
+- On success, the admin UI refetches `/api/admin/bonus` to show new totals; inputs clear. Public leaderboard receives an SSE push (see Discussion C) and refetches within ~100 ms — no 30 s wait.
 - Auto-refresh every 15 s (shorter than public 30 s polling) so multiple admins stay in sync.
 - Show a banner if another admin modified a row since last load.
 
@@ -158,11 +148,64 @@ Add to `.env.example` and document in [env-config.md](env-config.md).
 
 ## Open questions
 
-1. **Undo UX** — do we need a one-click "revert last change" button, or is manual re-entry with a reason sufficient for a single day?
-2. **Bonus visibility on public leaderboard** — show `bonus_points` as a separate column, or only the merged `total`? (Transparency vs. clutter.)
-3. **Multiple admins simultaneously** — is optimistic concurrency (`If-Match` on `updated_at`) worth the complexity, or is "last write wins + history trail" fine for 2–3 organisers?
-4. **Negative deltas** — allow admins to subtract points (corrections), or only additive? Current draft allows both but rejects negative totals.
-5. **Export** — end-of-event CSV of final standings including bonus breakdown?
+1. ~~**Undo UX**~~ — **Decided:** no undo button. An editable bonus field per team is enough for v1; corrections are manual re-entry. History drawer remains for audit.
+2. ~~**Bonus visibility on public leaderboard**~~ — **Decided:** public leaderboard shows three columns — `il_points`, `bonus_points`, `total`. Ranking is by `total` only; the other two are informational.
+3. ~~**Multiple admins simultaneously**~~ — **Decided:** last-write-wins. No `If-Match` / optimistic locking. History trail covers disputes.
+4. ~~**Negative deltas**~~ — **Decided:** the bonus field is a **delta input**, not an absolute set. Typing `10` adds 10; typing `-10` subtracts 10. Resulting total is bounded ≥ 0 (subtractions that would go negative are rejected).
+5. ~~**Export**~~ — **Decided:** yes. Add `GET /api/admin/export.csv` returning final standings with `team_id, team_name, il_points, bonus_points, total, rank`. Admin-auth required.
+
+## Discussion — additional points to resolve
+
+Items surfaced during review, beyond the original open questions. Each needs a decision before build.
+
+### A. Rate-limit scope on `/api/admin/login`
+
+Draft reuses the existing per-IP limiter (5 attempts / 15 min). At a physical event, multiple organisers share the venue NAT — one fat-fingered password locks everyone out.
+
+**Decided:** global limiter, since there is a single shared credential anyway. Target: 20 attempts / 5 min across all IPs, and log every failed attempt to the server log for post-event review.
+
+### B. Session TTL vs event length
+
+Cookie TTL = 8 h = event length. If an organiser logs in at setup (T-2h), their cookie expires two hours before the end. No refresh mechanism in draft.
+
+**Decided:** 48 h fixed TTL. Covers setup, event, teardown without any coupling to event dates. Organisers can always re-log-in if needed.
+
+### C. Snapshot invalidation vs client polling
+
+Draft invalidates the aggregator cache on bonus write. Public clients poll every 30 s, which leaves stale totals visible for up to one interval.
+
+**Decided:** public dashboard must update instantly after an admin commit. Implementation: expose an SSE endpoint `GET /api/leaderboard/stream` that emits a `leaderboard-updated` event whenever the aggregator cache is invalidated (bonus batch commit **or** IL snapshot refresh). Public clients keep the 30 s poll as a fallback, but also subscribe to the SSE stream and refetch `/api/leaderboard` immediately on event. Admin batch commit therefore triggers: transaction → cache bust → SSE emit → all connected clients refetch within ~100 ms.
+
+### D. Team seeding trigger
+
+Draft seeds `team_bonus` rows "on admin page load". If no admin opens the page before a bonus is awarded via API/script, seeding is skipped and the endpoint 404s.
+
+**Decided:** seed inside the aggregator run. Every aggregator tick `INSERT OR IGNORE` one row per IL team into `team_bonus` with `points = 0`. Rows exist as soon as the backend has seen a team — independent of UI activity. New teams added mid-event are picked up on the next tick.
+
+### E. Login audit
+
+`bonus_history` logs mutations but nothing records *who logged in when*.
+
+**Decided:** skip. No `admin_login_log` table. Failed login attempts still go to the server log (per Discussion A) — enough for a one-day event with a single shared credential.
+
+### F. `reason` required vs optional
+
+**Decided:** drop `reason` entirely in v1. Also drop the `bonus_history` table and its endpoint — live `team_bonus` state is the only record; server logs capture admin writes for post-event review if needed.
+
+### G. Upper bound on a single delta
+
+**Decided:** no cap in v1. Organisers are trusted; `bonus_history` is there to catch mistakes. Revisit only if a fat-finger incident actually happens.
+
+### H. Deletion / disqualification
+
+Not in draft: what if a team needs to be hidden (DQ, withdrawal)?
+
+**Decided:** add a per-team **active toggle** in the admin panel.
+- Schema: `team_bonus` gains `active INTEGER NOT NULL DEFAULT 1` (SQLite boolean).
+- Endpoint: `PATCH /api/admin/bonus/:teamId/active` with `{ active: boolean }`. Invalidates cache + emits SSE push, same as a batch commit.
+- Aggregator: inactive teams are **excluded** from `/api/leaderboard` output entirely — not rendered, not ranked, ranks of remaining teams recomputed as if the team didn't exist.
+- Admin UI: extra toggle column per row. Inactive rows remain visible in the admin table (greyed out) so organisers can reactivate at any time.
+- Reactivation restores the team with its current `il_points + bonus_points`; no data is lost during deactivation.
 
 ## Build order (once approved)
 

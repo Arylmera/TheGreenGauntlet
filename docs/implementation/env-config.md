@@ -13,8 +13,12 @@ Server-only. Never exposed to browser/Vite.
 | `PORT` | no | `3000` | HTTP listen port. |
 | `SNAPSHOT_TTL_MS` | no | `10000` | Leaderboard snapshot cache TTL. |
 | `TOKEN_REFRESH_MARGIN_S` | no | `60` | Refresh access token this many seconds before expiry. |
-| `DATA_DIR` | no | `/app/data` | Directory for `snapshot.json` + `token.json`. Must be a Docker named volume in prod. |
+| `DATA_DIR` | no | `/app/data` | Directory for `snapshot.json` + `token.json` + `bonus.sqlite`. Must be a Docker named volume in prod. |
 | `LOG_LEVEL` | no | `info` | Pino/Fastify log level. |
+| `ADMIN_PASSWORD` | yes | — | Shared admin password for `/admin` page. Server refuses to start if missing. See [admin-bonus-plan.md](admin-bonus-plan.md). |
+| `ADMIN_SESSION_SECRET` | yes | — | HMAC key for signed admin session cookies. 32+ bytes random. Required. |
+| `ADMIN_SESSION_TTL_MS` | no | `172800000` | Admin cookie TTL (default 48 h). |
+| `BONUS_DB_PATH` | no | `${DATA_DIR}/bonus.sqlite` | SQLite file holding `team_bonus` + `bonus_history`. Override only for tests. |
 
 ## Files
 - `.env.example` — documented, committed, no real values.
@@ -37,6 +41,7 @@ Server-only. Never exposed to browser/Vite.
 - Missing `IMMERSIVELAB_ACCESS_KEY` → server exits with clear message.
 - Missing or malformed `EVENT_START_AT` / `EVENT_END_AT` → server exits with clear message.
 - `EVENT_START_AT >= EVENT_END_AT` → server exits with clear message.
+- Missing `ADMIN_PASSWORD` or `ADMIN_SESSION_SECRET` → server exits with clear message.
 - `/api/health` response includes `eventWindow: { startAt, endAt, phase: "pre" | "live" | "ended" }`.
 - `VITE_` prefix accidentally added → build-time grep CI check fails.
 - Bundle audit: `grep -r IMMERSIVELAB_ACCESS_KEY dist/` → zero hits.

@@ -3,6 +3,8 @@
 Site is public. Browser never sees an ImmersiveLab token. A backend proxy holds the secret, exchanges for an access token, walks `/v2/accounts`, aggregates a per-team leaderboard (1 Immersive Labs account per team), and returns a scrubbed snapshot.
 
 > **Note:** teams receive fresh Immersive Labs accounts at `EVENT_START_AT`, so `Account.points` is event-scoped by construction. No `/v2/attempts` walk, no `completedAt` filtering. See [implementation/aggregation.md](implementation/aggregation.md) and [implementation/dashboard-storage-plan.md](implementation/dashboard-storage-plan.md).
+>
+> **Admin bonus layer:** on top of `Account.points`, an authenticated admin page awards per-team bonus points for on-site challenges. Bonuses live in a separate SQLite file (`bonus.sqlite`) and merge into the leaderboard total (`total = il_points + bonus_points`). Admin writes push via SSE so the public dashboard updates within ~100 ms. See [implementation/admin-bonus-plan.md](implementation/admin-bonus-plan.md).
 
 ## Sequence
 
@@ -87,18 +89,24 @@ flowchart TD
 
 ## Aggregation rules
 - `Account.points: null` → treat as `0`.
-- Leaderboard total = `Account.points` directly. Fresh accounts = event-scoped by construction; no `completedAt` filtering needed.
+- Leaderboard `total = il_points + bonus_points`, where `il_points = Account.points` and `bonus_points` comes from `team_bonus.points` in `bonus.sqlite` (0 if the row is missing). Fresh accounts = event-scoped by construction; no `completedAt` filtering needed.
+- Teams with `team_bonus.active = 0` are excluded from the payload (hidden / DQ).
 - **Event window** (`EVENT_START_AT` / `EVENT_END_AT`) drives **phase + freeze**, not scoring:
   - `now < EVENT_START_AT` → `phase = "pre"`, `teams: []` (protects against cred leaks before start).
   - `in-window` → `phase = "live"`, normal aggregation.
   - `now > EVENT_END_AT` → `phase = "ended"`, freeze: stop rebuilds, keep serving last pre-end snapshot.
-- Sort teams desc by `points`. Tie-break: `lastActivityAt` asc (earlier finisher wins), then `displayName` asc.
+- Sort teams desc by `total`. Tie-break: `lastActivityAt` asc (earlier finisher wins), then `displayName` asc.
 - Snapshot cached for ~10 s (`SNAPSHOT_TTL_MS`) in memory, persisted to `/app/data/snapshot.json` on every successful rebuild (atomic tmp + rename). Loaded on boot so restart serves stale instantly.
+- Admin bonus writes invalidate the snapshot cache and emit a `leaderboard-updated` SSE event; public clients refetch within ~100 ms instead of waiting for the 30 s poll.
 
 ## Endpoints
 **Proxy → browser (public, read-only)**
-- `GET /api/leaderboard` — ranked team snapshot `{ teams: [...], phase, eventWindow, updatedAt }`.
+- `GET /api/leaderboard` — ranked team snapshot `{ teams: [{ il_points, bonus_points, total, ... }], phase, eventWindow, updatedAt }`.
+- `GET /api/leaderboard/stream` — SSE, emits `leaderboard-updated` on cache invalidation.
 - `GET /api/health` — proxy + token status + `eventWindow`.
+
+**Proxy → browser (admin, cookie-auth)**
+- `POST /api/admin/login` / `/logout`; `GET /api/admin/bonus`; `POST /api/admin/bonus/batch`; `PATCH /api/admin/bonus/:teamId/active`; `GET /api/admin/export.csv`. See [implementation/admin-bonus-plan.md](implementation/admin-bonus-plan.md).
 
 **Proxy → ImmersiveLab (server-side, authenticated)**
 - `POST /v1/public/tokens` — token exchange.

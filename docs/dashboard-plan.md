@@ -36,8 +36,10 @@ No token ever reaches the browser.
 ```
 
 ### Endpoints exposed by the proxy
-- `GET /api/leaderboard` — returns `{ teams: [{ uuid, displayName, points, lastActivityAt }], phase, eventWindow, updatedAt }`, sorted by points desc. Aggregation + sorting happens server-side.
+- `GET /api/leaderboard` — returns `{ teams: [{ uuid, displayName, il_points, bonus_points, total, lastActivityAt }], phase, eventWindow, updatedAt }`, sorted by `total` desc. Aggregation + sorting happens server-side.
+- `GET /api/leaderboard/stream` — SSE push for instant updates after admin bonus writes (see [implementation/admin-bonus-plan.md](implementation/admin-bonus-plan.md)).
 - `GET /api/health` — proxy + token status + `eventWindow`.
+- `POST/GET/PATCH /api/admin/*` — authenticated admin surface for per-team bonus points + active toggle. See [implementation/admin-bonus-plan.md](implementation/admin-bonus-plan.md).
 
 ### Proxy internals
 - Single Node server (Express, aligned with prior project). Same process serves `dist/` (the Vite build output) as static assets. SPA fallback: unknown non-`/api` routes return `index.html`.
@@ -107,8 +109,9 @@ Browser only talks to the proxy at same origin, so no ImmersiveLab-side CORS con
 - `EVENT_START_AT` (ISO 8601, required — drives `phase = "pre"` + pre-event gate)
 - `EVENT_END_AT` (ISO 8601, required — drives `phase = "ended"` + post-event freeze)
 - `SNAPSHOT_TTL_MS` (default `10000`)
-- `DATA_DIR` (default `/app/data` — holds `snapshot.json` + `token.json`)
+- `DATA_DIR` (default `/app/data` — holds `snapshot.json` + `token.json` + `bonus.sqlite`)
 - `PORT` (default `3000`)
+- `ADMIN_PASSWORD` + `ADMIN_SESSION_SECRET` (required for admin bonus page; see [implementation/admin-bonus-plan.md](implementation/admin-bonus-plan.md))
 
 ## Files to create / modify
 - `package.json`, `vite.config.ts`, `tsconfig.json`, `index.html`
