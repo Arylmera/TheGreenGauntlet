@@ -13,7 +13,7 @@ export function TeamAvatar({ size = 40, className = '' }: Props) {
       aria-hidden
       width={size}
       height={size}
-      className={`rounded-full bg-surface-off border border-line-light select-none ${className}`}
+      className={`rounded-full select-none ${className}`}
       style={{ width: size, height: size }}
     />
   );
