@@ -10,5 +10,6 @@ Per-part build plans derived from [../dashboard-plan.md](../dashboard-plan.md) a
 4. [frontend.md](frontend.md) — React app, hook, components.
 5. [deployment.md](deployment.md) — Docker build, named volume, dev workflow.
 6. [env-config.md](env-config.md) — env vars, `.env.example`.
+7. [admin-bonus-plan.md](admin-bonus-plan.md) — **draft.** Admin page + per-team bonus points (on-site challenges) persisted in a separate SQLite file; merged into leaderboard total.
 
-Build order: 0 → 1 → 2 → 3 → 4 → 6 → 5.
+Build order: 0 → 1 → 2 → 3 → 4 → 6 → 5. Part 7 (admin bonus) slots in after 3 (aggregation) once approved — see its own build order.

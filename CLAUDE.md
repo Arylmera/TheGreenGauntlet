@@ -10,6 +10,7 @@ See [docs/project.md](docs/project.md) for goals, API details, and decisions.
 - `data-flow.md` — sequence + aggregation rules + security invariants
 - `V1V2Scope.md` — scope split vs `devops-day-leaderboard`
 - `implementation/` — per-module build plans. **Start with `dashboard-storage-plan.md`** (scope decisions for 30-team / 8-hour event: fresh accounts, `Account.points` scoring, named-volume persistence, reduced role of `EVENT_START_AT` / `EVENT_END_AT`).
+- `implementation/admin-bonus-plan.md` — **draft.** Admin page + per-team bonus points (on-site challenges) persisted in a separate SQLite file; merged into leaderboard total.
 - `guidelines/` — stack conventions (React, TS, Node proxy, styling, testing, security, git).
 
 ## Guidelines policy (mandatory)
