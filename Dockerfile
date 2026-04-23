@@ -3,6 +3,8 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 ENV NODE_ENV=development
+# python3/make/g++ available for better-sqlite3 in case prebuild is unavailable.
+RUN apk add --no-cache python3 make g++
 COPY package*.json ./
 RUN npm ci
 COPY tsconfig*.json vite.config.ts postcss.config.js tailwind.config.ts index.html ./
@@ -13,6 +15,7 @@ RUN npm run build
 FROM node:20-alpine AS deps
 WORKDIR /app
 ENV NODE_ENV=production
+RUN apk add --no-cache python3 make g++
 COPY package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 

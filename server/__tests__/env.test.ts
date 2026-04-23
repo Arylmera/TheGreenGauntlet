@@ -6,6 +6,8 @@ const good = {
   IMMERSIVELAB_SECRET_TOKEN: 's',
   EVENT_START_AT: '2026-05-01T09:00:00Z',
   EVENT_END_AT: '2026-05-01T17:00:00Z',
+  ADMIN_PASSWORD: 'admin-password',
+  ADMIN_SESSION_SECRET: 'a'.repeat(32),
 };
 
 describe('loadEnv', () => {
@@ -26,8 +28,21 @@ describe('loadEnv', () => {
       EVENT_START_AT: good.EVENT_START_AT,
       EVENT_END_AT: good.EVENT_END_AT,
       USE_STUB_UPSTREAM: 'true',
+      ADMIN_PASSWORD: good.ADMIN_PASSWORD,
+      ADMIN_SESSION_SECRET: good.ADMIN_SESSION_SECRET,
     } as NodeJS.ProcessEnv);
     expect(env.USE_STUB_UPSTREAM).toBe(true);
+  });
+
+  it('fails when ADMIN_PASSWORD missing', () => {
+    const { ADMIN_PASSWORD: _omit, ...rest } = good;
+    expect(() => loadEnv(rest as NodeJS.ProcessEnv)).toThrow(/ADMIN_PASSWORD/);
+  });
+
+  it('fails when ADMIN_SESSION_SECRET too short', () => {
+    expect(() =>
+      loadEnv({ ...good, ADMIN_SESSION_SECRET: 'short' } as NodeJS.ProcessEnv),
+    ).toThrow(/ADMIN_SESSION_SECRET/);
   });
 
   it('fails when event window inverted', () => {

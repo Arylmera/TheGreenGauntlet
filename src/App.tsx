@@ -4,9 +4,17 @@ import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { Podium } from './components/Podium';
 import { Leaderboard } from './components/Leaderboard';
+import { AdminPage } from './pages/Admin';
 import type { Team } from './types';
 
 export function App() {
+  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) {
+    return <AdminPage />;
+  }
+  return <PublicDashboard />;
+}
+
+function PublicDashboard() {
   const { data, updatedAt, loading, error, consecutiveErrors } = useLeaderboard();
   const { theme, toggle } = useTheme();
 
