@@ -21,7 +21,7 @@ No token ever reaches the browser.
 ## Relevant API facts (from `docs/immersivelab-api.json` + prior project)
 - **Base URL**: `https://api.immersivelabs.online`.
 - **Auth**: `POST /v1/public/tokens` form-encoded `username={access_key}&password={secret_token}` → `accessToken` valid ~30 min. **Proxy only.**
-- **Accounts**: `GET /v2/accounts` (scope `account:read`). `Account.points: integer | null`. Fields used: `uuid`, `displayName`, `points`, `lastActivityAt`. `email` is read-and-dropped (scrubbed before response).
+- **Accounts**: `GET /v2/accounts` (list) + `GET /v2/accounts/{uuid}` (detail). Scope `account:read`. `Account.points: integer | null`. Fields used: `uuid`, `displayName`, `points`, `lastActivityAt`. `email` is read server-side to filter participants (`@immersivelabs.pro`), then dropped before response.
 - **Fresh accounts per event**: teams get new accounts at start, so `Account.points` is event-scoped by construction. We trust it directly — no activities/attempts walk, no `completedAt` filter. Fallback (attempts path) is documented in [implementation/aggregation.md](implementation/aggregation.md) but not implemented in v1.
 - **No event-window in the API**: the OpenAPI spec has no `Event` entity with start/end timestamps. The event window is supplied out-of-band via `EVENT_START_AT` / `EVENT_END_AT` env vars. These drive **phase** (pre/live/ended) and **post-event freeze**, not scoring filters.
 - **Pagination**: `{ page: [...], meta: { nextPageToken, hasNextPage } }`. Pass `?page_token=...`. Do not change page size mid-walk.

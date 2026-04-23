@@ -23,11 +23,10 @@ See [dashboard-storage-plan.md](dashboard-storage-plan.md) §1 for why.
 - Single-flight: concurrent callers share one rebuild promise.
 
 ## Build steps
-1. `walkAccounts()` → `accounts[]`. Treat `points: null` as 0.
-2. Filter the accounts, the email of the account should contain '@immersivelabs.pro'
-3. Sort desc by `points`. Tie-break: `lastActivityAt` asc (earlier finisher wins), then `displayName` asc.
-4. Scrub: drop `email` and any field not listed in the payload schema.
-5. Relabel for payload: `accounts` → `teams` (1 IL account per team; see [dashboard-storage-plan.md](dashboard-storage-plan.md) §4).
+1. `walkAccounts()` → `accounts[]`. Treat `points: null` as 0. Email-based filter (`@immersivelabs.pro`) is applied inside the client walker; see [immersiveLab-client.md](immersiveLab-client.md).
+2. Sort desc by `points`. Tie-break: `lastActivityAt` asc (earlier finisher wins), then `displayName` asc.
+3. Scrub: drop any field not listed in the payload schema (email is already not yielded by the walker).
+4. Relabel for payload: `accounts` → `teams` (1 IL account per team; see [dashboard-storage-plan.md](dashboard-storage-plan.md) §4).
 
 No activity walk. No attempts walk. Retries naturally shadow because `Account.points` reflects current state.
 
