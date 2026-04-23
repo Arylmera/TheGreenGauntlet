@@ -143,24 +143,25 @@ export class ImmersiveLabClient {
     return this.fetchJson(`/v2/accounts/${encodeURIComponent(uuid)}`, AccountDetailedSchema);
   }
 
-async *walkAccounts(): AsyncIterable<Account> {
-  for await (const item of this.walkAccountList()) {
-    const detail = await this.getAccountDetailed(item.uuid);
-    if (detail.email && detail.email.includes('@immersivelabs.pro')) {
-      yield {
-        uuid: detail.uuid,
-        displayName: detail.displayName ?? buildFallbackName(detail) ?? item.uuid,
-        points: detail.points ?? item.points ?? null,
-        lastActivityAt: detail.lastActivityAt ?? null,
-      };
+  private buildFallbackName(a: AccountDetailed): string | null {
+    const parts = [a.firstName, a.lastName].filter((x): x is string => typeof x === 'string' && x.length > 0);
+    if (parts.length > 0) return parts.join(' ');
+    if (a.email) return a.email;
+    if (a.externalId) return a.externalId;
+    return null;
+  }
+
+  async *walkAccounts(): AsyncIterable<Account> {
+    for await (const item of this.walkAccountList()) {
+      const detail = await this.getAccountDetailed(item.uuid);
+      if (detail.email && detail.email.includes('@immersivelabs.pro')) {
+        yield {
+          uuid: detail.uuid,
+          displayName: detail.displayName ?? this.buildFallbackName(detail) ?? item.uuid,
+          points: detail.points ?? item.points ?? null,
+          lastActivityAt: detail.lastActivityAt ?? null,
+        };
+      }
     }
   }
-}
-
-function buildFallbackName(a: AccountDetailed): string | null {
-  const parts = [a.firstName, a.lastName].filter((x): x is string => typeof x === 'string' && x.length > 0);
-  if (parts.length > 0) return parts.join(' ');
-  if (a.email) return a.email;
-  if (a.externalId) return a.externalId;
-  return null;
 }
