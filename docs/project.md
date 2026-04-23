@@ -23,6 +23,7 @@ That project is **per-account**, not per-team, so the team-aggregation layer is 
 ## Goals
 - Visualize event data from the Immersive Labs API.
 - **Per-team leaderboard** (30 rows — 1 fresh Immersive Labs account per team, ranked by points). See [implementation/dashboard-storage-plan.md](implementation/dashboard-storage-plan.md).
+- **On-site bonus points** — admin-only page to add/edit per-team bonus points from offline challenges during the event. Persisted in a separate SQLite file, merged into the leaderboard total. See [implementation/admin-bonus-plan.md](implementation/admin-bonus-plan.md) (draft).
 - **Display language: English only.** All UI copy, labels, and formatted output render in EN regardless of browser locale or account settings.
 
 ## Caveats / known limits
@@ -32,4 +33,5 @@ That project is **per-account**, not per-team, so the team-aggregation layer is 
 ## Plans
 - [dashboard-plan.md](dashboard-plan.md) — leaderboard dashboard architecture (React + Vite, 30 s polling).
 - [data-flow.md](data-flow.md) — data flow, aggregation rules, security invariants.
+- [implementation/admin-bonus-plan.md](implementation/admin-bonus-plan.md) — admin page + bonus points persistence (draft).
 - [../TODO.md](../TODO.md) — open questions blocking build.

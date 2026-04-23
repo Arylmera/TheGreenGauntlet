@@ -54,6 +54,7 @@ useLeaderboard(): { data, updatedAt, loading, error, refresh }
 - Modern, minimal. No skeuomorphic medals. Medal chip = small circular token with 1/2/3 + gold (`#d4af37`) / silver (`#c0c0c0`) / bronze (`#cd7f32`) tint on the chip border; card body stays white per DESIGN.md.
 - Winner card elevated by `Level 2` shadow; 2nd/3rd at `Level 1`.
 - Shows the same logo avatar + team name + points, scaled up.
+- **Points-proportional height:** rank 1 is always full height; rank 2/3 heights scale by `points / topPoints`, clamped to `[0.6, 1]`, so the delta vs. the leader is visible at a glance on the podium itself (not just the table). Ties with rank 1 match its height. When all three are still at 0 points (pre-activity), falls back to a fixed hierarchy (1.0 / 0.85 / 0.75). A responsive `min-h-*` floor per breakpoint guarantees medal, name, points, and last-activity timestamp always fit inside the card. Height changes animate over 300 ms.
 - Below the podium: full 30-row leaderboard including ranks 1–3 again (consistency for scanning).
 
 ### Rank-change animation

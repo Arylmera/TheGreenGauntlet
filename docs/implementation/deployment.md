@@ -26,7 +26,7 @@ stage 2 — runtime
 ```
 
 ## Volume
-- Named volume mounted at `/app/data` (default `DATA_DIR`). Holds `snapshot.json` + `token.json`. Survives container recreate, reboot, and image updates.
+- Named volume mounted at `/app/data` (default `DATA_DIR`). Holds `snapshot.json` + `token.json` + `bonus.sqlite` (admin bonus DB, see [admin-bonus-plan.md](admin-bonus-plan.md)). Survives container recreate, reboot, and image updates.
 - `docker run -v greengauntlet-data:/app/data -p 3000:3000 ...` (or compose `volumes: [greengauntlet-data:/app/data]`).
 - Hosting-specific volume driver syntax decided at deploy time (Fly volume, Render disk, Railway volume).
 
@@ -35,13 +35,15 @@ stage 2 — runtime
 2. Ensure `DATA_DIR` exists and is writable; fail fast otherwise.
 3. Load `token.json` → token cache (skip re-auth if still valid).
 4. Load `snapshot.json` → stale slot (`/api/leaderboard` serves it immediately).
-5. Start HTTP listener.
+5. Open `bonus.sqlite` (create + run migrations if missing), set `PRAGMA journal_mode=WAL`.
+6. Start HTTP listener.
 6. First request triggers fresh rebuild in background; single-flight guards concurrent misses.
 
 ## Routing at runtime
-- `GET /api/*` → proxy handlers.
+- `GET /api/*` → proxy handlers (public leaderboard, health, SSE stream).
+- `POST/GET/PATCH /api/admin/*` → admin handlers, cookie-auth (see [admin-bonus-plan.md](admin-bonus-plan.md)).
 - `GET /assets/*` → static from `dist/assets`.
-- `GET /*` → `dist/index.html` (SPA fallback).
+- `GET /*` → `dist/index.html` (SPA fallback; React route `/admin` lives inside the bundle).
 
 ## Dev workflow
 - `npm run dev` starts Vite (5173) + Node proxy (3000) via `concurrently`.

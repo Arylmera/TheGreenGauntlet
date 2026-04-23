@@ -24,11 +24,19 @@ const PODIUM_ALT: Record<Rank, string> = {
   3: 'Bronze medal',
 };
 
-const HEIGHT: Record<Rank, string> = {
-  1: 'h-52 sm:h-60 lg:h-72 2xl:h-96',
-  2: 'h-44 sm:h-52 lg:h-64 2xl:h-80',
-  3: 'h-44 sm:h-52 lg:h-60 2xl:h-72',
-};
+const HEIGHT_SCALED =
+  'h-[calc(13rem*var(--podium-scale))] sm:h-[calc(15rem*var(--podium-scale))] lg:h-[calc(18rem*var(--podium-scale))] 2xl:h-[calc(24rem*var(--podium-scale))]';
+
+const HEIGHT_MIN = 'min-h-44 sm:min-h-52 lg:min-h-60 2xl:min-h-80';
+
+const MIN_SCALE = 0.6;
+
+function computeScale(rank: Rank, topPoints: number, points: number): number {
+  if (rank === 1) return 1;
+  if (topPoints <= 0) return rank === 2 ? 0.85 : 0.75;
+  const ratio = points / topPoints;
+  return Math.min(1, Math.max(MIN_SCALE, ratio));
+}
 
 const WIDTH: Record<Rank, string> = {
   1: 'w-28 sm:w-40 lg:w-56 2xl:w-80',
@@ -62,6 +70,7 @@ const POINTS_TEXT: Record<Rank, string> = {
 
 export function Podium({ top }: Props) {
   const byRank = new Map(top.map((t) => [t.rank as Rank, t]));
+  const topPoints = byRank.get(1)?.points ?? 0;
 
   return (
     <section
@@ -71,23 +80,25 @@ export function Podium({ top }: Props) {
       {PODIUM_ORDER.map((rank) => {
         const team = byRank.get(rank);
         if (!team) return null;
-        return <PodiumStep key={rank} rank={rank} team={team} />;
+        const scale = computeScale(rank, topPoints, team.points);
+        return <PodiumStep key={rank} rank={rank} team={team} scale={scale} />;
       })}
     </section>
   );
 }
 
-type StepProps = { rank: Rank; team: Team };
+type StepProps = { rank: Rank; team: Team; scale: number };
 
-function PodiumStep({ rank, team }: StepProps) {
+function PodiumStep({ rank, team, scale }: StepProps) {
   return (
     <article
+      style={{ ['--podium-scale' as string]: scale }}
       className={`
         flex flex-col items-center justify-end
         bg-surface-white dark:bg-dark-card rounded-comfy border border-line-light dark:border-dark-line
         px-2 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-5 2xl:px-10 2xl:py-8
-        ${WIDTH[rank]} ${HEIGHT[rank]} ${SHADOW[rank]}
-        transition-shadow
+        ${WIDTH[rank]} ${HEIGHT_MIN} ${HEIGHT_SCALED} ${SHADOW[rank]}
+        transition-[height,box-shadow] duration-300
       `}
     >
       <PodiumMedal rank={rank} />
