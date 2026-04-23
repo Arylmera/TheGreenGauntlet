@@ -19,12 +19,15 @@ Server-side ImmersiveLab API wrapper. Holds secret, caches token, walks pages.
 - Timeout 10 s per request.
 
 ## Paginated walkers
-- `walkAccounts()` → `AsyncIterable<Account>`. Loops `GET /v2/accounts?page_token=...` until `meta.hasNextPage === false`. Do not change page size mid-walk.
+- `walkAccountList()` → `AsyncIterable<AccountListItem>`. Loops `GET /v2/accounts?page_token=...` until `meta.hasNextPage === false`. Do not change page size mid-walk.
+- `walkAccounts()` → `AsyncIterable<Account>`. For each list item, fetches `GET /v2/accounts/{uuid}` for the detailed record, then **filters** to only yield accounts whose `email` contains `@immersivelabs.pro` (scopes the leaderboard to event participants and excludes admin/staff accounts). `email` is consumed here as a filter predicate and not yielded downstream.
 - Not used in v1: `/v2/activities`, `/v2/attempts`, `/v2/teams`, `/v2/teams/{id}/memberships`, deprecated `Account.teams`. See [dashboard-storage-plan.md](dashboard-storage-plan.md) §1 for why (fresh accounts make `Account.points` event-scoped).
 
 ## Types
 - Narrow ImmersiveLab response shapes to only fields used:
-  - `Account { uuid, displayName, email, points, lastActivityAt }` (`email` is read and dropped at the aggregation layer)
+  - `AccountListItem { uuid, email?, externalId?, points? }` — shape returned by `/v2/accounts` list page.
+  - `AccountDetailed { uuid, displayName?, email?, externalId?, firstName?, lastName?, lastActivityAt?, points?, status?, timeZone? }` — shape returned by `/v2/accounts/{uuid}`.
+  - `Account { uuid, displayName, points, lastActivityAt }` — narrowed type yielded by `walkAccounts()`. `email` is read for filtering (`@immersivelabs.pro`) then dropped; `displayName` falls back to `firstName lastName` → `email` → `externalId` → `uuid`.
 
 ## Steps
 1. Implement `getToken` + unit test around expiry math + disk persistence.
