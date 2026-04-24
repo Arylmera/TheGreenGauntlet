@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
-import type { LeaderboardAggregator } from '../aggregate.js';
-import type { LeaderboardEvents } from '../leaderboardEvents.js';
+import type { LeaderboardAggregator } from '../leaderboard/aggregator.js';
+import type { LeaderboardEvents } from '../leaderboard/leaderboardEvents.js';
 
 const SSE_KEEPALIVE_MS = 25_000;
 

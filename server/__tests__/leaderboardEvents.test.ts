@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { LeaderboardEvents } from '../leaderboardEvents.js';
-import type { LeaderboardPayload } from '../aggregate.js';
+import { LeaderboardEvents } from '../leaderboard/leaderboardEvents.js';
+import type { LeaderboardPayload } from '../leaderboard/types.js';
 
 const payload: LeaderboardPayload = {
   updatedAt: new Date().toISOString(),

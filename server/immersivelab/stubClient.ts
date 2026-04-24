@@ -1,5 +1,5 @@
-import type { Account } from './immersiveLab.js';
-import type { AccountSource } from './aggregate.js';
+import type { Account } from './schemas.js';
+import type { AccountSource } from '../leaderboard/types.js';
 
 const TEAM_NAMES = [
   'Kernel Panic',
@@ -69,7 +69,8 @@ export class StubAccountSource implements AccountSource {
       const rate = this.rates[i] ?? 500;
       const jitter = (jitterRand() - 0.5) * 80;
       const points = Math.max(0, Math.round(rate * elapsedHours + jitter));
-      const lastActivityAt = points > 0 ? new Date(this.now() - (i + 1) * 15_000).toISOString() : null;
+      const lastActivityAt =
+        points > 0 ? new Date(this.now() - (i + 1) * 15_000).toISOString() : null;
       yield {
         uuid: `stub-${i + 1}`,
         displayName: TEAM_NAMES[i] ?? `Team ${i + 1}`,

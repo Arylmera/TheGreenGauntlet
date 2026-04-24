@@ -2,8 +2,6 @@ import crypto from 'node:crypto';
 
 export type SessionPayload = { sub: string; exp: number };
 
-export const COOKIE_NAME = 'gg_admin';
-
 function b64urlEncode(buf: Buffer): string {
   return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
@@ -45,58 +43,4 @@ export function verifySession(
   }
   if (typeof parsed.exp !== 'number' || parsed.exp < now) return null;
   return parsed;
-}
-
-export function parseCookies(header: string | undefined): Record<string, string> {
-  if (!header) return {};
-  const out: Record<string, string> = {};
-  for (const part of header.split(';')) {
-    const idx = part.indexOf('=');
-    if (idx < 0) continue;
-    const key = part.slice(0, idx).trim();
-    const val = part.slice(idx + 1).trim();
-    if (key) out[key] = decodeURIComponent(val);
-  }
-  return out;
-}
-
-export function buildSessionCookie(
-  token: string,
-  maxAgeMs: number,
-  secure: boolean,
-): string {
-  const maxAgeS = Math.max(1, Math.floor(maxAgeMs / 1000));
-  const parts = [
-    `${COOKIE_NAME}=${token}`,
-    'Path=/',
-    'HttpOnly',
-    'SameSite=Lax',
-    `Max-Age=${maxAgeS}`,
-  ];
-  if (secure) parts.push('Secure');
-  return parts.join('; ');
-}
-
-export function buildClearCookie(secure: boolean): string {
-  const parts = [
-    `${COOKIE_NAME}=`,
-    'Path=/',
-    'HttpOnly',
-    'SameSite=Lax',
-    'Max-Age=0',
-  ];
-  if (secure) parts.push('Secure');
-  return parts.join('; ');
-}
-
-export function timingSafeEqualStrings(a: string, b: string): boolean {
-  const ab = Buffer.from(a, 'utf8');
-  const bb = Buffer.from(b, 'utf8');
-  if (ab.length !== bb.length) {
-    // still run compare with same length to reduce timing leak
-    const pad = Buffer.alloc(Math.max(ab.length, bb.length));
-    crypto.timingSafeEqual(pad, pad);
-    return false;
-  }
-  return crypto.timingSafeEqual(ab, bb);
 }

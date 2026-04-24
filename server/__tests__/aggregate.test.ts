@@ -2,8 +2,10 @@ import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { LeaderboardAggregator, phaseFor, rankTeams } from '../aggregate.js';
-import type { Account, ImmersiveLabClient } from '../immersiveLab.js';
+import { LeaderboardAggregator } from '../leaderboard/aggregator.js';
+import { phaseFor, rankTeams } from '../leaderboard/ranking.js';
+import type { Account } from '../immersivelab/schemas.js';
+import type { ImmersiveLabClient } from '../immersivelab/client.js';
 import type { Env } from '../env.js';
 
 const baseEnv = (overrides: Partial<Env> = {}): Env => ({

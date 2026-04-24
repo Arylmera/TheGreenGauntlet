@@ -2,12 +2,13 @@ import path from 'node:path';
 import { loadEnv } from './env.js';
 import { createLogger } from './logger.js';
 import { ensureWritableDir } from './snapshotStore.js';
-import { ImmersiveLabClient } from './immersiveLab.js';
-import { StubAccountSource } from './stubClient.js';
-import { LeaderboardAggregator, type AccountSource } from './aggregate.js';
+import { ImmersiveLabClient } from './immersivelab/client.js';
+import { StubAccountSource } from './immersivelab/stubClient.js';
+import { LeaderboardAggregator } from './leaderboard/aggregator.js';
+import type { AccountSource } from './leaderboard/types.js';
+import { LeaderboardEvents } from './leaderboard/leaderboardEvents.js';
+import { BonusDb } from './bonus/bonusDb.js';
 import { buildApp } from './app.js';
-import { BonusDb } from './bonusDb.js';
-import { LeaderboardEvents } from './leaderboardEvents.js';
 
 const env = loadEnv();
 const logger = createLogger(env.LOG_LEVEL);

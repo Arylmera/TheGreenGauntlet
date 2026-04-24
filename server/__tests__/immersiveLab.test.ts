@@ -2,7 +2,7 @@ import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ImmersiveLabClient } from '../immersiveLab.js';
+import { ImmersiveLabClient } from '../immersivelab/client.js';
 import type { Env } from '../env.js';
 
 const baseEnv = (dir: string): Env => ({

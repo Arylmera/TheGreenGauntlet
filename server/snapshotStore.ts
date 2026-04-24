@@ -1,8 +1,6 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
-export type TokenCache = { accessToken: string; expiresAt: number };
-
 export class JsonStore<T> {
   constructor(private readonly file: string) {}
 
