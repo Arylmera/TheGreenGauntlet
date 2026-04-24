@@ -6,8 +6,8 @@ import { ImmersiveLabClient } from './immersivelab/client.js';
 import { StubAccountSource } from './immersivelab/stubClient.js';
 import { LeaderboardAggregator } from './leaderboard/aggregator.js';
 import type { AccountSource } from './leaderboard/types.js';
-import { LeaderboardEvents } from './leaderboard/leaderboardEvents.js';
-import { BonusDb } from './bonus/bonusDb.js';
+import { LeaderboardEvents } from './leaderboard/events.js';
+import { BonusDb } from './bonus/db.js';
 import { buildApp } from './app.js';
 
 const env = loadEnv();

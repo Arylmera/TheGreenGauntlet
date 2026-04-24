@@ -8,8 +8,8 @@ import {
   type BonusDelta,
   type TeamBonusRow,
   type TeamSeed,
-} from './bonus.types.js';
-import { migrate } from './bonus.schema.js';
+} from './types.js';
+import { migrate } from './schema.js';
 
 export class BonusDb {
   private readonly db: Db;

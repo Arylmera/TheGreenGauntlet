@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { Env } from '../../env.js';
-import type { BonusDb } from '../../bonus/bonusDb.js';
-import { BonusDbError } from '../../bonus/bonus.types.js';
+import type { BonusDb } from '../../bonus/db.js';
+import { BonusDbError } from '../../bonus/types.js';
 import type { LeaderboardAggregator } from '../../leaderboard/aggregator.js';
 import type { Team } from '../../leaderboard/types.js';
 import { requireAdmin } from './auth.js';

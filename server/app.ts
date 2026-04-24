@@ -5,13 +5,13 @@ import fastifyStatic from '@fastify/static';
 import type { Env } from './env.js';
 import { LeaderboardAggregator } from './leaderboard/aggregator.js';
 import type { AccountSource } from './leaderboard/types.js';
-import type { LeaderboardEvents } from './leaderboard/leaderboardEvents.js';
-import type { BonusDb } from './bonus/bonusDb.js';
+import type { LeaderboardEvents } from './leaderboard/events.js';
+import type { BonusDb } from './bonus/db.js';
 import { registerHealthRoute } from './routes/health.js';
 import { registerLeaderboardRoute } from './routes/leaderboard.js';
 import { registerAdminAuthRoutes } from './routes/admin/auth.js';
 import { registerAdminBonusRoutes } from './routes/admin/bonus.js';
-import { registerAdminExportRoutes } from './routes/admin/export.csv.js';
+import { registerAdminExportRoutes } from './routes/admin/exportCsv.js';
 
 export type AppDeps = {
   env: Env;

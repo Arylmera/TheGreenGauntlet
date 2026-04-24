@@ -1,4 +1,4 @@
-import { isBonusCategory, type BonusDelta } from '../../bonus/bonus.types.js';
+import { isBonusCategory, type BonusDelta } from '../../bonus/types.js';
 
 export type ValidationError = { status: 400; error: 'invalid_body'; message: string };
 

@@ -1,6 +1,6 @@
 import type { Env } from '../env.js';
 import type { Account } from '../immersivelab/schemas.js';
-import type { TeamBonusRow } from '../bonus/bonus.types.js';
+import type { TeamBonusRow } from '../bonus/types.js';
 import type { Phase, PublicTeam, Team } from './types.js';
 
 type TeamDraft = Omit<Team, 'rank'>;

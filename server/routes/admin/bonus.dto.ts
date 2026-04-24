@@ -1,4 +1,4 @@
-import type { TeamBonusRow } from '../../bonus/bonus.types.js';
+import type { TeamBonusRow } from '../../bonus/types.js';
 import type { Team } from '../../leaderboard/types.js';
 
 export type AdminBonusTeamDto = {

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { LeaderboardEvents } from '../leaderboard/leaderboardEvents.js';
+import { LeaderboardEvents } from '../leaderboard/events.js';
 import type { LeaderboardPayload } from '../leaderboard/types.js';
 
 const payload: LeaderboardPayload = {

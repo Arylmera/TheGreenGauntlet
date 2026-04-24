@@ -1,11 +1,11 @@
 import path from 'node:path';
 import type { Env } from '../env.js';
 import type { Account } from '../immersivelab/schemas.js';
-import type { BonusDb } from '../bonus/bonusDb.js';
-import type { TeamBonusRow } from '../bonus/bonus.types.js';
+import type { BonusDb } from '../bonus/db.js';
+import type { TeamBonusRow } from '../bonus/types.js';
 import { JsonStore } from '../snapshotStore.js';
 import { phaseFor, rankTeams, toPublicTeam } from './ranking.js';
-import type { LeaderboardEvents } from './leaderboardEvents.js';
+import type { LeaderboardEvents } from './events.js';
 import type {
   AccountSource,
   EventWindow,
