@@ -29,20 +29,18 @@ export function Header({ updatedAt, theme, onSetTheme, soundEnabled, onToggleSou
         }
       >
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-          <img
-            src={logo}
-            alt="The Green Gauntlet"
-            className={
-              isMario
-                ? 'w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 shrink-0 pixelated select-none'
-                : 'w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 2xl:w-20 2xl:h-20 shrink-0 select-none'
-            }
-          />
+          {!isMario && (
+            <img
+              src={logo}
+              alt="The Green Gauntlet"
+              className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 2xl:w-20 2xl:h-20 shrink-0 select-none"
+            />
+          )}
           {isMario ? (
             <div className="flex items-center gap-3 sm:gap-4 min-w-0">
               <QBlock size={54} />
               <div className="flex flex-col min-w-0">
-                <h1 className="title-chunk text-[20px] sm:text-[26px] lg:text-[34px] xl:text-[42px] pl-[4px] pt-[4px] pr-[2px]" style={{ overflow: 'visible' }}>
+                <h1 className="title-chunk text-[20px] sm:text-[26px] lg:text-[34px] xl:text-[42px] pl-[4px] pr-[2px]" style={{ overflow: 'visible' }}>
                   <span className="green">THE GREEN</span>
                   <br className="hidden sm:inline" />
                   <span className="gauntlet"> GAUNTLET</span>

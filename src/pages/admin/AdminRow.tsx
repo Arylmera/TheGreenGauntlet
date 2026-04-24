@@ -27,11 +27,11 @@ export function AdminRow({ team, deltas, onDeltaChange, onToggleActive, isMario 
     ? 'px-3 py-2 sm:py-3 text-center num text-xl text-[color:var(--mario-ink)]'
     : 'px-3 py-2 sm:py-3 text-center tabular text-sm';
   const totalCls = isMario
-    ? 'px-3 py-2 sm:py-3 text-right num text-2xl font-bold text-[color:var(--mario-ink)]'
-    : 'px-3 py-2 sm:py-3 text-right tabular font-bold text-sm sm:text-base text-ink-black dark:text-dark-text';
+    ? 'px-3 py-2 sm:py-3 text-center num text-2xl font-bold text-[color:var(--mario-ink)]'
+    : 'px-3 py-2 sm:py-3 text-center tabular font-bold text-sm sm:text-base text-ink-black dark:text-dark-text';
   const inputCls = isMario
-    ? 'pixel-input w-24 text-right'
-    : 'w-24 px-2 py-1 text-right rounded-standard border border-line-light dark:border-dark-line bg-surface-white dark:bg-dark-card text-ink-black dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-brand-green';
+    ? 'pixel-input w-24 text-center'
+    : 'w-24 px-2 py-1 text-center rounded-standard border border-line-light dark:border-dark-line bg-surface-white dark:bg-dark-card text-ink-black dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-brand-green';
 
   return (
     <tr className={rowCls}>
@@ -53,7 +53,7 @@ export function AdminRow({ team, deltas, onDeltaChange, onToggleActive, isMario 
       <td className={numCls}>{team.crokinole_points.toLocaleString('en-US')}</td>
       <td className={numCls}>{team.helping_points.toLocaleString('en-US')}</td>
       {CATEGORIES.map((category) => (
-        <td key={category} className="px-3 py-2 sm:py-3 text-right">
+        <td key={category} className="px-3 py-2 sm:py-3 text-center">
           <input
             type="number"
             inputMode="numeric"

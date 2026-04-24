@@ -223,14 +223,14 @@ export function AdminTeamsTable({ onLoggedOut, theme, onSetTheme }: Props) {
                 <th className="px-3 py-2 sm:py-3 w-24 text-center whitespace-nowrap">
                   {isMario ? 'HELPING' : 'Helping'}
                 </th>
-                <th className="px-3 py-2 sm:py-3 w-28 text-right">{isMario ? 'MARIO' : 'Mario'}</th>
-                <th className="px-3 py-2 sm:py-3 w-28 text-right">
+                <th className="px-3 py-2 sm:py-3 w-28 text-center">{isMario ? 'MARIO' : 'Mario'}</th>
+                <th className="px-3 py-2 sm:py-3 w-28 text-center">
                   {isMario ? 'CROKINOLE' : 'Crokinole'}
                 </th>
-                <th className="px-3 py-2 sm:py-3 w-28 text-right">
+                <th className="px-3 py-2 sm:py-3 w-28 text-center">
                   {isMario ? 'HELPING' : 'Helping'}
                 </th>
-                <th className="px-3 py-2 sm:py-3 w-24 text-right">
+                <th className="px-3 py-2 sm:py-3 w-24 text-center">
                   {isMario ? 'TOTAL' : 'Total'}
                 </th>
               </tr>
