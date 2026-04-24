@@ -1,15 +1,9 @@
 import type { Team } from '../types';
 import { formatRelative } from '../utils/formatRelative';
+import podiumBronze from '../assets/podium-bronze.png';
 import podiumGold from '../assets/podium-gold.png';
 import podiumSilver from '../assets/podium-silver.png';
-import podiumBronze from '../assets/podium-bronze.png';
-import { MedalIcon } from './mario/MedalIcon';
-import { CoinIcon } from './mario/CoinIcon';
-
-export type Rank = 1 | 2 | 3;
-
-export const PIPE_WIDTH_PX = 240;
-export const PIPE_HEIGHT_BASE_PX = 320;
+import type { Rank } from './podium.constants';
 
 const PODIUM_IMG: Record<Rank, string> = {
   1: podiumGold,
@@ -52,58 +46,9 @@ const POINTS_TEXT: Record<Rank, string> = {
   3: 'text-sm sm:text-base lg:text-numeric-lg',
 };
 
-type PipeStepProps = { rank: Rank; team: Team; ratio: number; points: number };
+type Props = { rank: Rank; team: Team; scale: number; points: number };
 
-export function PipeStep({ rank, team, ratio, points }: PipeStepProps) {
-  const w = PIPE_WIDTH_PX;
-  const h = Math.round(PIPE_HEIGHT_BASE_PX * ratio);
-  const isFirst = rank === 1;
-
-  return (
-    <article
-      className={`relative flex flex-col items-center justify-end ${isFirst ? 'mario-sparkle' : ''}`}
-      style={{ width: `min(${w}px, 30vw)` }}
-    >
-      <div
-        className="relative mb-3 shrink-0"
-        style={{ width: 'clamp(64px, 108px, 108px)', aspectRatio: '1 / 1' }}
-      >
-        <MedalIcon rank={rank} />
-      </div>
-
-      <div
-        className="pipe w-full flex flex-col items-center justify-start px-3 sm:px-4 pt-6 pb-0"
-        style={{ height: `clamp(180px, ${h}px, ${h}px)` }}
-      >
-        <div className="plaque w-full px-3 py-3 text-center relative mt-1">
-          <span className="plaque-tape tight-px">RANK {rank}</span>
-          <h2
-            className="font-pixel text-[11px] sm:text-[13px] lg:text-[14px] text-[color:var(--mario-ink)] leading-snug break-words mt-1"
-            title={team.displayName}
-          >
-            {team.displayName}
-          </h2>
-          <p className="mt-3 flex items-center justify-center gap-2">
-            <span
-              className="num font-bold text-[color:var(--mario-ink)]"
-              style={{ fontSize: 'clamp(22px, 3vw, 36px)', lineHeight: 1 }}
-            >
-              {points.toLocaleString('en-US')}
-            </span>
-            <CoinIcon coinSize={isFirst ? 'md' : 'sm'} spin />
-          </p>
-          <p className="mt-2 font-crt text-[color:var(--mario-ink-soft)] text-sm sm:text-base">
-            {formatRelative(team.lastActivityAt)}
-          </p>
-        </div>
-      </div>
-    </article>
-  );
-}
-
-type PanelStepProps = { rank: Rank; team: Team; scale: number; points: number };
-
-export function PanelStep({ rank, team, scale, points }: PanelStepProps) {
+export function PanelStep({ rank, team, scale, points }: Props) {
   return (
     <article
       style={{ ['--podium-scale' as string]: scale }}

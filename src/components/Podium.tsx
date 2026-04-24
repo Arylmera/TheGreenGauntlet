@@ -1,7 +1,9 @@
 import type { Category, Team } from '../types';
 import { CATEGORY_SCORE_FIELD } from '../types';
 import { useArcade } from '../context/ArcadeContext';
-import { PanelStep, PipeStep, type Rank } from './Podium.steps';
+import { PanelStep } from './PanelStep';
+import { PipeStep } from './PipeStep';
+import type { Rank } from './podium.constants';
 
 type Props = {
   top: Team[];

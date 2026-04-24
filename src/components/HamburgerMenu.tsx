@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Theme } from '../hooks/useTheme';
+import { useDismissOnOutside } from '../hooks/useDismissOnOutside';
 import {
   CheckIcon,
   HamburgerIcon,
@@ -9,6 +10,7 @@ import {
   SpeakerOnIcon,
   SunIcon,
 } from './HamburgerMenu.icons';
+import { hamburgerClasses } from './HamburgerMenu.styles';
 
 type Props = {
   theme: Theme;
@@ -23,50 +25,39 @@ const THEME_OPTIONS: ReadonlyArray<{ value: Theme; label: string }> = [
   { value: 'mario', label: 'Arcade' },
 ];
 
+const ITEM_SELECTOR = '[role="menuitemradio"], [role="menuitemcheckbox"]';
+
 export function HamburgerMenu({ theme, onSetTheme, soundEnabled, onToggleSound }: Props) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const isMario = theme === 'mario';
+  const cls = hamburgerClasses(isMario);
+
+  const close = useCallback(() => setOpen(false), []);
+  const focusTrigger = useCallback(() => triggerRef.current?.focus(), []);
+
+  useDismissOnOutside({
+    active: open,
+    refs: [menuRef, triggerRef],
+    onDismiss: close,
+    onEscape: focusTrigger,
+  });
 
   useEffect(() => {
     if (!open) return;
-    function onDocClick(e: MouseEvent) {
-      const target = e.target as Node;
-      if (menuRef.current?.contains(target)) return;
-      if (triggerRef.current?.contains(target)) return;
-      setOpen(false);
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
-        setOpen(false);
-        triggerRef.current?.focus();
-      }
-    }
-    document.addEventListener('mousedown', onDocClick);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onDocClick);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    const first = menuRef.current?.querySelector<HTMLElement>('[role="menuitemradio"], [role="menuitemcheckbox"]');
-    first?.focus();
+    menuRef.current?.querySelector<HTMLElement>(ITEM_SELECTOR)?.focus();
   }, [open]);
 
   function handleSelectTheme(t: Theme) {
     onSetTheme(t);
     setOpen(false);
-    triggerRef.current?.focus();
+    focusTrigger();
   }
 
   function handleMenuKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
-    const items = Array.from(
-      menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitemradio"], [role="menuitemcheckbox"]') ?? [],
-    );
+    const items = Array.from(menuRef.current?.querySelectorAll<HTMLElement>(ITEM_SELECTOR) ?? []);
     if (items.length === 0) return;
     const currentIndex = items.indexOf(document.activeElement as HTMLElement);
     const delta = e.key === 'ArrowDown' ? 1 : -1;
@@ -75,32 +66,7 @@ export function HamburgerMenu({ theme, onSetTheme, soundEnabled, onToggleSound }
     e.preventDefault();
   }
 
-  const showSound = theme === 'mario' && onToggleSound !== undefined;
-  const isMario = theme === 'mario';
-
-  const triggerCls = isMario
-    ? 'inline-flex items-center justify-center w-11 h-11 bg-[color:var(--mario-parchment)] border-[3px] border-[color:var(--mario-ink)] rounded-[3px] text-[color:var(--mario-ink)] focus-ring transition-transform hover:-translate-y-px active:translate-y-px'
-    : 'inline-flex items-center justify-center w-11 h-11 rounded-standard bg-surface-off dark:bg-dark-card border border-line-light dark:border-dark-line text-ink-charcoal dark:text-dark-mid hover:bg-line-light dark:hover:bg-dark-hover focus-ring transition-colors';
-
-  const panelCls = isMario
-    ? 'absolute right-0 mt-2 z-50 min-w-[12rem] bg-[color:var(--mario-parchment)] border-[3px] border-[color:var(--mario-ink)] rounded-[3px] py-1 shadow-[0_4px_0_rgba(0,0,0,0.3)]'
-    : 'absolute right-0 mt-2 z-50 min-w-[12rem] bg-surface-white dark:bg-dark-card border border-line-light dark:border-dark-line rounded-standard shadow-lvl-2 py-1';
-
-  const headingCls = isMario
-    ? 'px-3 py-1 font-pixel text-[10px] text-[color:var(--mario-ink)] tight-px'
-    : 'px-3 py-1 text-xs uppercase tracking-wide text-ink-charcoal dark:text-dark-mid';
-
-  const itemCls = isMario
-    ? 'w-full flex items-center gap-3 px-3 py-2 min-h-[44px] text-left font-pixel text-[10px] tight-px text-[color:var(--mario-ink)] hover:bg-[color:var(--mario-parchment-dark)] focus-ring'
-    : 'w-full flex items-center gap-3 px-3 py-2 min-h-[44px] text-left text-sm text-ink-black dark:text-dark-text hover:bg-surface-off dark:hover:bg-dark-hover focus-ring';
-
-  const iconWrapCls = isMario
-    ? 'w-5 h-5 inline-flex items-center justify-center text-[color:var(--mario-ink)]'
-    : 'w-5 h-5 inline-flex items-center justify-center text-ink-charcoal dark:text-dark-mid';
-
-  const dividerCls = isMario
-    ? 'my-1 border-t-[3px] border-[color:var(--mario-ink)]'
-    : 'my-1 border-t border-line-light dark:border-dark-line';
+  const showSound = isMario && onToggleSound !== undefined;
 
   return (
     <div className="relative">
@@ -112,7 +78,7 @@ export function HamburgerMenu({ theme, onSetTheme, soundEnabled, onToggleSound }
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls="gg-hamburger-menu"
-        className={triggerCls}
+        className={cls.trigger}
       >
         <HamburgerIcon />
       </button>
@@ -124,44 +90,32 @@ export function HamburgerMenu({ theme, onSetTheme, soundEnabled, onToggleSound }
           role="menu"
           aria-label="Settings"
           onKeyDown={handleMenuKeyDown}
-          className={panelCls}
+          className={cls.panel}
         >
-          <div className={headingCls}>
-            {isMario ? 'THEME' : 'Theme'}
-          </div>
-          {THEME_OPTIONS.map((opt) => {
-            const selected = theme === opt.value;
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                role="menuitemradio"
-                aria-checked={selected}
-                onClick={() => handleSelectTheme(opt.value)}
-                className={itemCls}
-              >
-                <span className={iconWrapCls}>
-                  {opt.value === 'light' && <SunIcon />}
-                  {opt.value === 'dark' && <MoonIcon />}
-                  {opt.value === 'mario' && <MushroomIcon />}
-                </span>
-                <span className="flex-1">{isMario ? opt.label.toUpperCase() : opt.label}</span>
-                {selected && <CheckIcon />}
-              </button>
-            );
-          })}
+          <div className={cls.heading}>{isMario ? 'THEME' : 'Theme'}</div>
+          {THEME_OPTIONS.map((opt) => (
+            <ThemeMenuItem
+              key={opt.value}
+              option={opt}
+              selected={theme === opt.value}
+              isMario={isMario}
+              itemCls={cls.item}
+              iconWrapCls={cls.iconWrap}
+              onSelect={handleSelectTheme}
+            />
+          ))}
 
           {showSound && (
             <>
-              <div className={dividerCls} />
+              <div className={cls.divider} />
               <button
                 type="button"
                 role="menuitemcheckbox"
                 aria-checked={soundEnabled}
                 onClick={() => onToggleSound?.()}
-                className={itemCls}
+                className={cls.item}
               >
-                <span className={iconWrapCls}>
+                <span className={cls.iconWrap}>
                   {soundEnabled ? <SpeakerOnIcon /> : <SpeakerOffIcon />}
                 </span>
                 <span className="flex-1">{isMario ? 'SOUND FX' : 'Sound effects'}</span>
@@ -175,3 +129,38 @@ export function HamburgerMenu({ theme, onSetTheme, soundEnabled, onToggleSound }
   );
 }
 
+type ThemeMenuItemProps = {
+  option: { value: Theme; label: string };
+  selected: boolean;
+  isMario: boolean;
+  itemCls: string;
+  iconWrapCls: string;
+  onSelect: (t: Theme) => void;
+};
+
+function ThemeMenuItem({
+  option,
+  selected,
+  isMario,
+  itemCls,
+  iconWrapCls,
+  onSelect,
+}: ThemeMenuItemProps) {
+  return (
+    <button
+      type="button"
+      role="menuitemradio"
+      aria-checked={selected}
+      onClick={() => onSelect(option.value)}
+      className={itemCls}
+    >
+      <span className={iconWrapCls}>
+        {option.value === 'light' && <SunIcon />}
+        {option.value === 'dark' && <MoonIcon />}
+        {option.value === 'mario' && <MushroomIcon />}
+      </span>
+      <span className="flex-1">{isMario ? option.label.toUpperCase() : option.label}</span>
+      {selected && <CheckIcon />}
+    </button>
+  );
+}

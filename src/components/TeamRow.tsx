@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect } from 'react';
 import type { Category, Team } from '../types';
 import { CATEGORY_SCORE_FIELD } from '../types';
-import { TeamAvatar } from './TeamAvatar';
-import { formatRelative } from '../utils/formatRelative';
 import { useArcade } from '../context/ArcadeContext';
+import { useRankBounce } from '../hooks/useRankBounce';
+import { formatRelative } from '../utils/formatRelative';
+import { TeamAvatar } from './TeamAvatar';
 import { MarioTeamRow } from './TeamRow.mario';
 
 type Props = {
@@ -27,17 +28,17 @@ const CELL = {
   AVATAR: 'hidden sm:table-cell px-2 py-3 sm:py-4 w-14',
   NAME: 'px-2 sm:px-4 py-3 sm:py-4 text-ink-black dark:text-dark-text font-medium text-sm sm:text-base 2xl:text-xl truncate max-w-0',
   IL: 'hidden lg:table-cell px-2 sm:px-4 py-3 sm:py-4 text-center tabular text-sm 2xl:text-base text-ink-mid dark:text-dark-dim w-44',
-  MARIO: 'hidden lg:table-cell px-2 sm:px-4 py-3 sm:py-4 text-center tabular text-sm 2xl:text-base text-ink-mid dark:text-dark-dim w-24',
-  CROKINOLE: 'hidden lg:table-cell px-2 sm:px-4 py-3 sm:py-4 text-center tabular text-sm 2xl:text-base text-ink-mid dark:text-dark-dim w-32',
-  TOTAL: 'px-2 sm:px-4 py-3 sm:py-4 text-center tabular font-bold text-base sm:text-lg 2xl:text-2xl w-24 sm:w-32',
-  ACTIVITY: 'hidden md:table-cell px-4 py-4 text-right text-ink-mid dark:text-dark-dim text-sm 2xl:text-base w-40',
+  MARIO:
+    'hidden lg:table-cell px-2 sm:px-4 py-3 sm:py-4 text-center tabular text-sm 2xl:text-base text-ink-mid dark:text-dark-dim w-24',
+  CROKINOLE:
+    'hidden lg:table-cell px-2 sm:px-4 py-3 sm:py-4 text-center tabular text-sm 2xl:text-base text-ink-mid dark:text-dark-dim w-32',
+  TOTAL:
+    'px-2 sm:px-4 py-3 sm:py-4 text-center tabular font-bold text-base sm:text-lg 2xl:text-2xl w-24 sm:w-32',
+  ACTIVITY:
+    'hidden md:table-cell px-4 py-4 text-right text-ink-mid dark:text-dark-dim text-sm 2xl:text-base w-40',
 } as const;
 
 const NUMBER_TEXT = 'tabular font-bold text-base sm:text-lg 2xl:text-2xl inline-block';
-
-function prefersReducedMotion(): boolean {
-  return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-}
 
 export function TeamRow({ team, flashed, category = 'total' }: Props) {
   const isTopThree = team.rank <= 3;
@@ -45,20 +46,8 @@ export function TeamRow({ team, flashed, category = 'total' }: Props) {
   const { theme, playCoin, playBounce } = useArcade();
   const isMario = theme === 'mario';
   const isTotal = category === 'total';
-  const categoryPoints = team[CATEGORY_SCORE_FIELD[category]] as number;
 
-  const [bounce, setBounce] = useState(false);
-  const prevRank = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (prevRank.current !== null && prevRank.current !== team.rank && isMario && !prefersReducedMotion()) {
-      setBounce(true);
-      playBounce();
-      const t = window.setTimeout(() => setBounce(false), 500);
-      return () => window.clearTimeout(t);
-    }
-    prevRank.current = team.rank;
-  }, [team.rank, isMario, playBounce]);
+  const bounce = useRankBounce(team.rank, isMario, playBounce);
 
   useEffect(() => {
     if (flashed && isMario) playCoin();
@@ -78,6 +67,8 @@ export function TeamRow({ team, flashed, category = 'total' }: Props) {
     );
   }
 
+  const categoryPoints = team[CATEGORY_SCORE_FIELD[category]] as number;
+
   return (
     <tr className={`${ROW_CLASS} ${flashClass}`} data-key={team.displayName}>
       <td className={CELL.RANK}>
@@ -90,32 +81,7 @@ export function TeamRow({ team, flashed, category = 'total' }: Props) {
         <span title={team.displayName}>{team.displayName}</span>
       </td>
       {isTotal ? (
-        <>
-          <td className={CELL.IL}>{team.il_points.toLocaleString('en-US')}</td>
-          <td className={CELL.MARIO}>
-            {team.mario_points > 0 ? (
-              <span className="text-brand-green font-medium">
-                +{team.mario_points.toLocaleString('en-US')}
-              </span>
-            ) : (
-              <span>—</span>
-            )}
-          </td>
-          <td className={CELL.CROKINOLE}>
-            {team.crokinole_points > 0 ? (
-              <span className="text-brand-green font-medium">
-                +{team.crokinole_points.toLocaleString('en-US')}
-              </span>
-            ) : (
-              <span>—</span>
-            )}
-          </td>
-          <td className={CELL.TOTAL}>
-            <span className={`${accent} inline-flex items-center gap-1 justify-end`}>
-              {team.total.toLocaleString('en-US')}
-            </span>
-          </td>
-        </>
+        <TotalCells team={team} accent={accent} />
       ) : (
         <td className={CELL.TOTAL}>
           <span className={`${accent} inline-flex items-center gap-1 justify-end`}>
@@ -126,4 +92,28 @@ export function TeamRow({ team, flashed, category = 'total' }: Props) {
       <td className={CELL.ACTIVITY}>{formatRelative(team.lastActivityAt)}</td>
     </tr>
   );
+}
+
+function TotalCells({ team, accent }: { team: Team; accent: string }) {
+  return (
+    <>
+      <td className={CELL.IL}>{team.il_points.toLocaleString('en-US')}</td>
+      <td className={CELL.MARIO}>
+        <BonusCell value={team.mario_points} />
+      </td>
+      <td className={CELL.CROKINOLE}>
+        <BonusCell value={team.crokinole_points} />
+      </td>
+      <td className={CELL.TOTAL}>
+        <span className={`${accent} inline-flex items-center gap-1 justify-end`}>
+          {team.total.toLocaleString('en-US')}
+        </span>
+      </td>
+    </>
+  );
+}
+
+function BonusCell({ value }: { value: number }) {
+  if (value <= 0) return <span>—</span>;
+  return <span className="text-brand-green font-medium">+{value.toLocaleString('en-US')}</span>;
 }
