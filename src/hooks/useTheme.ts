@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
+import { useLocalStorage } from './useLocalStorage';
 
 export type Theme = 'light' | 'dark' | 'mario';
 
@@ -12,38 +13,31 @@ function coerce(stored: string | null): Theme | null {
   return null;
 }
 
-function readInitial(): Theme {
-  try {
-    const stored = coerce(window.localStorage.getItem(STORAGE_KEY));
-    if (stored) return stored;
-  } catch {
-    // ignore — storage blocked
-  }
+function systemDefault(): Theme {
   return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
-function apply(theme: Theme) {
+function apply(theme: Theme): void {
   const root = document.documentElement;
   root.classList.toggle('dark', theme === 'dark');
   root.dataset.theme = theme;
 }
 
 export function useTheme(): { theme: Theme; toggle: () => void; set: (t: Theme) => void } {
-  const [theme, setThemeState] = useState<Theme>(() => readInitial());
+  const [theme, setThemeState] = useLocalStorage<Theme>(STORAGE_KEY, systemDefault, {
+    parse: coerce,
+    serialize: (t) => t,
+  });
 
   useEffect(() => {
     apply(theme);
-    try {
-      window.localStorage.setItem(STORAGE_KEY, theme);
-    } catch {
-      // ignore
-    }
   }, [theme]);
 
-  const set = useCallback((t: Theme) => setThemeState(t), []);
+  const set = useCallback((t: Theme) => setThemeState(t), [setThemeState]);
   const toggle = useCallback(
-    () => setThemeState((t) => CYCLE[(CYCLE.indexOf(t) + 1) % CYCLE.length] ?? 'light'),
-    [],
+    () =>
+      setThemeState((t: Theme) => CYCLE[(CYCLE.indexOf(t) + 1) % CYCLE.length] ?? 'light'),
+    [setThemeState],
   );
 
   return { theme, toggle, set };

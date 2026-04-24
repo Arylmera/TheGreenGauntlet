@@ -262,6 +262,30 @@ describe('admin routes', () => {
     expect(lines[1]).toMatch(/t1,Team One,100,80,120,0,300,1/);
   });
 
+  it('login rate-limiter returns 429 after 20 failed attempts in window', async () => {
+    for (let i = 0; i < 20; i += 1) {
+      const r = await harness.app.inject({
+        method: 'POST',
+        url: '/api/admin/login',
+        payload: { password: 'wrong' },
+      });
+      expect(r.statusCode).toBe(401);
+    }
+    const blocked = await harness.app.inject({
+      method: 'POST',
+      url: '/api/admin/login',
+      payload: { password: 'wrong' },
+    });
+    expect(blocked.statusCode).toBe(429);
+    // Correct password also blocked while limit exceeded.
+    const stillBlocked = await harness.app.inject({
+      method: 'POST',
+      url: '/api/admin/login',
+      payload: { password: PASSWORD },
+    });
+    expect(stillBlocked.statusCode).toBe(429);
+  });
+
   it('logout clears cookie and subsequent request is 401', async () => {
     const { cookie } = await login(harness.app);
     const logout = await harness.app.inject({
