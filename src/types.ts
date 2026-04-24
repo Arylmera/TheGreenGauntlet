@@ -7,6 +7,8 @@ export type Team = {
   rank: number;
   uuid: string;
   displayName: string;
+  /** Raw Immersive Labs `Account.points` — excludes helping bonus. */
+  immersivelab_points: number;
   /** Immersive Labs points already merged with helping bonus. */
   il_points: number;
   mario_points: number;
@@ -14,6 +16,17 @@ export type Team = {
   total: number;
   lastActivityAt: string | null;
 };
+
+/** The four public leaderboard views. */
+export type Category = 'total' | 'immersivelab_points' | 'mario_points' | 'crokinole_points';
+
+/** Field on `Team` that backs the score/sort for a given category. */
+export const CATEGORY_SCORE_FIELD = {
+  total: 'total',
+  immersivelab_points: 'immersivelab_points',
+  mario_points: 'mario_points',
+  crokinole_points: 'crokinole_points',
+} as const satisfies Record<Category, keyof Team>;
 
 export type LeaderboardPayload = {
   phase: Phase;

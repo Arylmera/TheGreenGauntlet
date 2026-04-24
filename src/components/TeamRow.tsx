@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Team } from '../types';
+import type { Category, Team } from '../types';
+import { CATEGORY_SCORE_FIELD } from '../types';
 import { TeamAvatar } from './TeamAvatar';
 import { formatRelative } from '../utils/formatRelative';
 import { useArcade } from '../context/ArcadeContext';
@@ -8,6 +9,7 @@ import { CoinIcon } from './mario/CoinIcon';
 type Props = {
   team: Team;
   flashed: boolean;
+  category?: Category;
 };
 
 const ROW_CLASS = `
@@ -57,11 +59,13 @@ function rankTone(rank: number): '' | 'gold' | 'silver' | 'bronze' {
   return '';
 }
 
-export function TeamRow({ team, flashed }: Props) {
+export function TeamRow({ team, flashed, category = 'total' }: Props) {
   const isTopThree = team.rank <= 3;
   const accent = isTopThree ? 'text-brand-green' : 'text-ink-black dark:text-dark-text';
   const { theme, playCoin, playBounce } = useArcade();
   const isMario = theme === 'mario';
+  const isTotal = category === 'total';
+  const categoryPoints = team[CATEGORY_SCORE_FIELD[category]] as number;
 
   const [bounce, setBounce] = useState(false);
   const prevRank = useRef<number | null>(null);
@@ -101,27 +105,38 @@ export function TeamRow({ team, flashed }: Props) {
         <td className={MARIO_CELL.NAME}>
           <span title={team.displayName}>{team.displayName}</span>
         </td>
-        <td className={MARIO_CELL.IL}>{team.il_points.toLocaleString('en-US')}</td>
-        <td className={MARIO_CELL.MARIO}>
-          {team.mario_points > 0 ? (
-            <span className="delta">+{team.mario_points.toLocaleString('en-US')}</span>
-          ) : (
-            <span className="text-[color:var(--mario-ink-soft)] opacity-40">—</span>
-          )}
-        </td>
-        <td className={MARIO_CELL.CROKINOLE}>
-          {team.crokinole_points > 0 ? (
-            <span className="delta">+{team.crokinole_points.toLocaleString('en-US')}</span>
-          ) : (
-            <span className="text-[color:var(--mario-ink-soft)] opacity-40">—</span>
-          )}
-        </td>
-        <td className={MARIO_CELL.TOTAL}>
-          <span className="inline-flex items-center gap-2 justify-end">
-            {team.total.toLocaleString('en-US')}
-            <CoinIcon coinSize={isTopThree ? 'md' : 'sm'} spin={isTopThree} />
-          </span>
-        </td>
+        {isTotal ? (
+          <>
+            <td className={MARIO_CELL.IL}>{team.il_points.toLocaleString('en-US')}</td>
+            <td className={MARIO_CELL.MARIO}>
+              {team.mario_points > 0 ? (
+                <span className="delta">+{team.mario_points.toLocaleString('en-US')}</span>
+              ) : (
+                <span className="text-[color:var(--mario-ink-soft)] opacity-40">—</span>
+              )}
+            </td>
+            <td className={MARIO_CELL.CROKINOLE}>
+              {team.crokinole_points > 0 ? (
+                <span className="delta">+{team.crokinole_points.toLocaleString('en-US')}</span>
+              ) : (
+                <span className="text-[color:var(--mario-ink-soft)] opacity-40">—</span>
+              )}
+            </td>
+            <td className={MARIO_CELL.TOTAL}>
+              <span className="inline-flex items-center gap-2 justify-end">
+                {team.total.toLocaleString('en-US')}
+                <CoinIcon coinSize={isTopThree ? 'md' : 'sm'} spin={isTopThree} />
+              </span>
+            </td>
+          </>
+        ) : (
+          <td className={MARIO_CELL.TOTAL}>
+            <span className="inline-flex items-center gap-2 justify-end">
+              {categoryPoints.toLocaleString('en-US')}
+              <CoinIcon coinSize={isTopThree ? 'md' : 'sm'} spin={isTopThree} />
+            </span>
+          </td>
+        )}
         <td className={MARIO_CELL.ACTIVITY}>{formatRelative(team.lastActivityAt)}</td>
       </tr>
     );
@@ -141,33 +156,43 @@ export function TeamRow({ team, flashed }: Props) {
         <span title={team.displayName}>{team.displayName}</span>
       </td>
 
-      <td className={CELL.IL}>{team.il_points.toLocaleString('en-US')}</td>
+      {isTotal ? (
+        <>
+          <td className={CELL.IL}>{team.il_points.toLocaleString('en-US')}</td>
 
-      <td className={CELL.MARIO}>
-        {team.mario_points > 0 ? (
-          <span className="text-brand-green font-medium">
-            +{team.mario_points.toLocaleString('en-US')}
+          <td className={CELL.MARIO}>
+            {team.mario_points > 0 ? (
+              <span className="text-brand-green font-medium">
+                +{team.mario_points.toLocaleString('en-US')}
+              </span>
+            ) : (
+              <span>—</span>
+            )}
+          </td>
+
+          <td className={CELL.CROKINOLE}>
+            {team.crokinole_points > 0 ? (
+              <span className="text-brand-green font-medium">
+                +{team.crokinole_points.toLocaleString('en-US')}
+              </span>
+            ) : (
+              <span>—</span>
+            )}
+          </td>
+
+          <td className={CELL.TOTAL}>
+            <span className={`${accent} inline-flex items-center gap-1 justify-end`}>
+              {team.total.toLocaleString('en-US')}
+            </span>
+          </td>
+        </>
+      ) : (
+        <td className={CELL.TOTAL}>
+          <span className={`${accent} inline-flex items-center gap-1 justify-end`}>
+            {categoryPoints.toLocaleString('en-US')}
           </span>
-        ) : (
-          <span>—</span>
-        )}
-      </td>
-
-      <td className={CELL.CROKINOLE}>
-        {team.crokinole_points > 0 ? (
-          <span className="text-brand-green font-medium">
-            +{team.crokinole_points.toLocaleString('en-US')}
-          </span>
-        ) : (
-          <span>—</span>
-        )}
-      </td>
-
-      <td className={CELL.TOTAL}>
-        <span className={`${accent} inline-flex items-center gap-1 justify-end`}>
-          {team.total.toLocaleString('en-US')}
-        </span>
-      </td>
+        </td>
+      )}
 
       <td className={CELL.ACTIVITY}>
         {formatRelative(team.lastActivityAt)}

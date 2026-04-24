@@ -23,8 +23,11 @@ export type Team = {
   lastActivityAt: string | null;
 };
 
-/** Shape emitted to the public dashboard — admin-only fields scrubbed. */
-export type PublicTeam = Omit<Team, 'immersivelab_points' | 'helping_points'>;
+/** Shape emitted to the public dashboard — helping bonus scrubbed.
+ *  `immersivelab_points` (raw IL without helping) is exposed so the client
+ *  can sort an "Immersive Lab only" view that excludes the helping bonus.
+ *  `il_points` remains `immersivelab_points + helping_points`. */
+export type PublicTeam = Omit<Team, 'helping_points'>;
 
 export type AccountSource = {
   walkAccounts(): AsyncIterable<Account>;
@@ -106,7 +109,7 @@ function assignRank(draft: TeamDraft, i: number): Team {
 }
 
 function toPublicTeam(t: Team): PublicTeam {
-  const { immersivelab_points: _raw, helping_points: _help, ...rest } = t;
+  const { helping_points: _help, ...rest } = t;
   return rest;
 }
 
