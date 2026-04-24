@@ -334,7 +334,7 @@ function AdminTable({ onLoggedOut, theme, onSetTheme }: AdminTableProps) {
               >
                 <th className="px-3 py-2 sm:py-3">{isMario ? 'TEAM' : 'Team'}</th>
                 <th className="px-3 py-2 sm:py-3 w-20 text-center">{isMario ? 'ACTIVE' : 'Active'}</th>
-                <th className="px-3 py-2 sm:py-3 w-28 text-center whitespace-nowrap">{isMario ? 'IL RAW' : 'IL raw'}</th>
+                <th className="px-3 py-2 sm:py-3 w-28 text-center whitespace-nowrap">Immersive Lab</th>
                 <th className="px-3 py-2 sm:py-3 w-24 text-center whitespace-nowrap">{isMario ? 'MARIO' : 'Mario'}</th>
                 <th className="px-3 py-2 sm:py-3 w-24 text-center whitespace-nowrap">{isMario ? 'CROKINOLE' : 'Crokinole'}</th>
                 <th className="px-3 py-2 sm:py-3 w-24 text-center whitespace-nowrap">{isMario ? 'HELPING' : 'Helping'}</th>

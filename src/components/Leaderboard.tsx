@@ -141,7 +141,7 @@ export function Leaderboard({ teams }: Props) {
             <th className="hidden sm:table-cell px-2 py-3 w-14" aria-label="Team avatar" />
             <th className="px-2 sm:px-4 py-2 sm:py-3">{isMario ? 'TEAM' : 'Team'}</th>
             <th className="hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-3 text-center w-36 whitespace-nowrap">
-              {isMario ? 'IMM.LAB' : 'Immersive Lab'}
+              Immersive Lab
             </th>
             <th className="hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-3 text-right w-20">
               {isMario ? 'MARIO' : 'Mario'}
