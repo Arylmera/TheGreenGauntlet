@@ -167,7 +167,7 @@ function PipeStep({ rank, team, ratio }: PipeStepProps) {
             >
               {team.total.toLocaleString('en-US')}
             </span>
-            <CoinIcon coinSize={isFirst ? 'md' : 'sm'} spin={isFirst} />
+            <CoinIcon coinSize={isFirst ? 'md' : 'sm'} spin />
           </p>
           <p className="mt-2 font-crt text-[color:var(--mario-ink-soft)] text-sm sm:text-base">
             {formatRelative(team.lastActivityAt)}

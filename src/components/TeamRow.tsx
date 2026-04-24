@@ -26,9 +26,9 @@ const CELL = {
   AVATAR: 'hidden sm:table-cell px-2 py-3 sm:py-4 w-14',
   NAME: 'px-2 sm:px-4 py-3 sm:py-4 text-ink-black dark:text-dark-text font-medium text-sm sm:text-base 2xl:text-xl truncate max-w-0',
   IL: 'hidden lg:table-cell px-2 sm:px-4 py-3 sm:py-4 text-center tabular text-sm 2xl:text-base text-ink-mid dark:text-dark-dim w-44',
-  MARIO: 'hidden lg:table-cell px-2 sm:px-4 py-3 sm:py-4 text-right tabular text-sm 2xl:text-base text-ink-mid dark:text-dark-dim w-24',
-  CROKINOLE: 'hidden lg:table-cell px-2 sm:px-4 py-3 sm:py-4 text-right tabular text-sm 2xl:text-base text-ink-mid dark:text-dark-dim w-32',
-  TOTAL: 'px-2 sm:px-4 py-3 sm:py-4 text-right tabular font-bold text-base sm:text-lg 2xl:text-2xl w-24 sm:w-32',
+  MARIO: 'hidden lg:table-cell px-2 sm:px-4 py-3 sm:py-4 text-center tabular text-sm 2xl:text-base text-ink-mid dark:text-dark-dim w-24',
+  CROKINOLE: 'hidden lg:table-cell px-2 sm:px-4 py-3 sm:py-4 text-center tabular text-sm 2xl:text-base text-ink-mid dark:text-dark-dim w-32',
+  TOTAL: 'px-2 sm:px-4 py-3 sm:py-4 text-center tabular font-bold text-base sm:text-lg 2xl:text-2xl w-24 sm:w-32',
   ACTIVITY: 'hidden md:table-cell px-4 py-4 text-right text-ink-mid dark:text-dark-dim text-sm 2xl:text-base w-40',
 } as const;
 
@@ -37,10 +37,10 @@ const MARIO_CELL = {
   RANK: 'px-2 sm:px-4 py-3 sm:py-4 w-12 sm:w-16 lg:w-20 text-center',
   AVATAR: 'hidden sm:table-cell px-2 py-3 sm:py-4 w-14',
   NAME: 'px-2 sm:px-4 py-3 sm:py-4 text-[color:var(--mario-ink)] font-pixel tight-px text-[11px] lg:text-[12px] truncate max-w-0',
-  IL: 'hidden lg:table-cell px-2 sm:px-4 py-3 sm:py-4 text-right num text-xl text-[color:var(--mario-ink-soft)] w-44',
-  MARIO: 'hidden lg:table-cell px-2 sm:px-4 py-3 sm:py-4 text-right num text-xl w-24',
-  CROKINOLE: 'hidden lg:table-cell px-2 sm:px-4 py-3 sm:py-4 text-right num text-xl w-32',
-  TOTAL: 'px-2 sm:px-4 py-3 sm:py-4 text-right num font-bold text-2xl lg:text-3xl text-[color:var(--mario-ink)] w-24 sm:w-32',
+  IL: 'hidden lg:table-cell px-2 sm:px-4 py-3 sm:py-4 text-center num text-xl text-[color:var(--mario-ink-soft)] w-44',
+  MARIO: 'hidden lg:table-cell px-2 sm:px-4 py-3 sm:py-4 text-center num text-xl w-24',
+  CROKINOLE: 'hidden lg:table-cell px-2 sm:px-4 py-3 sm:py-4 text-center num text-xl w-32',
+  TOTAL: 'px-2 sm:px-4 py-3 sm:py-4 text-center num font-bold text-2xl lg:text-3xl text-[color:var(--mario-ink)] w-24 sm:w-32',
   ACTIVITY: 'hidden md:table-cell px-4 py-4 text-right font-crt text-lg text-[color:var(--mario-ink-soft)] w-40',
 } as const;
 

@@ -22,7 +22,7 @@ export function registerLeaderboardRoute(
 
   if (!events) return;
 
-  app.get('/api/leaderboard/stream', (req, reply) => {
+  app.get('/api/leaderboard/stream', async (req, reply) => {
     reply.raw.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-store',
@@ -30,6 +30,14 @@ export function registerLeaderboardRoute(
       'X-Accel-Buffering': 'no',
     });
     reply.raw.write(': connected\n\n');
+
+    try {
+      const initial = await aggregator.getLeaderboard();
+      reply.raw.write(`event: leaderboard-updated\n`);
+      reply.raw.write(`data: ${JSON.stringify(initial)}\n\n`);
+    } catch {
+      // Initial snapshot unavailable; client will fall back to its poll.
+    }
 
     const unsubscribe = events.onUpdate((payload) => {
       reply.raw.write(`event: leaderboard-updated\n`);

@@ -59,11 +59,30 @@ export function useLeaderboard(): State & { refresh: () => void } {
   usePageVisible(load);
 
   // Subscribe to server-sent `leaderboard-updated` events for near-instant refresh.
+  // Events carry the full payload, so we apply it directly and avoid a redundant GET.
   useEffect(() => {
     let es: EventSource | null = null;
     try {
       es = new EventSource('/api/leaderboard/stream');
-      es.addEventListener('leaderboard-updated', () => {
+      es.addEventListener('leaderboard-updated', (ev) => {
+        const raw = (ev as MessageEvent).data;
+        try {
+          const payload = JSON.parse(raw) as LeaderboardPayload;
+          if (payload && Array.isArray(payload.teams) && typeof payload.updatedAt === 'string') {
+            abortRef.current?.abort();
+            setState((s) => ({
+              ...s,
+              data: payload,
+              updatedAt: payload.updatedAt,
+              loading: false,
+              error: null,
+              consecutiveErrors: 0,
+            }));
+            return;
+          }
+        } catch {
+          // Fall through to re-fetch.
+        }
         void load();
       });
     } catch {

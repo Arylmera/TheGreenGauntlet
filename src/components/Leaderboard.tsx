@@ -97,13 +97,13 @@ export function Leaderboard({ teams }: Props) {
             <th className="hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-3 text-center w-44 whitespace-nowrap">
               Immersive Lab
             </th>
-            <th className="hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-3 text-right w-24 whitespace-nowrap">
+            <th className="hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-3 text-center w-24 whitespace-nowrap">
               {isMario ? 'MARIO' : 'Mario'}
             </th>
-            <th className="hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-3 text-right w-32 whitespace-nowrap">
+            <th className="hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-3 text-center w-32 whitespace-nowrap">
               {isMario ? 'CROKINOLE' : 'Crokinole'}
             </th>
-            <th className="px-2 sm:px-4 py-2 sm:py-3 text-right w-24 sm:w-32">
+            <th className="px-2 sm:px-4 py-2 sm:py-3 text-center w-24 sm:w-32">
               {isMario ? 'TOTAL' : 'Total'}
             </th>
             <th className="hidden md:table-cell px-4 py-3 text-right w-40">
