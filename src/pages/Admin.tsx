@@ -229,8 +229,8 @@ function AdminTable({ onLoggedOut }: AdminTableProps) {
               <tr className="bg-surface-off dark:bg-dark-hover text-ink-black dark:text-dark-text text-left text-xs sm:text-sm font-semibold">
                 <th className="px-3 py-2 sm:py-3">Team</th>
                 <th className="px-3 py-2 sm:py-3 w-20 text-center">Active</th>
-                <th className="px-3 py-2 sm:py-3 w-24 text-right">IL</th>
-                <th className="px-3 py-2 sm:py-3 w-24 text-right">Bonus total</th>
+                <th className="px-3 py-2 sm:py-3 w-36 text-center whitespace-nowrap">Immersive Lab</th>
+                <th className="px-3 py-2 sm:py-3 w-28 text-center whitespace-nowrap">Bonus total</th>
                 <th className="px-3 py-2 sm:py-3 w-28 text-right">Delta</th>
                 <th className="px-3 py-2 sm:py-3 w-24 text-right">Total</th>
               </tr>
@@ -282,18 +282,23 @@ function AdminRow({ team, delta, onDeltaChange, onToggleActive }: RowProps) {
         {team.teamName}
       </td>
       <td className="px-3 py-2 sm:py-3 text-center">
-        <input
-          type="checkbox"
-          checked={team.active}
-          onChange={(e) => onToggleActive(e.target.checked)}
-          aria-label={`Active ${team.teamName}`}
-          className="h-4 w-4 accent-brand-green"
-        />
+        <label className="inline-flex items-center cursor-pointer align-middle">
+          <input
+            type="checkbox"
+            checked={team.active}
+            onChange={(e) => onToggleActive(e.target.checked)}
+            aria-label={`Active ${team.teamName}`}
+            className="sr-only peer"
+          />
+          <span
+            className="relative w-10 h-5 rounded-full bg-line-light dark:bg-dark-line transition-colors peer-checked:bg-brand-green peer-focus-visible:ring-2 peer-focus-visible:ring-brand-green peer-focus-visible:ring-offset-2 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:h-4 after:w-4 after:rounded-full after:bg-white after:shadow after:transition-transform peer-checked:after:translate-x-5"
+          />
+        </label>
       </td>
-      <td className="px-3 py-2 sm:py-3 text-right tabular text-sm">
+      <td className="px-3 py-2 sm:py-3 text-center tabular text-sm">
         {team.il_points.toLocaleString('en-US')}
       </td>
-      <td className="px-3 py-2 sm:py-3 text-right tabular text-sm">
+      <td className="px-3 py-2 sm:py-3 text-center tabular text-sm">
         {team.bonus_points.toLocaleString('en-US')}
       </td>
       <td className="px-3 py-2 sm:py-3 text-right">
