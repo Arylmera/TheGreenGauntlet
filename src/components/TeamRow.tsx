@@ -20,7 +20,7 @@ const CELL = {
   RANK: 'px-2 sm:px-4 py-3 sm:py-4 2xl:py-5 w-12 sm:w-16 lg:w-20 text-center',
   AVATAR: 'hidden sm:table-cell px-2 py-3 sm:py-4 w-14',
   NAME: 'px-2 sm:px-4 py-3 sm:py-4 text-ink-black dark:text-dark-text font-medium text-sm sm:text-base 2xl:text-xl truncate max-w-0',
-  IL: 'hidden lg:table-cell px-2 sm:px-4 py-3 sm:py-4 text-right tabular text-sm 2xl:text-base text-ink-mid dark:text-dark-dim w-24',
+  IL: 'hidden lg:table-cell px-2 sm:px-4 py-3 sm:py-4 text-center tabular text-sm 2xl:text-base text-ink-mid dark:text-dark-dim w-36',
   BONUS: 'hidden lg:table-cell px-2 sm:px-4 py-3 sm:py-4 text-right tabular text-sm 2xl:text-base text-ink-mid dark:text-dark-dim w-24',
   TOTAL: 'px-2 sm:px-4 py-3 sm:py-4 text-right tabular font-bold text-base sm:text-lg 2xl:text-2xl w-24 sm:w-32',
   ACTIVITY: 'hidden md:table-cell px-4 py-4 text-right text-ink-mid dark:text-dark-dim text-sm 2xl:text-base w-40',
