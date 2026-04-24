@@ -1,4 +1,5 @@
 import { EventEmitter } from 'node:events';
+import type { LeaderboardPayload } from './aggregate.js';
 
 export class LeaderboardEvents {
   private readonly emitter = new EventEmitter();
@@ -8,12 +9,12 @@ export class LeaderboardEvents {
     this.emitter.setMaxListeners(1000);
   }
 
-  onUpdate(listener: (payload: { updatedAt: string }) => void): () => void {
+  onUpdate(listener: (payload: LeaderboardPayload) => void): () => void {
     this.emitter.on('update', listener);
     return () => this.emitter.off('update', listener);
   }
 
-  emitUpdate(): void {
-    this.emitter.emit('update', { updatedAt: new Date().toISOString() });
+  emitUpdate(payload: LeaderboardPayload): void {
+    this.emitter.emit('update', payload);
   }
 }

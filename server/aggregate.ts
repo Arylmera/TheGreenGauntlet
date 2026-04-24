@@ -137,10 +137,15 @@ export class LeaderboardAggregator {
     return this.snapshot ? this.now() - this.snapshot.builtAt : null;
   }
 
-  /** Bust cached snapshot and emit SSE update. Called after admin writes. */
+  /** Bust cached snapshot, rebuild in background, and push fresh payload to SSE clients. */
   invalidate(): void {
     this.snapshot = null;
-    this.events?.emitUpdate();
+    if (!this.events) return;
+    void this.rebuildWithFallback()
+      .then((payload) => this.events?.emitUpdate(payload))
+      .catch(() => {
+        // Swallow: next client request will retry. SSE clients keep last known state.
+      });
   }
 
   async getLeaderboard(): Promise<LeaderboardPayload> {

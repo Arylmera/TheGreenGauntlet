@@ -152,9 +152,17 @@ export class ImmersiveLabClient {
   }
 
   async *walkAccounts(): AsyncIterable<Account> {
-    for await (const item of this.walkAccountList()) {
-      const detail = await this.getAccountDetailed(item.uuid);
-      if (detail.email && detail.email.includes('@immersivelabs.pro')) {
+    const items: AccountListItem[] = [];
+    for await (const item of this.walkAccountList()) items.push(item);
+
+    const CONCURRENCY = 8;
+    for (let i = 0; i < items.length; i += CONCURRENCY) {
+      const chunk = items.slice(i, i + CONCURRENCY);
+      const details = await Promise.all(
+        chunk.map((it) => this.getAccountDetailed(it.uuid).then((detail) => ({ item: it, detail }))),
+      );
+      for (const { item, detail } of details) {
+        if (!detail.email || !detail.email.includes('@immersivelabs.pro')) continue;
         yield {
           uuid: detail.uuid,
           displayName: detail.displayName ?? this.buildFallbackName(detail) ?? item.uuid,
