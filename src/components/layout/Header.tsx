@@ -37,21 +37,21 @@ export function Header({ updatedAt, theme, onSetTheme, soundEnabled, onToggleSou
             />
           )}
           {isMario ? (
-            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-              <QBlock size={54} />
-              <div className="flex flex-col min-w-0">
+            <div className="flex flex-col min-w-0">
+              <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                <QBlock size={54} />
                 <h1 className="title-chunk text-[20px] sm:text-[26px] lg:text-[34px] xl:text-[42px] pl-[4px] pr-[2px]" style={{ overflow: 'visible' }}>
                   <span className="green">THE GREEN</span>
                   <br className="hidden sm:inline" />
                   <span className="gauntlet"> GAUNTLET</span>
                 </h1>
-                <p
+              </div>
+              <p
                   className="font-crt text-white text-base sm:text-lg lg:text-xl mt-2 tight-px"
                   style={{ textShadow: '0 2px 0 rgba(0,0,0,0.35)' }}
                 >
                   BNP Paribas Fortis · DevOps Day · Live Standings
                 </p>
-              </div>
             </div>
           ) : (
             <div className="flex flex-col min-w-0">
