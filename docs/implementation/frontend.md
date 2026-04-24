@@ -1,26 +1,35 @@
 # Frontend
 
-Public React SPA. No auth UI. Polls `/api/leaderboard` every 30 s.
+React SPA served by the Fastify process at `/`. Polls `/api/leaderboard` every 30 s **and** subscribes to `/api/leaderboard/stream` (SSE) for near-instant refresh on admin writes. A cookie-auth `/admin` page lives in the same bundle.
 
 ## Stack
-- Vite + React + TypeScript.
-- No state library. Local `useState` + a polling hook.
+- Vite + React + TypeScript + Tailwind.
+- No state library. Local `useState` + polling/SSE hook + React context for theme and tab.
 
-## Files
+## Files (as shipped)
 - `index.html`, `src/main.tsx`, `src/App.tsx`.
 - `src/api/client.ts` — `fetchLeaderboard()` calling `/api/leaderboard`.
-- `src/hooks/useLeaderboard.ts` — 30 s poll, pause on `document.hidden`, exponential backoff on error.
-- `src/components/Leaderboard.tsx` — ranked team list (30 rows).
-- `src/components/TeamRow.tsx` — single row (rank, display name, points, `lastActivityAt`).
-- `src/styles.css` or Tailwind (decide).
+- `src/hooks/useLeaderboard.ts` — 30 s poll **plus** `EventSource('/api/leaderboard/stream')` subscription; pause on `document.hidden`; exponential backoff on error.
+- `src/hooks/useViewCategory.ts` — reads/writes `?view=total|il|mario|crokinole`.
+- `src/hooks/useArcade.ts` — theme (light / dark / mario) + sound toggle context.
+- `src/hooks/useFlashedTeams.ts`, `src/hooks/useRowAnimations.ts` — row-flash + FLIP reorder, suppressed on tab switch.
+- `src/utils/rankByCategory.ts` — pure re-ranker; tests in `rankByCategory.test.ts`.
+- `src/components/LeaderboardTabs.tsx` — Total / IL / Mario / Crokinole tab strip; standard + Mario pixel variants. `overflow-x-auto` + `snap-x` on mobile.
+- `src/components/Leaderboard.tsx` — ranked list; columns collapse to the active category outside Total.
+- `src/components/TeamRow.tsx` + `src/components/TeamRow.mario.tsx` — row + Mario pixel variant.
+- `src/components/Podium.tsx` + `src/components/Podium.steps.tsx` — podium with points-proportional height, reused per tab.
+- `src/components/HamburgerMenu.tsx` + `src/components/HamburgerMenu.icons.tsx` — menu with theme switch (light/dark/mario) and sound toggle (arcade only).
+- `src/components/UpdatedPill.tsx` — "Updated Xs ago" pill; arcade mode flips to `LIVE · HH:MM:SS` with a live dot.
+- `src/admin/` — `/admin` SPA route (login card + batch bonus table + active toggle + CSV link).
 
 ## Hook contract
 ```ts
-useLeaderboard(): { data, updatedAt, loading, error, refresh }
+useLeaderboard(): { data, updatedAt, loading, error, consecutiveErrors, refresh }
 ```
 - Initial fetch on mount.
-- `setInterval(30_000)`; clear on unmount.
+- `setInterval(30_000)`; clear on unmount. Backoff (up to 120 s) on consecutive errors.
 - `visibilitychange` → pause when hidden, refetch on visible.
+- `new EventSource('/api/leaderboard/stream')` — on `leaderboard-updated` event, trigger `load()` immediately. SSE failure falls back silently to the 30 s poll.
 
 ## UX
 - **Language: English only.** All copy hard-coded in EN. Set `<html lang="en">`. Use `Intl` formatters with explicit `"en-US"` locale (never default to browser locale) for dates, times, and numbers.
@@ -83,8 +92,18 @@ useLeaderboard(): { data, updatedAt, loading, error, refresh }
 - Sustained error (3 consecutive poll failures) → amber banner at top, keep last known standings visible.
 
 ### Refresh indicator
-- Top-right pill: "Updated 12s ago" bound to `updatedAt`. Updates in place every second.
-- Next-refresh subtle progress: 1px green progress bar under header counting down 30s poll interval. Resets on each fetch.
+- Top-right pill (`UpdatedPill.tsx`): "Updated Xs ago" bound to `updatedAt`; updates in place every second. In the Mario arcade theme the pill flips to `LIVE · HH:MM:SS` with a pulsing dot.
+- No countdown progress bar. SSE push means the next refresh is near-instant on admin writes; the 30 s poll is a fallback, not something to visualise.
+
+### Category tabs
+- `LeaderboardTabs.tsx` renders four tabs: `Total` / `Immersive Lab` / `Mario` / `Crokinole`. Standard variant and Mario pixel variant (consumes `useArcade()`).
+- Selection is bound to `?view=total|il|mario|crokinole` via `useViewCategory`.
+- `App.tsx` runs `rankByCategory(data.teams, category)` before passing to `Podium` and `Leaderboard`. Outside Total, the list collapses to rank / avatar / name / active-category points / last activity.
+- Row-flash animation is suppressed for the single render after a tab change (`useFlashedTeams`).
+
+### Theme (hamburger menu)
+- `HamburgerMenu.tsx` exposes three themes: **light**, **dark**, **Mario arcade**.
+- Mario mode swaps in pixel-art row/podium/tab variants, enables sound effects (toggleable from the same menu), and flips `UpdatedPill` into `LIVE` mode. Footer stays visible in every theme.
 
 ### Mock data for mockup phase
 - `src/mocks/leaderboard.live.json` — 30 teams, varied points, realistic `lastActivityAt` spread.

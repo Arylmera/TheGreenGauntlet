@@ -12,7 +12,6 @@ import { Podium } from './components/Podium';
 import { Leaderboard } from './components/Leaderboard';
 import { AdminPage } from './pages/Admin';
 import { rankByCategory } from './utils/rankByCategory';
-import type { Team } from './types';
 
 const SOUND_FILES = {
   coin: '/src/assets/audio/coin.ogg',
@@ -106,21 +105,22 @@ function PublicDashboard() {
   );
 }
 
+const SKELETON_PODIUM_SLOTS = ['podium-2nd', 'podium-1st', 'podium-3rd'] as const;
+const SKELETON_ROW_KEYS = Array.from({ length: 30 }, (_, i) => `skeleton-row-${i}`);
+
 function SkeletonBoard() {
-  const rows: Team[] = [];
   return (
-    <div className="animate-pulse">
+    <div className="animate-pulse" aria-label="Loading leaderboard" aria-busy="true">
       <div className="flex items-end justify-center gap-6 mb-10">
-        {[2, 1, 3].map((i) => (
-          <div key={i} className="bg-surface-white dark:bg-dark-card border border-line-light dark:border-dark-line rounded-comfy w-56 h-44" />
+        {SKELETON_PODIUM_SLOTS.map((slot) => (
+          <div key={slot} className="bg-surface-white dark:bg-dark-card border border-line-light dark:border-dark-line rounded-comfy w-56 h-44" />
         ))}
       </div>
       <div className="bg-surface-white dark:bg-dark-card rounded-comfy border border-line-light dark:border-dark-line">
-        {Array.from({ length: 30 }).map((_, i) => (
-          <div key={i} className="h-14 border-b border-line-light dark:border-dark-line last:border-b-0" />
+        {SKELETON_ROW_KEYS.map((key) => (
+          <div key={key} className="h-14 border-b border-line-light dark:border-dark-line last:border-b-0" />
         ))}
       </div>
-      {rows.length}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 # Dashboard Storage & Event Plan
 
-> Planning doc — **not yet executed**. Captures decisions for the 30-team, 8-hour live event.
+> **Status: shipped in v1.** All decisions below are in effect on `develop`. The one change since the original doc: `bonus.sqlite` also lives on the same named volume (added when the admin bonus system landed — see [admin-bonus-plan.md](admin-bonus-plan.md)), so the volume now carries three files, not two.
 
 ## Context
 Live event: 30 teams compete for 8 hours; any team member can open the leaderboard at any time. Data source is the Immersive Labs API (OAuth2). Repo is docs-only — no code yet. Confirmed scope:
@@ -64,7 +64,7 @@ So the env vars stay required, just with a narrower job: **phase + freeze**, not
 ## Files to create/modify
 
 **New code (first implementation — nothing exists yet):**
-- `server/index.ts` — Express app, static SPA serve, `/api/*` routes.
+- `server/index.ts` + `server/app.ts` — Fastify app, static SPA serve, `/api/*` routes.
 - `server/aggregate.ts` — minimal-path aggregation per revised [aggregation.md](aggregation.md).
 - `server/immersiveLabClient.ts` — OAuth + `walkAccounts` only (skip activities/attempts walkers for v1).
 - `server/snapshotStore.ts` — **new module.** Load/save `snapshot.json` + `token.json` atomically.

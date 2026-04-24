@@ -20,7 +20,7 @@ Server-side ImmersiveLab API wrapper. Holds secret, caches token, walks pages.
 
 ## Paginated walkers
 - `walkAccountList()` → `AsyncIterable<AccountListItem>`. Loops `GET /v2/accounts?page_token=...` until `meta.hasNextPage === false`. Do not change page size mid-walk.
-- `walkAccounts()` → `AsyncIterable<Account>`. For each list item, fetches `GET /v2/accounts/{uuid}` for the detailed record, then **filters** to only yield accounts whose `email` contains `@immersivelabs.pro` (scopes the leaderboard to event participants and excludes admin/staff accounts). `email` is consumed here as a filter predicate and not yielded downstream.
+- `walkAccounts()` → `AsyncIterable<Account>`. Collects the full list first, then fetches `GET /v2/accounts/{uuid}` for the detailed record **in parallel batches of 8** (`CONCURRENCY = 8`) to cut end-to-end aggregation latency. **Filters** to only yield accounts whose `email` contains `@immersivelabs.pro` (scopes the leaderboard to event participants and excludes admin/staff accounts). `email` is consumed here as a filter predicate and not yielded downstream.
 - Not used in v1: `/v2/activities`, `/v2/attempts`, `/v2/teams`, `/v2/teams/{id}/memberships`, deprecated `Account.teams`. See [dashboard-storage-plan.md](dashboard-storage-plan.md) §1 for why (fresh accounts make `Account.points` event-scoped).
 
 ## Types

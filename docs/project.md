@@ -20,10 +20,13 @@ A previous dashboard for a similar event exists at `C:\Users\guill\Documents\git
 
 That project is **per-account**, not per-team, so the team-aggregation layer is net-new here.
 
-## Goals
+## Goals (v1 — shipped)
 - Visualize event data from the Immersive Labs API.
 - **Per-team leaderboard** (30 rows — 1 fresh Immersive Labs account per team, ranked by points). See [implementation/dashboard-storage-plan.md](implementation/dashboard-storage-plan.md).
-- **On-site bonus points** — admin-only page to add/edit per-team bonus points from offline challenges during the event. Persisted in a separate SQLite file, merged into the leaderboard total. See [implementation/admin-bonus-plan.md](implementation/admin-bonus-plan.md) (draft).
+- **Category tabs** — `Total` / `Immersive Lab` / `Mario` / `Crokinole` on the public dashboard. Same podium + list, re-ranked per category; deep-linked via `?view=`. See [implementation/category-tabs-plan.md](implementation/category-tabs-plan.md).
+- **On-site bonus points** — admin-only page (`/admin`) adds/edits per-team deltas across three fixed categories (`mario`, `crokinole`, `helping`). Persisted in `bonus.sqlite` on the named Docker volume; merged into the leaderboard. Writes push via SSE so spectators update within ~100 ms. See [implementation/admin-bonus-plan.md](implementation/admin-bonus-plan.md).
+- **Live push** — `GET /api/leaderboard/stream` (SSE) emits `leaderboard-updated` whenever the snapshot cache is invalidated (admin bonus write, active toggle, IL refresh). 30 s poll remains as fallback.
+- **Arcade/Mario theme** — optional hamburger-menu toggle (light / dark / Mario) with pixel-art variants of the tabs, podium, team rows, and footer.
 - **Display language: English only.** All UI copy, labels, and formatted output render in EN regardless of browser locale or account settings.
 
 ## Caveats / known limits
@@ -31,7 +34,8 @@ That project is **per-account**, not per-team, so the team-aggregation layer is 
 - **No `Event` entity in the API.** Event bounds are supplied out-of-band via env vars. Since scoring no longer filters by `completedAt`, `EVENT_START_AT` / `EVENT_END_AT` drive **phase** (pre/live/ended) and **post-event freeze** only. See [data-flow.md](data-flow.md) and [implementation/aggregation.md](implementation/aggregation.md).
 
 ## Plans
-- [dashboard-plan.md](dashboard-plan.md) — leaderboard dashboard architecture (React + Vite, 30 s polling).
+- [dashboard-plan.md](dashboard-plan.md) — leaderboard dashboard architecture (React + Vite, Fastify proxy, 30 s poll + SSE push).
 - [data-flow.md](data-flow.md) — data flow, aggregation rules, security invariants.
-- [implementation/admin-bonus-plan.md](implementation/admin-bonus-plan.md) — admin page + bonus points persistence (draft).
-- [../TODO.md](../TODO.md) — open questions blocking build.
+- [implementation/README.md](implementation/README.md) — index of per-module build plans (all shipped in v1).
+- [implementation/admin-bonus-plan.md](implementation/admin-bonus-plan.md) — admin page + three-category bonus persistence.
+- [implementation/category-tabs-plan.md](implementation/category-tabs-plan.md) — per-category public tabs.

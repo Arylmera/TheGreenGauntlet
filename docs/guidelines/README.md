@@ -7,7 +7,7 @@ One file per concern. Keep entries to bullet points. If something stops being tr
 ## Index
 - [react.md](react.md) — React + Vite frontend
 - [typescript.md](typescript.md) — TS conventions shared by client + server
-- [node-api.md](node-api.md) — Express proxy, ImmersiveLab client
+- [node-api.md](node-api.md) — Fastify proxy, ImmersiveLab client
 - [styling.md](styling.md) — responsive + theming rules
 - [testing.md](testing.md) — what to test, what to skip
 - [security.md](security.md) — secrets, PII, public-surface rules

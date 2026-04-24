@@ -36,13 +36,13 @@ No token ever reaches the browser.
 ```
 
 ### Endpoints exposed by the proxy
-- `GET /api/leaderboard` — returns `{ teams: [{ uuid, displayName, il_points, bonus_points, total, lastActivityAt }], phase, eventWindow, updatedAt }`, sorted by `total` desc. Aggregation + sorting happens server-side.
-- `GET /api/leaderboard/stream` — SSE push for instant updates after admin bonus writes (see [implementation/admin-bonus-plan.md](implementation/admin-bonus-plan.md)).
+- `GET /api/leaderboard` — returns `{ teams: [{ uuid, displayName, immersivelab_points, il_points, mario_points, crokinole_points, total, lastActivityAt, rank }], phase, eventWindow, updatedAt }`, sorted by `total` desc. `il_points` is `Account.points + helping_points` (helping merged in silently); `immersivelab_points` is the raw pre-merge value used by the `Immersive Lab` tab. Aggregation + sorting happens server-side.
+- `GET /api/leaderboard/stream` — SSE. Emits `leaderboard-updated` on cache invalidation (admin write, active toggle, IL refresh). 25 s keepalive comment frames keep proxies from dropping the stream. See [implementation/admin-bonus-plan.md](implementation/admin-bonus-plan.md).
 - `GET /api/health` — proxy + token status + `eventWindow`.
-- `POST/GET/PATCH /api/admin/*` — authenticated admin surface for per-team bonus points + active toggle. See [implementation/admin-bonus-plan.md](implementation/admin-bonus-plan.md).
+- `POST/GET/PATCH /api/admin/*` — cookie-authenticated admin surface for per-team bonus deltas + active toggle + CSV export. See [implementation/admin-bonus-plan.md](implementation/admin-bonus-plan.md).
 
 ### Proxy internals
-- Single Node server (Express, aligned with prior project). Same process serves `dist/` (the Vite build output) as static assets. SPA fallback: unknown non-`/api` routes return `index.html`.
+- Single Node server on **Fastify** (chosen over Express for the faster static handler + schema support). Same process serves `dist/` (the Vite build output) as static assets. SPA fallback: unknown non-`/api` routes return `index.html`.
 - Token cache in memory + `token.json` on named volume.
 - Leaderboard cache in memory + `snapshot.json` on named volume (atomic tmp + rename). Loaded on boot → stale slot.
 - On each `/api/leaderboard` request:
@@ -58,19 +58,35 @@ No token ever reaches the browser.
 ```
 src/
   api/
-    client.ts          // fetch('/api/leaderboard'), no auth
+    client.ts              // fetch('/api/leaderboard'), no auth
   hooks/
-    useLeaderboard.ts  // polls every 30s, returns {teams, phase, eventWindow, updatedAt}
+    useLeaderboard.ts      // 30s poll + SSE subscription to /api/leaderboard/stream
+    useViewCategory.ts     // reads/writes ?view=total|il|mario|crokinole
+    useArcade.ts           // theme + sound context (light / dark / mario arcade)
+    useFlashedTeams.ts     // row-flash diff suppressed across tab switches
+    usePageVisible.ts      // pause polling when document.hidden
+  utils/
+    rankByCategory.ts      // pure re-rank helper per selected tab
   components/
-    Leaderboard.tsx    // ranked list of teams
-    TeamRow.tsx        // single row (rank, name, points, last activity)
+    LeaderboardTabs.tsx    // Total / IL / Mario / Crokinole (standard + Mario variants)
+    Leaderboard.tsx        // ranked list; columns collapse to the active category outside Total
+    TeamRow.tsx
+    TeamRow.mario.tsx      // pixel-art variant
+    Podium.tsx
+    Podium.steps.tsx       // pipe/panel scaling variant
+    HamburgerMenu.tsx
+    HamburgerMenu.icons.tsx
+    UpdatedPill.tsx        // "Updated Xs ago" / "LIVE · HH:MM:SS"
+  admin/                   // /admin page (cookie-auth), bonus deltas + active toggle + CSV
   App.tsx
   main.tsx
 ```
 
-- **`client.ts`**: just `fetch('/api/leaderboard')` — no headers, no token logic. Throws on non-2xx.
-- **`useLeaderboard`**: mount + every 30 s. `AbortController` on unmount. Pauses polling when `document.hidden`.
-- **`Leaderboard.tsx`**: ranked list of 30 team rows. Renders phase-aware states (`"pre"` → "Event starts at …"; `"ended"` → "Final standings" banner + frozen list).
+- **`client.ts`**: `fetch('/api/leaderboard')` — no headers, no token logic. Throws on non-2xx.
+- **`useLeaderboard`**: mount + every 30 s poll; additionally subscribes to `/api/leaderboard/stream` via `EventSource` and refetches on `leaderboard-updated`. `AbortController` on unmount. Pauses polling when `document.hidden`. Exponential backoff on error.
+- **Category tabs** via `LeaderboardTabs` + `useViewCategory`; current category is reflected in `?view=`. `rankByCategory(teams, category)` re-sorts with rank 1..N per tab.
+- **Arcade theme**: `useArcade` exposes `theme` (light / dark / mario) and `soundOn`. Mario mode swaps in pixel-art row + podium + tab variants and enables sound effects. Toggled from `HamburgerMenu`.
+- **Leaderboard.tsx** renders phase-aware states (`"pre"` → "Event starts at …"; `"ended"` → "Final standings" banner + frozen list).
 
 ## Responsive UX (mobile, laptop, big screen)
 The dashboard is public and will be viewed on phones, laptops, **and event-room TVs/projectors**. Design mobile-first, scale up, never horizontal-scroll.
@@ -113,18 +129,25 @@ Browser only talks to the proxy at same origin, so no ImmersiveLab-side CORS con
 - `PORT` (default `3000`)
 - `ADMIN_PASSWORD` + `ADMIN_SESSION_SECRET` (required for admin bonus page; see [implementation/admin-bonus-plan.md](implementation/admin-bonus-plan.md))
 
-## Files to create / modify
+## Files (as shipped)
 - `package.json`, `vite.config.ts`, `tsconfig.json`, `index.html`
-- `server/index.ts` — Express app, static serving, SPA fallback
-- `server/immersiveLab.ts` — token cache + paginated `/v2/accounts` walker (port of prior `immersiveLabsClient.js`, minus activities/attempts)
-- `server/auth.ts` — token exchange + refresh (port of prior `immersiveLabsAuth.js`)
-- `server/aggregate.ts` — aggregation + 10 s snapshot cache + phase + freeze
+- `server/index.ts` — entrypoint (wires env, client, aggregator, SQLite, events, Fastify app)
+- `server/app.ts` — Fastify app builder, static serving, SPA fallback, CORS-off same-origin
+- `server/routes/health.ts`, `server/routes/leaderboard.ts` — public routes + SSE stream
+- `server/routes/admin/auth.ts`, `server/routes/admin/bonus.ts` — cookie-auth + bonus CRUD + `PATCH /active` + CSV export
+- `server/immersiveLab.ts` — token cache + paginated `/v2/accounts` walker + detail fetch (concurrency 8) + `@immersivelabs.pro` filter
+- `server/aggregate.ts` — aggregation + 10 s snapshot cache + phase + freeze + `team_bonus` LEFT JOIN + three-category merge
+- `server/bonusDb.ts` — `better-sqlite3` wrapper (WAL) for `team_bonus`
+- `server/leaderboardEvents.ts` — `EventEmitter` fan-out for SSE
+- `server/adminSession.ts` — HMAC-signed cookie helpers
 - `server/snapshotStore.ts` — atomic load/save for `snapshot.json` + `token.json`
-- `src/api/client.ts`, `src/hooks/useLeaderboard.ts`
-- `src/components/{Leaderboard,TeamRow}.tsx`
+- `src/api/client.ts`, `src/hooks/useLeaderboard.ts`, `src/hooks/useViewCategory.ts`, `src/hooks/useArcade.ts`
+- `src/utils/rankByCategory.ts` (+ test)
+- `src/components/{Leaderboard,TeamRow,TeamRow.mario,Podium,Podium.steps,LeaderboardTabs,HamburgerMenu,HamburgerMenu.icons,UpdatedPill}.tsx`
+- `src/admin/` — `/admin` page (login card + bonus table + Apply batch + active toggle + CSV link)
 - `src/App.tsx`, `src/main.tsx`
-- `.env.example` with proxy vars
-- `README.md` with deployment + runbook
+- `.env.example` with proxy + admin vars
+- `Dockerfile` (multi-stage), `docker-compose.yml` (named volume `greengauntlet-data`)
 
 ## Verification
 1. `npm run dev` starts Vite + proxy (concurrently or via Vite middleware).
@@ -136,18 +159,26 @@ Browser only talks to the proxy at same origin, so no ImmersiveLab-side CORS con
 7. Open two browsers → identical standings within one poll cycle.
 8. Inspect browser devtools → **no ImmersiveLab domain in network tab, no secrets in JS bundle, no emails in response**.
 
-## Runtime layout
+## Runtime layout (as shipped)
 ```
-Dockerfile (multi-stage)
-  stage 1: node:alpine — npm ci, vite build → /dist
-  stage 2: node:alpine — copy server/ + /dist, npm ci --omit=dev
-  CMD ["node", "server/index.js"]  -> listens on :3000
-    GET /api/*      -> proxy handlers
-    GET /assets/*   -> static from dist/
-    GET /*          -> dist/index.html  (SPA fallback)
+Dockerfile (multi-stage, node:20-alpine)
+  builder: npm ci, vite build → /app/dist, tsc → /app/dist-server
+  deps:    npm ci --omit=dev
+  runtime: copy dist + dist-server + node_modules
+           VOLUME ["/app/data"]
+           ENTRYPOINT ["/sbin/tini", "--"]
+           CMD ["node", "dist-server/index.js"]   # listens on :3000
+    GET /api/*                 -> Fastify handlers (leaderboard, SSE, admin)
+    GET /assets/*              -> static from dist/
+    GET /*   non-/api          -> dist/index.html  (SPA fallback, serves /admin too)
+  HEALTHCHECK: wget /api/health every 30 s
 ```
 
-Dev: `npm run dev` runs Vite (5173) with a proxy rule forwarding `/api` to the Node server (3000) run in parallel (`concurrently` or `npm-run-all`).
+docker-compose: `greengauntlet-data:/app/data` named volume holds `snapshot.json`, `token.json`, `bonus.sqlite`. Port mapped `1337:3000`.
+
+Dev: `npm run dev` runs Vite (5173) with a proxy rule forwarding `/api` to the Fastify server (3000) run in parallel (`concurrently`).
 
 ## Open items
 Tracked in [../TODO.md](../TODO.md) — single source of truth for credentials, event rules, ops, UX, and points-source / persistence / admin-scope decisions.
+
+> **Status:** v1 shipped. The component and route lists above reflect `develop` at time of writing. See [implementation/](implementation/) for per-module detail.

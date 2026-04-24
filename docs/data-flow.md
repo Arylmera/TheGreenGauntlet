@@ -1,6 +1,6 @@
 # Data Flow: Account Points → Public Dashboard
 
-Site is public. Browser never sees an ImmersiveLab token. A backend proxy holds the secret, exchanges for an access token, walks `/v2/accounts`, aggregates a per-team leaderboard (1 Immersive Labs account per team), and returns a scrubbed snapshot.
+Site is public. Browser never sees an ImmersiveLab token. A backend (Fastify) proxy holds the secret, exchanges for an access token, walks `/v2/accounts`, filters participants by `@immersivelabs.pro` email, aggregates a per-team leaderboard (1 Immersive Labs account per team), and returns a scrubbed snapshot. The browser also keeps an SSE connection open to `/api/leaderboard/stream` for instant pushes after admin bonus writes.
 
 > **Note:** teams receive fresh Immersive Labs accounts at `EVENT_START_AT`, so `Account.points` is event-scoped by construction. No `/v2/attempts` walk, no `completedAt` filtering. See [implementation/aggregation.md](implementation/aggregation.md) and [implementation/dashboard-storage-plan.md](implementation/dashboard-storage-plan.md).
 >
@@ -13,10 +13,14 @@ sequenceDiagram
     participant U as Public viewer
     participant FE as React app
     participant PX as Proxy (/api)
+    participant DB as bonus.sqlite
     participant ImmersiveLab as api.immersivelabs.online
+    participant A as Admin
 
     U->>FE: open site (no login)
-    loop every 30s (pauses if document.hidden)
+    FE->>PX: GET /api/leaderboard/stream (SSE subscribe)
+    PX-->>FE: event: leaderboard-updated (initial snapshot)
+    loop every 30s (pauses if document.hidden; fallback when SSE drops)
         FE->>PX: GET /api/leaderboard
         alt phase == ended
             PX-->>FE: frozen last snapshot (no upstream call)
@@ -30,8 +34,13 @@ sequenceDiagram
             end
             PX->>ImmersiveLab: GET /v2/accounts?page_token=...
             ImmersiveLab-->>PX: page + nextPageToken
-            Note over PX,ImmersiveLab: repeat until null
-            PX->>PX: sort teams desc by points, tie-break by lastActivityAt, then name
+            Note over PX,ImmersiveLab: paginated list, then per-uuid detail fetch (concurrency 8)
+            PX->>PX: filter accounts by @immersivelabs.pro email
+            PX->>DB: INSERT OR IGNORE team_bonus row per team
+            DB-->>PX: mario/crokinole/helping + active
+            PX->>PX: merge il_points = Account.points + helping; total = il + mario + crokinole
+            PX->>PX: drop teams where active=0
+            PX->>PX: sort desc by total, tie-break by lastActivityAt, then displayName
             PX->>PX: scrub PII (drop email)
             PX->>PX: cache snapshot (memory + /app/data/snapshot.json)
             PX-->>FE: { teams[], phase, eventWindow, updatedAt }
@@ -42,6 +51,15 @@ sequenceDiagram
             PX->>ImmersiveLab: retry request
         end
     end
+
+    Note over A,PX: Admin flow — cookie-auth
+    A->>PX: POST /api/admin/bonus/batch (category deltas)
+    PX->>DB: transactional UPDATE per category
+    DB-->>PX: updated rows
+    PX->>PX: invalidate snapshot cache
+    PX-->>FE: SSE event: leaderboard-updated (on next /api/leaderboard)
+    FE->>PX: GET /api/leaderboard (triggered by SSE)
+    PX-->>FE: fresh snapshot (~100 ms end-to-end)
 ```
 
 ## Data shape
@@ -50,25 +68,35 @@ sequenceDiagram
 flowchart LR
     subgraph Browser
       UI[Leaderboard]
+      ADM[Admin page]
+      SSE_CLIENT[SSE EventSource]
     end
     subgraph Proxy
       CACHE[("10s snapshot cache")]
       DISK[("/app/data/snapshot.json")]
       TOK[("access token cache + token.json")]
-      AGG[Aggregate + sort]
+      BONUS[("/app/data/bonus.sqlite (WAL)")]
+      AGG[Aggregate + sort + email filter]
+      SSE_EMIT[leaderboard-updated emitter]
     end
     subgraph ImmersiveLab_API
-      A["GET /v2/accounts (paginated)"]
+      A["GET /v2/accounts (list + detail, concurrency 8)"]
     end
 
     UI -->|"GET /api/leaderboard"| CACHE
     CACHE -.miss.-> AGG
     AGG --> A
     TOK -.->|"Bearer"| A
+    AGG <-->|"team_bonus rows"| BONUS
     AGG -->|"ranked teams"| CACHE
     CACHE <--> DISK
     TOK <--> DISK
     CACHE -->|"scrubbed JSON"| UI
+    ADM -->|"POST /api/admin/bonus/batch (cookie-auth)"| BONUS
+    BONUS -.invalidate.-> CACHE
+    BONUS -.notify.-> SSE_EMIT
+    SSE_EMIT -->|"event: leaderboard-updated"| SSE_CLIENT
+    SSE_CLIENT -.triggers refetch.-> UI
 ```
 
 ## Auth bootstrap (server-side only)
