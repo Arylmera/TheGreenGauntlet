@@ -85,12 +85,12 @@ Unchanged from v1.
 
 Flow:
 
-1. `POST /api/admin/login` with `{ password }`. Compare with `crypto.timingSafeEqual` against `ADMIN_PASSWORD`. On success, set signed httpOnly cookie `gg_admin` (SameSite=Strict, Secure, 48 h TTL).
+1. `POST /api/admin/login` with `{ password }`. Compare with `crypto.timingSafeEqual` against `ADMIN_PASSWORD`. On success, set signed httpOnly cookie `gg_admin` (SameSite=Lax, Secure, 48 h TTL). Cookie is scoped per-host; with the multi-domain nginx setup (`arylmera` / `ccei` / `bnpparibasfortis`) admin logs in once per domain they use.
 2. All `/api/admin/*` routes require a valid cookie; otherwise 401.
 3. `POST /api/admin/logout` clears the cookie.
 4. Global rate-limit on login: 20 attempts / 5 min across all IPs (see Decisions log A).
 
-No CSRF token — SameSite=Strict + JSON-only mutating routes is enough for this threat model. See [../guidelines/SECURITY.md](../guidelines/SECURITY.md).
+No CSRF token — SameSite=Lax blocks cookie on cross-site POST, and mutating routes are JSON-only. Enough for this threat model. See [../guidelines/SECURITY.md](../guidelines/SECURITY.md).
 
 ## Endpoints
 

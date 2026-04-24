@@ -70,7 +70,7 @@ export function buildSessionCookie(
     `${COOKIE_NAME}=${token}`,
     'Path=/',
     'HttpOnly',
-    'SameSite=Strict',
+    'SameSite=Lax',
     `Max-Age=${maxAgeS}`,
   ];
   if (secure) parts.push('Secure');
@@ -82,7 +82,7 @@ export function buildClearCookie(secure: boolean): string {
     `${COOKIE_NAME}=`,
     'Path=/',
     'HttpOnly',
-    'SameSite=Strict',
+    'SameSite=Lax',
     'Max-Age=0',
   ];
   if (secure) parts.push('Secure');
