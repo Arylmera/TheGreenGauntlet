@@ -1,6 +1,6 @@
-# Node Proxy (Express)
+# Node Proxy (Fastify)
 
-- Single process serves `dist/` static + `/api/*`. No split services.
+- Single process (Fastify + `@fastify/static`) serves `dist/` static + `/api/*`. No split services.
 - Only expose explicit `/api/*` routes — never a generic passthrough.
 - Secrets only from env. Never logged, never sent to browser.
 - Token cache in memory + optional `token.json`. Refresh on 401 or T-minutes before expiry.

@@ -2,27 +2,73 @@
 
 Single container. One port. One deploy.
 
-## Dockerfile (multi-stage)
-```
-stage 1 — builder
-  FROM node:20-alpine
-  WORKDIR /app
-  COPY package*.json ./
-  RUN npm ci
-  COPY . .
-  RUN npm run build          # vite build → dist/, tsc → dist-server/*.js
+## Dockerfile (multi-stage, as shipped)
+Three stages — **builder**, **deps**, **runtime** — so the runtime image ships without build toolchains.
 
-stage 2 — runtime
-  FROM node:20-alpine
-  WORKDIR /app
-  COPY package*.json ./
-  RUN npm ci --omit=dev
-  COPY --from=builder /app/dist ./dist
-  COPY --from=builder /app/dist-server ./dist-server
-  RUN mkdir -p /app/data
-  VOLUME ["/app/data"]
-  EXPOSE 3000
-  CMD ["node", "dist-server/index.js"]
+```
+# builder — installs full deps, builds Vite + TSC
+FROM node:20-alpine AS builder
+WORKDIR /app
+RUN apk add --no-cache python3 make g++    # better-sqlite3 native build fallback
+COPY package*.json ./
+RUN npm ci
+COPY tsconfig*.json vite.config.ts postcss.config.js tailwind.config.ts index.html ./
+COPY src ./src
+COPY server ./server
+RUN npm run build                          # → /app/dist + /app/dist-server
+
+# deps — production node_modules only (keeps runtime image small)
+FROM node:20-alpine AS deps
+WORKDIR /app
+RUN apk add --no-cache python3 make g++
+COPY package*.json ./
+RUN npm ci --omit=dev && npm cache clean --force
+
+# runtime — non-root node user, tini as PID 1, healthcheck baked in
+FROM node:20-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=production DATA_DIR=/app/data PORT=3000
+RUN apk add --no-cache tini wget \
+ && mkdir -p /app/data \
+ && chown -R node:node /app
+COPY --chown=node:node package*.json ./
+COPY --chown=node:node --from=deps /app/node_modules ./node_modules
+COPY --chown=node:node --from=builder /app/dist ./dist
+COPY --chown=node:node --from=builder /app/dist-server ./dist-server
+USER node
+VOLUME ["/app/data"]
+EXPOSE 3000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -qO- http://127.0.0.1:3000/api/health || exit 1
+ENTRYPOINT ["/sbin/tini", "--"]
+CMD ["node", "dist-server/index.js"]
+```
+
+## docker-compose (as shipped)
+```yaml
+services:
+  gauntlet:
+    image: ghcr.io/arylmera/thegreengauntlet:latest
+    pull_policy: always
+    container_name: green-gauntlet
+    restart: unless-stopped
+    ports:
+      - "1337:3000"
+    env_file:
+      - .env
+    environment:
+      DATA_DIR: /app/data
+    volumes:
+      - greengauntlet-data:/app/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  greengauntlet-data:
 ```
 
 ## Volume

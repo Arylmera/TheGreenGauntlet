@@ -2,7 +2,7 @@
 
 On-site (offline) challenges and organiser-awarded points that the Immersive Labs API cannot know about. An authenticated admin page lets organisers add/edit per-team bonus points during the day; these are merged into the leaderboard alongside `Account.points`.
 
-Status: **v1 shipped on `develop` (commits `6b7bf2c`, `5624013`, `d7d15d9`, `bf437a7`). v1.1 redesign below — three bonus categories — in planning.**
+Status: **v1.1 shipped on `develop`.** Three bonus categories (`mario`, `crokinole`, `helping`), SQLite `team_bonus` store, batch commit, active toggle, CSV export, SSE push — all live in the current codebase (`server/bonusDb.ts`, `server/routes/admin/bonus.ts`, `server/aggregate.ts`, `src/admin/`). The section below is the original design doc and still describes the current behaviour; the "TBC" and "Build order" sections at the end are kept for historical context.
 
 ## Goals
 

@@ -42,15 +42,24 @@ export function Leaderboard({ teams, category = 'total', onCategoryChange }: Pro
     : 'px-2 sm:px-4 py-2 sm:py-3 border-b border-line-light dark:border-dark-line bg-surface-off dark:bg-dark-hover flex items-center justify-between gap-3 flex-wrap';
 
   const inputClasses = isMario
-    ? 'pixel-input w-full sm:w-64'
+    ? 'pixel-input w-full sm:w-56'
     : 'w-full sm:max-w-xs px-3 py-2 rounded-standard border border-line-light dark:border-dark-line bg-surface-white dark:bg-dark-card text-ink-black dark:text-dark-text text-sm placeholder:text-ink-mid dark:placeholder:text-dark-dim focus:outline-none focus:ring-2 focus:ring-brand-green';
 
   const theadRowClasses = isMario
     ? 'text-ink-black text-left text-[10px] sm:text-xs font-pixel tight-px'
     : 'bg-surface-off dark:bg-dark-hover text-ink-black dark:text-dark-text text-left text-xs sm:text-sm 2xl:text-base font-semibold';
 
+  const panelId = 'gg-leaderboard-panel';
+  const activeTabId = `gg-tab-${category}`;
+
   return (
-    <section aria-label="Leaderboard" className={sectionClasses}>
+    <section
+      id={panelId}
+      role="tabpanel"
+      aria-labelledby={onCategoryChange ? activeTabId : undefined}
+      aria-label={onCategoryChange ? undefined : 'Leaderboard'}
+      className={sectionClasses}
+    >
       <div className={toolbarClasses}>
         {isMario ? (
           <>
@@ -68,7 +77,7 @@ export function Leaderboard({ teams, category = 'total', onCategoryChange }: Pro
             </div>
             <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap ml-auto">
               {onCategoryChange && (
-                <LeaderboardTabs value={category} onChange={onCategoryChange} />
+                <LeaderboardTabs value={category} onChange={onCategoryChange} panelId={panelId} />
               )}
               <label className="relative block w-full sm:w-56">
                 <span className="sr-only">Search team</span>
@@ -85,7 +94,7 @@ export function Leaderboard({ teams, category = 'total', onCategoryChange }: Pro
         ) : (
           <>
             {onCategoryChange && (
-              <LeaderboardTabs value={category} onChange={onCategoryChange} />
+              <LeaderboardTabs value={category} onChange={onCategoryChange} panelId={panelId} />
             )}
             <label className="relative block sm:ml-auto w-full sm:w-auto">
               <span className="sr-only">Search team</span>

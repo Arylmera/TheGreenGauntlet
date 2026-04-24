@@ -19,6 +19,8 @@ Server-only. Never exposed to browser/Vite.
 | `ADMIN_SESSION_SECRET` | yes | — | HMAC key for signed admin session cookies. 32+ bytes random. Required. |
 | `ADMIN_SESSION_TTL_MS` | no | `172800000` | Admin cookie TTL (default 48 h). |
 | `BONUS_DB_PATH` | no | `${DATA_DIR}/bonus.sqlite` | SQLite file holding `team_bonus` (per-team `mario_points`, `crokinole_points`, `helping_points`, plus `active`). Override only for tests. |
+| `USE_STUB_UPSTREAM` | no | `false` | When `true`, the server uses a synthetic account source instead of calling ImmersiveLab. Useful for demo/dev; credentials below are not required in that mode. |
+| `NODE_ENV` | no | — | `production` flips the admin cookie to `Secure`. |
 
 ## Files
 - `.env.example` — documented, committed, no real values.

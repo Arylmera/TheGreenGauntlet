@@ -4,7 +4,7 @@ import { CATEGORY_SCORE_FIELD } from '../types';
 import { TeamAvatar } from './TeamAvatar';
 import { formatRelative } from '../utils/formatRelative';
 import { useArcade } from '../context/ArcadeContext';
-import { CoinIcon } from './mario/CoinIcon';
+import { MarioTeamRow } from './TeamRow.mario';
 
 type Props = {
   team: Team;
@@ -22,7 +22,6 @@ const ROW_CLASS = `
 const FLASH_CLASS = 'animate-flash dark:animate-flash-dark';
 const FLASH_MARIO = 'animate-flash-mario';
 
-// Light/dark cell classes
 const CELL = {
   RANK: 'px-2 sm:px-4 py-3 sm:py-4 2xl:py-5 w-12 sm:w-16 lg:w-20 text-center',
   AVATAR: 'hidden sm:table-cell px-2 py-3 sm:py-4 w-14',
@@ -34,29 +33,10 @@ const CELL = {
   ACTIVITY: 'hidden md:table-cell px-4 py-4 text-right text-ink-mid dark:text-dark-dim text-sm 2xl:text-base w-40',
 } as const;
 
-// Mario cell classes (VT323 for numbers, Press Start 2P for name/rank, larger sizes)
-const MARIO_CELL = {
-  RANK: 'px-2 sm:px-4 py-3 sm:py-4 w-12 sm:w-16 lg:w-20 text-center',
-  AVATAR: 'hidden sm:table-cell px-2 py-3 sm:py-4 w-14',
-  NAME: 'px-2 sm:px-4 py-3 sm:py-4 text-[color:var(--mario-ink)] font-pixel tight-px text-[11px] lg:text-[12px] truncate max-w-0',
-  IL: 'hidden lg:table-cell px-2 sm:px-4 py-3 sm:py-4 text-center num text-xl text-[color:var(--mario-ink-soft)] w-44',
-  MARIO: 'hidden lg:table-cell px-2 sm:px-4 py-3 sm:py-4 text-center num text-xl w-24',
-  CROKINOLE: 'hidden lg:table-cell px-2 sm:px-4 py-3 sm:py-4 text-center num text-xl w-32',
-  TOTAL: 'px-2 sm:px-4 py-3 sm:py-4 text-center num font-bold text-2xl lg:text-3xl text-[color:var(--mario-ink)] w-24 sm:w-32',
-  ACTIVITY: 'hidden md:table-cell px-4 py-4 text-right font-crt text-lg text-[color:var(--mario-ink-soft)] w-40',
-} as const;
-
 const NUMBER_TEXT = 'tabular font-bold text-base sm:text-lg 2xl:text-2xl inline-block';
 
 function prefersReducedMotion(): boolean {
   return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-}
-
-function rankTone(rank: number): '' | 'gold' | 'silver' | 'bronze' {
-  if (rank === 1) return 'gold';
-  if (rank === 2) return 'silver';
-  if (rank === 3) return 'bronze';
-  return '';
 }
 
 export function TeamRow({ team, flashed, category = 'total' }: Props) {
@@ -86,80 +66,32 @@ export function TeamRow({ team, flashed, category = 'total' }: Props) {
 
   const flashClass = flashed ? (isMario ? FLASH_MARIO : FLASH_CLASS) : '';
 
-  const rowBase = isMario
-    ? `scroll-row ${isTopThree ? 'top-rank' : ''}`
-    : ROW_CLASS;
-
   if (isMario) {
-    const tone = rankTone(team.rank);
     return (
-      <tr className={`${rowBase} ${flashClass}`} data-key={team.displayName}>
-        <td className={MARIO_CELL.RANK}>
-          <span className={`rank-badge ${tone} font-pixel text-[12px] tight-px ${bounce ? 'mario-bounce' : ''}`}>
-            {team.rank}
-          </span>
-        </td>
-        <td className={MARIO_CELL.AVATAR}>
-          <TeamAvatar size={36} />
-        </td>
-        <td className={MARIO_CELL.NAME}>
-          <span title={team.displayName}>{team.displayName}</span>
-        </td>
-        {isTotal ? (
-          <>
-            <td className={MARIO_CELL.IL}>{team.il_points.toLocaleString('en-US')}</td>
-            <td className={MARIO_CELL.MARIO}>
-              {team.mario_points > 0 ? (
-                <span className="delta">+{team.mario_points.toLocaleString('en-US')}</span>
-              ) : (
-                <span className="text-[color:var(--mario-ink-soft)] opacity-40">—</span>
-              )}
-            </td>
-            <td className={MARIO_CELL.CROKINOLE}>
-              {team.crokinole_points > 0 ? (
-                <span className="delta">+{team.crokinole_points.toLocaleString('en-US')}</span>
-              ) : (
-                <span className="text-[color:var(--mario-ink-soft)] opacity-40">—</span>
-              )}
-            </td>
-            <td className={MARIO_CELL.TOTAL}>
-              <span className="inline-flex items-center gap-2 justify-end">
-                {team.total.toLocaleString('en-US')}
-                <CoinIcon coinSize={isTopThree ? 'md' : 'sm'} spin={isTopThree} />
-              </span>
-            </td>
-          </>
-        ) : (
-          <td className={MARIO_CELL.TOTAL}>
-            <span className="inline-flex items-center gap-2 justify-end">
-              {categoryPoints.toLocaleString('en-US')}
-              <CoinIcon coinSize={isTopThree ? 'md' : 'sm'} spin={isTopThree} />
-            </span>
-          </td>
-        )}
-        <td className={MARIO_CELL.ACTIVITY}>{formatRelative(team.lastActivityAt)}</td>
-      </tr>
+      <MarioTeamRow
+        team={team}
+        category={category}
+        bounce={bounce}
+        flashClass={flashClass}
+        isTopThree={isTopThree}
+      />
     );
   }
 
   return (
-    <tr className={`${rowBase} ${flashClass}`} data-key={team.displayName}>
+    <tr className={`${ROW_CLASS} ${flashClass}`} data-key={team.displayName}>
       <td className={CELL.RANK}>
         <span className={`${NUMBER_TEXT} ${accent}`}>{team.rank}</span>
       </td>
-
       <td className={CELL.AVATAR}>
         <TeamAvatar size={36} />
       </td>
-
       <td className={CELL.NAME}>
         <span title={team.displayName}>{team.displayName}</span>
       </td>
-
       {isTotal ? (
         <>
           <td className={CELL.IL}>{team.il_points.toLocaleString('en-US')}</td>
-
           <td className={CELL.MARIO}>
             {team.mario_points > 0 ? (
               <span className="text-brand-green font-medium">
@@ -169,7 +101,6 @@ export function TeamRow({ team, flashed, category = 'total' }: Props) {
               <span>—</span>
             )}
           </td>
-
           <td className={CELL.CROKINOLE}>
             {team.crokinole_points > 0 ? (
               <span className="text-brand-green font-medium">
@@ -179,7 +110,6 @@ export function TeamRow({ team, flashed, category = 'total' }: Props) {
               <span>—</span>
             )}
           </td>
-
           <td className={CELL.TOTAL}>
             <span className={`${accent} inline-flex items-center gap-1 justify-end`}>
               {team.total.toLocaleString('en-US')}
@@ -193,10 +123,7 @@ export function TeamRow({ team, flashed, category = 'total' }: Props) {
           </span>
         </td>
       )}
-
-      <td className={CELL.ACTIVITY}>
-        {formatRelative(team.lastActivityAt)}
-      </td>
+      <td className={CELL.ACTIVITY}>{formatRelative(team.lastActivityAt)}</td>
     </tr>
   );
 }

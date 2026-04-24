@@ -1,5 +1,7 @@
 # Category Tabs — Implementation Plan
 
+> **Status: shipped in v1.** `src/components/LeaderboardTabs.tsx`, `src/utils/rankByCategory.ts` (+ test), `src/hooks/useViewCategory.ts`, and the `immersivelab_points` field on the public payload are all live on `develop`. Server `PublicTeam` retains both `immersivelab_points` (raw) and `il_points` (= raw + helping) per the decision below.
+
 ## Context
 
 The public dashboard currently shows a single leaderboard sorted by `team.total` (sum of IL-including-helping + mario + crokinole). We want three additional disciplines accessible as tabs *inside the same page* so spectators can see who is leading in each discipline individually, not just overall.

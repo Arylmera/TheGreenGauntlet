@@ -21,6 +21,11 @@ export type AppDeps = {
 };
 
 export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
+  // Same-origin deployment: the Node process serves both the React bundle and
+  // /api routes (see docs/data-flow.md). No CORS plugin is registered by design —
+  // Fastify emits no Access-Control-Allow-Origin header, so cross-origin reads
+  // are blocked by the browser. Introducing a cross-origin client would require
+  // registering @fastify/cors with an explicit allowlist.
   const app = Fastify({
     logger: { level: deps.env.LOG_LEVEL },
     disableRequestLogging: false,

@@ -20,7 +20,7 @@ export function UpdatedPill({ updatedAt }: Props) {
 
   if (isMario) {
     return (
-      <span className="pill-arcade" title={`Updated ${label}`}>
+      <span className="pill-arcade" title={`Updated ${label}`} role="status" aria-live="polite">
         <span className="live-dot" aria-hidden />
         <span>LIVE · {label}</span>
       </span>
@@ -28,7 +28,11 @@ export function UpdatedPill({ updatedAt }: Props) {
   }
 
   return (
-    <div className="inline-flex items-center gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-standard bg-surface-off dark:bg-dark-card border border-line-light dark:border-dark-line text-ink-charcoal dark:text-dark-mid text-xs sm:text-sm tabular">
+    <div
+      role="status"
+      aria-live="polite"
+      className="inline-flex items-center gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-standard bg-surface-off dark:bg-dark-card border border-line-light dark:border-dark-line text-ink-charcoal dark:text-dark-mid text-xs sm:text-sm tabular"
+    >
       <span className="w-2 h-2 rounded-full bg-brand-green" aria-hidden />
       <span className="hidden sm:inline">Updated&nbsp;</span>
       <span>{label}</span>
