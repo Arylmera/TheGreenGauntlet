@@ -99,6 +99,10 @@ export function AdminTeamsTable({ onLoggedOut, theme, onSetTheme }: Props) {
     onLoggedOut();
   };
 
+  const [query, setQuery] = useState('');
+  const q = query.trim().toLowerCase();
+  const visibleTeams = q ? teams.filter((t) => t.teamName.toLowerCase().includes(q)) : teams;
+
   const pendingCount = countPending(deltas);
 
   return (
@@ -168,7 +172,20 @@ export function AdminTeamsTable({ onLoggedOut, theme, onSetTheme }: Props) {
       </header>
 
       <main className="relative z-10 max-w-screen-2xl mx-auto w-full px-3 sm:px-6 py-4 sm:py-6">
-        <ApplyBar busy={busy} count={pendingCount} onApply={() => void onApply()} isMario={isMario} />
+        <div className="my-3 flex items-center justify-between gap-3 flex-wrap">
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={isMario ? 'SEARCH TEAM…' : 'Search team…'}
+            className={
+              isMario
+                ? 'pixel-input w-full sm:w-56'
+                : 'w-full sm:max-w-xs px-3 py-2 rounded-standard border border-line-light dark:border-dark-line bg-surface-white dark:bg-dark-card text-ink-black dark:text-dark-text text-sm placeholder:text-ink-mid dark:placeholder:text-dark-dim focus:outline-none focus:ring-2 focus:ring-brand-green'
+            }
+          />
+          <ApplyBar busy={busy} count={pendingCount} onApply={() => void onApply()} isMario={isMario} />
+        </div>
 
         {error && (
           <div
@@ -236,7 +253,7 @@ export function AdminTeamsTable({ onLoggedOut, theme, onSetTheme }: Props) {
               </tr>
             </thead>
             <tbody>
-              {teams.map((t) => (
+              {visibleTeams.map((t) => (
                 <AdminRow
                   key={t.teamId}
                   team={t}
@@ -246,7 +263,7 @@ export function AdminTeamsTable({ onLoggedOut, theme, onSetTheme }: Props) {
                   isMario={isMario}
                 />
               ))}
-              {teams.length === 0 && (
+              {visibleTeams.length === 0 && (
                 <tr>
                   <td
                     colSpan={10}
@@ -256,9 +273,13 @@ export function AdminTeamsTable({ onLoggedOut, theme, onSetTheme }: Props) {
                         : 'px-4 py-6 text-center text-ink-mid dark:text-dark-dim text-sm'
                     }
                   >
-                    {isMario
-                      ? 'NO TEAMS YET — WAITING FOR AGGREGATOR…'
-                      : 'No teams yet — waiting for first aggregator tick.'}
+                    {q
+                      ? isMario
+                        ? 'NO MATCH'
+                        : 'No teams match your search.'
+                      : isMario
+                        ? 'NO TEAMS YET — WAITING FOR AGGREGATOR…'
+                        : 'No teams yet — waiting for first aggregator tick.'}
                   </td>
                 </tr>
               )}
