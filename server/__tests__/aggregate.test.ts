@@ -163,6 +163,21 @@ describe('LeaderboardAggregator', () => {
     expect(onDisk.payload.teams[0].uuid).toBe('x');
   });
 
+  it('public payload exposes immersivelab_points (raw IL) and scrubs helping_points', async () => {
+    const env = baseEnv({ DATA_DIR: tmp });
+    const agg = new LeaderboardAggregator({
+      env,
+      client: makeClient([{ uuid: 'x', displayName: 'X', points: 42, lastActivityAt: null }]),
+      now: () => Date.parse('2026-05-01T12:00:00Z'),
+    });
+    await agg.init();
+    const payload = await agg.getLeaderboard();
+    const team = payload.teams[0] as unknown as Record<string, unknown>;
+    expect(team.immersivelab_points).toBe(42);
+    expect(team.il_points).toBe(42);
+    expect(team).not.toHaveProperty('helping_points');
+  });
+
   it('single-flight: concurrent calls trigger one rebuild', async () => {
     const walk = vi.fn(async function* () {
       yield { uuid: 'x', displayName: 'X', points: 1, lastActivityAt: null } satisfies Account;

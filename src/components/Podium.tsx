@@ -1,4 +1,5 @@
-import type { Team } from '../types';
+import type { Category, Team } from '../types';
+import { CATEGORY_SCORE_FIELD } from '../types';
 import { formatRelative } from '../utils/formatRelative';
 import podiumGold from '../assets/podium-gold.png';
 import podiumSilver from '../assets/podium-silver.png';
@@ -9,7 +10,12 @@ import { CoinIcon } from './mario/CoinIcon';
 
 type Props = {
   top: Team[];
+  category?: Category;
 };
+
+function pointsOf(team: Team, category: Category): number {
+  return team[CATEGORY_SCORE_FIELD[category]] as number;
+}
 
 type Rank = 1 | 2 | 3;
 
@@ -76,16 +82,19 @@ function pipeRatios(pts1: number, pts2: number, pts3: number) {
   return { 1: ratio1, 2: ratio2, 3: ratio3 } as Record<Rank, number>;
 }
 
-export function Podium({ top }: Props) {
+export function Podium({ top, category = 'total' }: Props) {
   const byRank = new Map(top.map((t) => [t.rank as Rank, t]));
-  const topPoints = byRank.get(1)?.total ?? 0;
+  const first = byRank.get(1);
+  const second = byRank.get(2);
+  const third = byRank.get(3);
+  const topPoints = first ? pointsOf(first, category) : 0;
   const { theme } = useArcade();
   const isMario = theme === 'mario';
 
   const ratios = pipeRatios(
-    byRank.get(1)?.total ?? 0,
-    byRank.get(2)?.total ?? 0,
-    byRank.get(3)?.total ?? 0,
+    first ? pointsOf(first, category) : 0,
+    second ? pointsOf(second, category) : 0,
+    third ? pointsOf(third, category) : 0,
   );
 
   if (isMario) {
@@ -104,6 +113,7 @@ export function Podium({ top }: Props) {
                 rank={rank}
                 team={team}
                 ratio={ratios[rank]}
+                points={pointsOf(team, category)}
               />
             );
           })}
@@ -119,17 +129,18 @@ export function Podium({ top }: Props) {
         {PODIUM_ORDER.map((rank) => {
           const team = byRank.get(rank);
           if (!team) return null;
-          const scale = computeScale(rank, topPoints, team.total);
-          return <PanelStep key={rank} rank={rank} team={team} scale={scale} />;
+          const points = pointsOf(team, category);
+          const scale = computeScale(rank, topPoints, points);
+          return <PanelStep key={rank} rank={rank} team={team} scale={scale} points={points} />;
         })}
       </div>
     </section>
   );
 }
 
-type PipeStepProps = { rank: Rank; team: Team; ratio: number };
+type PipeStepProps = { rank: Rank; team: Team; ratio: number; points: number };
 
-function PipeStep({ rank, team, ratio }: PipeStepProps) {
+function PipeStep({ rank, team, ratio, points }: PipeStepProps) {
   const w = PIPE_WIDTH_PX;
   const h = Math.round(PIPE_HEIGHT_BASE_PX * ratio);
   const isFirst = rank === 1;
@@ -165,7 +176,7 @@ function PipeStep({ rank, team, ratio }: PipeStepProps) {
               className="num font-bold text-[color:var(--mario-ink)]"
               style={{ fontSize: 'clamp(22px, 3vw, 36px)', lineHeight: 1 }}
             >
-              {team.total.toLocaleString('en-US')}
+              {points.toLocaleString('en-US')}
             </span>
             <CoinIcon coinSize={isFirst ? 'md' : 'sm'} spin />
           </p>
@@ -178,9 +189,9 @@ function PipeStep({ rank, team, ratio }: PipeStepProps) {
   );
 }
 
-type PanelStepProps = { rank: Rank; team: Team; scale: number };
+type PanelStepProps = { rank: Rank; team: Team; scale: number; points: number };
 
-function PanelStep({ rank, team, scale }: PanelStepProps) {
+function PanelStep({ rank, team, scale, points }: PanelStepProps) {
   return (
     <article
       style={{ ['--podium-scale' as string]: scale }}
@@ -210,7 +221,7 @@ function PanelStep({ rank, team, scale }: PanelStepProps) {
         {team.displayName}
       </h2>
       <p className={`mt-1 sm:mt-2 text-brand-green font-bold tabular ${POINTS_TEXT[rank]}`}>
-        {team.total.toLocaleString('en-US')}
+        {points.toLocaleString('en-US')}
       </p>
       <p className="hidden sm:block mt-0.5 sm:mt-1 text-ink-mid dark:text-dark-dim text-[10px] sm:text-xs 2xl:text-sm">
         {formatRelative(team.lastActivityAt)}

@@ -3,6 +3,7 @@ import { useLeaderboard } from './hooks/useLeaderboard';
 import { useTheme } from './hooks/useTheme';
 import { useSoundPref } from './hooks/useSoundPref';
 import { useSound } from './hooks/useSound';
+import { useViewCategory } from './hooks/useViewCategory';
 import { ArcadeProvider } from './context/ArcadeContext';
 import { SkyStage } from './components/mario/Clouds';
 import { Header } from './components/Header';
@@ -10,6 +11,7 @@ import { Footer } from './components/Footer';
 import { Podium } from './components/Podium';
 import { Leaderboard } from './components/Leaderboard';
 import { AdminPage } from './pages/Admin';
+import { rankByCategory } from './utils/rankByCategory';
 import type { Team } from './types';
 
 const SOUND_FILES = {
@@ -29,6 +31,12 @@ function PublicDashboard() {
   const { theme, set: setTheme } = useTheme();
   const { enabled: soundEnabled, toggle: toggleSound } = useSoundPref();
   const play = useSound({ sounds: SOUND_FILES, enabled: soundEnabled && theme === 'mario' });
+  const [category, setCategory] = useViewCategory();
+
+  const viewTeams = useMemo(
+    () => (data ? rankByCategory(data.teams, category) : []),
+    [data, category],
+  );
 
   const arcadeValue = useMemo(
     () => ({
@@ -80,9 +88,13 @@ function PublicDashboard() {
 
           {data && data.phase !== 'pre' && data.teams.length > 0 && (
             <>
-              <Podium top={data.teams.slice(0, 3)} />
+              <Podium top={viewTeams.slice(0, 3)} category={category} />
               <div className="pt-6 pb-10 flex-1">
-                <Leaderboard teams={data.teams} />
+                <Leaderboard
+                  teams={viewTeams}
+                  category={category}
+                  onCategoryChange={setCategory}
+                />
               </div>
             </>
           )}

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
-import type { Team } from '../types';
+import type { Category, Team } from '../types';
 import { TeamRow } from './TeamRow';
+import { LeaderboardTabs } from './LeaderboardTabs';
 import { useArcade } from '../context/ArcadeContext';
 import { CoinIcon } from './mario/CoinIcon';
 import { useRowAnimations } from '../hooks/useRowAnimations';
@@ -8,9 +9,17 @@ import { useFlashedTeams } from '../hooks/useFlashedTeams';
 
 type Props = {
   teams: Team[];
+  category?: Category;
+  onCategoryChange?: (next: Category) => void;
 };
 
-export function Leaderboard({ teams }: Props) {
+const CATEGORY_LABELS: Record<Exclude<Category, 'total'>, { std: string; mario: string }> = {
+  immersivelab_points: { std: 'Immersive Lab', mario: 'IMMERSIVE LAB' },
+  mario_points: { std: 'Mario', mario: 'MARIO' },
+  crokinole_points: { std: 'Crokinole', mario: 'CROKINOLE' },
+};
+
+export function Leaderboard({ teams, category = 'total', onCategoryChange }: Props) {
   const tbodyRef = useRef<HTMLTableSectionElement | null>(null);
   const [query, setQuery] = useState('');
   const { theme } = useArcade();
@@ -22,7 +31,7 @@ export function Leaderboard({ teams }: Props) {
     : teams;
 
   useRowAnimations(tbodyRef, teams);
-  const flashed = useFlashedTeams(teams);
+  const flashed = useFlashedTeams(teams, category);
 
   const sectionClasses = isMario
     ? 'scroll-panel overflow-hidden'
@@ -30,7 +39,7 @@ export function Leaderboard({ teams }: Props) {
 
   const toolbarClasses = isMario
     ? 'scroll-header px-4 pt-14 pb-3 flex items-center justify-between gap-4 flex-wrap'
-    : 'px-2 sm:px-4 py-2 sm:py-3 border-b border-line-light dark:border-dark-line bg-surface-off dark:bg-dark-hover';
+    : 'px-2 sm:px-4 py-2 sm:py-3 border-b border-line-light dark:border-dark-line bg-surface-off dark:bg-dark-hover flex items-center justify-between gap-3 flex-wrap';
 
   const inputClasses = isMario
     ? 'pixel-input w-full sm:w-64'
@@ -45,7 +54,7 @@ export function Leaderboard({ teams }: Props) {
       <div className={toolbarClasses}>
         {isMario ? (
           <>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 shrink-0">
               <CoinIcon coinSize="md" spin />
               <h2
                 className="font-pixel text-white text-[12px] sm:text-[14px] lg:text-[16px] tight-px"
@@ -57,7 +66,28 @@ export function Leaderboard({ teams }: Props) {
                 LEADERBOARD · WORLD 1-1
               </h2>
             </div>
-            <label className="relative block w-full sm:w-64">
+            <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap ml-auto">
+              {onCategoryChange && (
+                <LeaderboardTabs value={category} onChange={onCategoryChange} />
+              )}
+              <label className="relative block w-full sm:w-56">
+                <span className="sr-only">Search team</span>
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search team…"
+                  className={inputClasses}
+                />
+              </label>
+            </div>
+          </>
+        ) : (
+          <>
+            {onCategoryChange && (
+              <LeaderboardTabs value={category} onChange={onCategoryChange} />
+            )}
+            <label className="relative block sm:ml-auto w-full sm:w-auto">
               <span className="sr-only">Search team</span>
               <input
                 type="search"
@@ -68,17 +98,6 @@ export function Leaderboard({ teams }: Props) {
               />
             </label>
           </>
-        ) : (
-          <label className="relative block">
-            <span className="sr-only">Search team</span>
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search team…"
-              className={inputClasses}
-            />
-          </label>
         )}
       </div>
       <table className="w-full table-fixed">
@@ -94,18 +113,26 @@ export function Leaderboard({ teams }: Props) {
             <th className="px-2 sm:px-4 py-2 sm:py-3 w-12 sm:w-16 lg:w-20 text-center">#</th>
             <th className="hidden sm:table-cell px-2 py-3 w-14" aria-label="Team avatar" />
             <th className="px-2 sm:px-4 py-2 sm:py-3">{isMario ? 'TEAM' : 'Team'}</th>
-            <th className="hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-3 text-center w-44 whitespace-nowrap">
-              Immersive Lab
-            </th>
-            <th className="hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-3 text-center w-24 whitespace-nowrap">
-              {isMario ? 'MARIO' : 'Mario'}
-            </th>
-            <th className="hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-3 text-center w-32 whitespace-nowrap">
-              {isMario ? 'CROKINOLE' : 'Crokinole'}
-            </th>
-            <th className="px-2 sm:px-4 py-2 sm:py-3 text-center w-24 sm:w-32">
-              {isMario ? 'TOTAL' : 'Total'}
-            </th>
+            {category === 'total' ? (
+              <>
+                <th className="hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-3 text-center w-44 whitespace-nowrap">
+                  Immersive Lab
+                </th>
+                <th className="hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-3 text-center w-24 whitespace-nowrap">
+                  {isMario ? 'MARIO' : 'Mario'}
+                </th>
+                <th className="hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-3 text-center w-32 whitespace-nowrap">
+                  {isMario ? 'CROKINOLE' : 'Crokinole'}
+                </th>
+                <th className="px-2 sm:px-4 py-2 sm:py-3 text-center w-24 sm:w-32">
+                  {isMario ? 'TOTAL' : 'Total'}
+                </th>
+              </>
+            ) : (
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-center w-28 sm:w-40 whitespace-nowrap">
+                {isMario ? CATEGORY_LABELS[category].mario : CATEGORY_LABELS[category].std}
+              </th>
+            )}
             <th className="hidden md:table-cell px-4 py-3 text-right w-40">
               {isMario ? 'LAST ACT.' : 'Last activity'}
             </th>
@@ -113,12 +140,12 @@ export function Leaderboard({ teams }: Props) {
         </thead>
         <tbody ref={tbodyRef}>
           {visibleTeams.map((t) => (
-            <TeamRow key={t.displayName} team={t} flashed={flashed.has(t.displayName)} />
+            <TeamRow key={t.displayName} team={t} flashed={flashed.has(t.displayName)} category={category} />
           ))}
           {visibleTeams.length === 0 && (
             <tr>
               <td
-                colSpan={8}
+                colSpan={category === 'total' ? 8 : 5}
                 className={
                   isMario
                     ? 'px-4 py-6 text-center font-crt text-lg text-[color:var(--mario-ink-soft)]'
