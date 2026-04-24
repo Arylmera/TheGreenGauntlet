@@ -1,7 +1,7 @@
-import logo from '../assets/logo.png';
-import { UpdatedPill } from './UpdatedPill';
-import { HamburgerMenu } from './HamburgerMenu';
-import type { Theme } from '../hooks/useTheme';
+import logo from '../../assets/logo.png';
+import { UpdatedPill } from '../UpdatedPill';
+import { HamburgerMenu } from '../menu/HamburgerMenu';
+import type { Theme } from '../../hooks/useTheme';
 
 type Props = {
   updatedAt: string | null;

@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events';
-import type { LeaderboardPayload } from './aggregate.js';
+import type { LeaderboardPayload } from './types.js';
 
 export class LeaderboardEvents {
   private readonly emitter = new EventEmitter();

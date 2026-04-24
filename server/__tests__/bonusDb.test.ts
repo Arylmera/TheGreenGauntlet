@@ -2,7 +2,8 @@ import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { BonusDb, BonusDbError } from '../bonusDb.js';
+import { BonusDb } from '../bonus/db.js';
+import { BonusDbError } from '../bonus/types.js';
 
 describe('BonusDb', () => {
   let tmp: string;

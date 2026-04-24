@@ -5,10 +5,9 @@ import {
   buildClearCookie,
   buildSessionCookie,
   parseCookies,
-  signSession,
-  timingSafeEqualStrings,
-  verifySession,
-} from '../../adminSession.js';
+} from '../../auth/sessionCookie.js';
+import { signSession, verifySession } from '../../auth/sessionToken.js';
+import { timingSafeEqualStrings } from '../../auth/crypto.js';
 
 type LoginLimiter = {
   check: (now: number) => boolean;

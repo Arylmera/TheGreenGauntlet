@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { Env } from '../env.js';
-import { phaseFor, type LeaderboardAggregator } from '../aggregate.js';
+import { phaseFor } from '../leaderboard/ranking.js';
+import type { LeaderboardAggregator } from '../leaderboard/aggregator.js';
 
 export function registerHealthRoute(
   app: FastifyInstance,

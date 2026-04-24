@@ -1,8 +1,8 @@
-import type { Category, Team } from '../types';
-import { CATEGORY_SCORE_FIELD } from '../types';
+import type { Category, Team } from '../../types';
+import { CATEGORY_SCORE_FIELD } from '../../types';
 import { TeamAvatar } from './TeamAvatar';
-import { formatRelative } from '../utils/formatRelative';
-import { CoinIcon } from './mario/CoinIcon';
+import { formatRelative } from '../../utils/formatRelative';
+import { CoinIcon } from '../mario/CoinIcon';
 
 const MARIO_CELL = {
   RANK: 'px-2 sm:px-4 py-3 sm:py-4 w-12 sm:w-16 lg:w-20 text-center',

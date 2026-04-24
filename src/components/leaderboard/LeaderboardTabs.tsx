@@ -1,6 +1,6 @@
 import { useRef } from 'react';
-import type { Category } from '../types';
-import { useArcade } from '../context/ArcadeContext';
+import type { Category } from '../../types';
+import { useArcade } from '../../context/ArcadeContext';
 
 type Props = {
   value: Category;

@@ -1,55 +1,15 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import Database, { type Database as Db } from 'better-sqlite3';
-
-export const BONUS_CATEGORIES = ['mario', 'crokinole', 'helping'] as const;
-export type BonusCategory = (typeof BONUS_CATEGORIES)[number];
-
-const CATEGORY_COLUMNS: Record<BonusCategory, string> = {
-  mario: 'mario_points',
-  crokinole: 'crokinole_points',
-  helping: 'helping_points',
-};
-
-export function isBonusCategory(value: unknown): value is BonusCategory {
-  return typeof value === 'string' && (BONUS_CATEGORIES as readonly string[]).includes(value);
-}
-
-export type TeamBonusRow = {
-  team_id: string;
-  team_name: string;
-  mario_points: number;
-  crokinole_points: number;
-  helping_points: number;
-  active: number;
-  updated_at: string;
-  updated_by: string | null;
-};
-
-export type BonusDelta = { teamId: string; category: BonusCategory; delta: number };
-
-export type TeamSeed = { teamId: string; teamName: string };
-
-export class BonusDbError extends Error {
-  constructor(
-    message: string,
-    readonly code: 'NEGATIVE_TOTAL' | 'UNKNOWN_TEAM' | 'INVALID',
-  ) {
-    super(message);
-    this.name = 'BonusDbError';
-  }
-}
-
-const CREATE_TABLE_SQL = `CREATE TABLE IF NOT EXISTS team_bonus (
-  team_id          TEXT PRIMARY KEY,
-  team_name        TEXT NOT NULL,
-  mario_points     INTEGER NOT NULL DEFAULT 0,
-  crokinole_points INTEGER NOT NULL DEFAULT 0,
-  helping_points   INTEGER NOT NULL DEFAULT 0,
-  active           INTEGER NOT NULL DEFAULT 1,
-  updated_at       TEXT NOT NULL,
-  updated_by       TEXT
-)`;
+import {
+  BonusDbError,
+  CATEGORY_COLUMNS,
+  isBonusCategory,
+  type BonusDelta,
+  type TeamBonusRow,
+  type TeamSeed,
+} from './types.js';
+import { migrate } from './schema.js';
 
 export class BonusDb {
   private readonly db: Db;
@@ -61,27 +21,7 @@ export class BonusDb {
     this.db.pragma('journal_mode = WAL');
     this.db.pragma('foreign_keys = ON');
     this.now = deps.now ?? (() => new Date().toISOString());
-    this.migrate();
-  }
-
-  private migrate(): void {
-    // v1 schema had a single `points` column. v1.1 replaces it with three
-    // per-category columns. No prior event has been run on v1, so the safe
-    // migration is to drop any legacy table and recreate fresh.
-    const existing = this.db
-      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='team_bonus'")
-      .get() as { name: string } | undefined;
-    if (existing) {
-      const columns = this.db.prepare('PRAGMA table_info(team_bonus)').all() as {
-        name: string;
-      }[];
-      const names = new Set(columns.map((c) => c.name));
-      const hasLegacy = names.has('points') && !names.has('mario_points');
-      if (hasLegacy) {
-        this.db.exec('DROP TABLE team_bonus');
-      }
-    }
-    this.db.exec(CREATE_TABLE_SQL);
+    migrate(this.db);
   }
 
   close(): void {
@@ -108,7 +48,7 @@ export class BonusDb {
     tx(seeds);
   }
 
-  listTeamsWithBonus(): TeamBonusRow[] {
+  getAll(): TeamBonusRow[] {
     return this.db
       .prepare(
         `SELECT team_id, team_name, mario_points, crokinole_points, helping_points,
@@ -117,10 +57,6 @@ export class BonusDb {
          ORDER BY team_name`,
       )
       .all() as TeamBonusRow[];
-  }
-
-  getAll(): TeamBonusRow[] {
-    return this.listTeamsWithBonus();
   }
 
   /**
@@ -146,7 +82,7 @@ export class BonusDb {
           throw new BonusDbError(`invalid category: ${String(d.category)}`, 'INVALID');
         }
         const column = CATEGORY_COLUMNS[d.category];
-        const row = (touched.get(d.teamId) ?? (getRow.get(d.teamId) as TeamBonusRow | undefined));
+        const row = touched.get(d.teamId) ?? (getRow.get(d.teamId) as TeamBonusRow | undefined);
         if (!row) throw new BonusDbError(`unknown team: ${d.teamId}`, 'UNKNOWN_TEAM');
         const delta = Number.isInteger(d.delta) ? d.delta : NaN;
         if (!Number.isFinite(delta)) {

@@ -3,8 +3,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../app.js';
-import { LeaderboardAggregator } from '../aggregate.js';
-import type { Account, ImmersiveLabClient } from '../immersiveLab.js';
+import { LeaderboardAggregator } from '../leaderboard/aggregator.js';
+import type { Account } from '../immersivelab/schemas.js';
+import type { ImmersiveLabClient } from '../immersivelab/client.js';
 import type { Env } from '../env.js';
 
 const env = (dir: string, overrides: Partial<Env> = {}): Env => ({

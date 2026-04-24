@@ -3,10 +3,11 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../app.js';
-import { LeaderboardAggregator } from '../aggregate.js';
-import { BonusDb } from '../bonusDb.js';
-import { LeaderboardEvents } from '../leaderboardEvents.js';
-import type { Account, ImmersiveLabClient } from '../immersiveLab.js';
+import { LeaderboardAggregator } from '../leaderboard/aggregator.js';
+import { BonusDb } from '../bonus/db.js';
+import { LeaderboardEvents } from '../leaderboard/events.js';
+import type { Account } from '../immersivelab/schemas.js';
+import type { ImmersiveLabClient } from '../immersivelab/client.js';
 import type { Env } from '../env.js';
 
 const PASSWORD = 'super-secret';

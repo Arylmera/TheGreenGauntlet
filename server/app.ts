@@ -3,13 +3,15 @@ import { fileURLToPath } from 'node:url';
 import Fastify, { type FastifyInstance } from 'fastify';
 import fastifyStatic from '@fastify/static';
 import type { Env } from './env.js';
-import { LeaderboardAggregator, type AccountSource } from './aggregate.js';
+import { LeaderboardAggregator } from './leaderboard/aggregator.js';
+import type { AccountSource } from './leaderboard/types.js';
+import type { LeaderboardEvents } from './leaderboard/events.js';
+import type { BonusDb } from './bonus/db.js';
 import { registerHealthRoute } from './routes/health.js';
 import { registerLeaderboardRoute } from './routes/leaderboard.js';
 import { registerAdminAuthRoutes } from './routes/admin/auth.js';
 import { registerAdminBonusRoutes } from './routes/admin/bonus.js';
-import type { BonusDb } from './bonusDb.js';
-import type { LeaderboardEvents } from './leaderboardEvents.js';
+import { registerAdminExportRoutes } from './routes/admin/exportCsv.js';
 
 export type AppDeps = {
   env: Env;
@@ -41,6 +43,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
       aggregator: deps.aggregator,
     });
   }
+  registerAdminExportRoutes(app, { env: deps.env, aggregator: deps.aggregator });
 
   app.setNotFoundHandler((req, reply) => {
     if (req.url.startsWith('/api/')) return reply.code(404).send({ error: 'not_found' });
