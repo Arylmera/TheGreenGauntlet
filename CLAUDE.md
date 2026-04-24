@@ -10,7 +10,7 @@ See [docs/project.md](docs/project.md) for goals, API details, and decisions.
 - `data-flow.md` — sequence + aggregation rules + security invariants
 - `V1V2Scope.md` — scope split vs `devops-day-leaderboard`
 - `implementation/` — per-module build plans. **Start with `dashboard-storage-plan.md`** (scope decisions for 30-team / 8-hour event: fresh accounts, `Account.points` scoring, named-volume persistence, reduced role of `EVENT_START_AT` / `EVENT_END_AT`).
-- `implementation/admin-bonus-plan.md` — **approved.** Admin page + per-team bonus points (on-site challenges) in a separate SQLite file; merged into leaderboard total. Batch-commit flow, SSE push to public dashboard, per-team active toggle for DQ/hide.
+- `implementation/admin-bonus-plan.md` — **v1 shipped; v1.1 redesign planned.** Admin page + per-team bonus points in a separate SQLite file. v1.1 splits bonuses into **three fixed categories**: `mario_points` and `crokinole_points` (shown as own columns on public leaderboard) and `helping_points` (merged into the IL column). Batch-commit flow, SSE push to public dashboard, per-team active toggle for DQ/hide.
 - `guidelines/` — stack conventions (React, TS, Node proxy, styling, testing, security, git).
 
 ## Guidelines policy (mandatory)

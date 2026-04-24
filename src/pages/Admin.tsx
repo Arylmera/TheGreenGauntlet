@@ -6,9 +6,18 @@ import {
   listBonus,
   setTeamActive,
 } from '../api/admin';
-import type { AdminBonusTeam } from '../types';
+import type { AdminBonusTeam, BonusCategory } from '../types';
 
 const REFRESH_MS = 15_000;
+
+const CATEGORIES: readonly BonusCategory[] = ['mario', 'crokinole', 'helping'];
+const CATEGORY_LABEL: Record<BonusCategory, string> = {
+  mario: 'Mario',
+  crokinole: 'Crokinole',
+  helping: 'Helping',
+};
+
+type DeltaMap = Record<string, Partial<Record<BonusCategory, string>>>;
 
 export function AdminPage() {
   const [authed, setAuthed] = useState<boolean | null>(null);
@@ -107,7 +116,7 @@ type AdminTableProps = { onLoggedOut: () => void };
 
 function AdminTable({ onLoggedOut }: AdminTableProps) {
   const [teams, setTeams] = useState<AdminBonusTeam[]>([]);
-  const [deltas, setDeltas] = useState<Record<string, string>>({});
+  const [deltas, setDeltas] = useState<DeltaMap>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
@@ -132,14 +141,25 @@ function AdminTable({ onLoggedOut }: AdminTableProps) {
     return () => window.clearInterval(id);
   }, [refresh]);
 
+  const setDelta = (teamId: string, category: BonusCategory, value: string): void => {
+    setDeltas((prev) => ({
+      ...prev,
+      [teamId]: { ...prev[teamId], [category]: value },
+    }));
+  };
+
   const onApply = async (): Promise<void> => {
-    const updates: { teamId: string; delta: number }[] = [];
-    for (const [teamId, raw] of Object.entries(deltas)) {
-      const trimmed = raw.trim();
-      if (trimmed.length === 0) continue;
-      const n = Number(trimmed);
-      if (!Number.isInteger(n) || n === 0) continue;
-      updates.push({ teamId, delta: n });
+    const updates: { teamId: string; category: BonusCategory; delta: number }[] = [];
+    for (const [teamId, perCategory] of Object.entries(deltas)) {
+      for (const category of CATEGORIES) {
+        const raw = perCategory?.[category];
+        if (!raw) continue;
+        const trimmed = raw.trim();
+        if (trimmed.length === 0) continue;
+        const n = Number(trimmed);
+        if (!Number.isInteger(n) || n === 0) continue;
+        updates.push({ teamId, category, delta: n });
+      }
     }
     if (updates.length === 0) return;
     setBusy(true);
@@ -156,7 +176,6 @@ function AdminTable({ onLoggedOut }: AdminTableProps) {
   };
 
   const onToggleActive = async (teamId: string, active: boolean): Promise<void> => {
-    // optimistic
     setTeams((prev) => prev.map((t) => (t.teamId === teamId ? { ...t, active } : t)));
     try {
       await setTeamActive(teamId, active);
@@ -176,10 +195,7 @@ function AdminTable({ onLoggedOut }: AdminTableProps) {
     onLoggedOut();
   };
 
-  const pendingCount = Object.values(deltas).filter((v) => {
-    const n = Number(v.trim());
-    return v.trim().length > 0 && Number.isInteger(n) && n !== 0;
-  }).length;
+  const pendingCount = countPending(deltas);
 
   return (
     <div className="min-h-screen bg-surface-off dark:bg-dark-page">
@@ -211,7 +227,7 @@ function AdminTable({ onLoggedOut }: AdminTableProps) {
         </div>
       </header>
 
-      <main className="max-w-screen-xl mx-auto w-full px-3 sm:px-6 py-4 sm:py-6">
+      <main className="max-w-screen-2xl mx-auto w-full px-3 sm:px-6 py-4 sm:py-6">
         <ApplyBar busy={busy} count={pendingCount} onApply={() => void onApply()} />
 
         {error && (
@@ -223,15 +239,19 @@ function AdminTable({ onLoggedOut }: AdminTableProps) {
           </div>
         )}
 
-        <section className="bg-surface-white dark:bg-dark-card rounded-comfy border border-line-light dark:border-dark-line shadow-lvl-1 overflow-hidden">
-          <table className="w-full">
+        <section className="bg-surface-white dark:bg-dark-card rounded-comfy border border-line-light dark:border-dark-line shadow-lvl-1 overflow-x-auto">
+          <table className="w-full min-w-[960px]">
             <thead>
               <tr className="bg-surface-off dark:bg-dark-hover text-ink-black dark:text-dark-text text-left text-xs sm:text-sm font-semibold">
                 <th className="px-3 py-2 sm:py-3">Team</th>
                 <th className="px-3 py-2 sm:py-3 w-20 text-center">Active</th>
-                <th className="px-3 py-2 sm:py-3 w-36 text-center whitespace-nowrap">Immersive Lab</th>
-                <th className="px-3 py-2 sm:py-3 w-28 text-center whitespace-nowrap">Bonus total</th>
-                <th className="px-3 py-2 sm:py-3 w-28 text-right">Delta</th>
+                <th className="px-3 py-2 sm:py-3 w-28 text-center whitespace-nowrap">IL raw</th>
+                <th className="px-3 py-2 sm:py-3 w-24 text-center whitespace-nowrap">Mario</th>
+                <th className="px-3 py-2 sm:py-3 w-24 text-center whitespace-nowrap">Crokinole</th>
+                <th className="px-3 py-2 sm:py-3 w-24 text-center whitespace-nowrap">Helping</th>
+                <th className="px-3 py-2 sm:py-3 w-28 text-right">Δ Mario</th>
+                <th className="px-3 py-2 sm:py-3 w-28 text-right">Δ Crokinole</th>
+                <th className="px-3 py-2 sm:py-3 w-28 text-right">Δ Helping</th>
                 <th className="px-3 py-2 sm:py-3 w-24 text-right">Total</th>
               </tr>
             </thead>
@@ -240,17 +260,15 @@ function AdminTable({ onLoggedOut }: AdminTableProps) {
                 <AdminRow
                   key={t.teamId}
                   team={t}
-                  delta={deltas[t.teamId] ?? ''}
-                  onDeltaChange={(v) =>
-                    setDeltas((prev) => ({ ...prev, [t.teamId]: v }))
-                  }
+                  deltas={deltas[t.teamId] ?? {}}
+                  onDeltaChange={(category, value) => setDelta(t.teamId, category, value)}
                   onToggleActive={(active) => void onToggleActive(t.teamId, active)}
                 />
               ))}
               {teams.length === 0 && (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={10}
                     className="px-4 py-6 text-center text-ink-mid dark:text-dark-dim text-sm"
                   >
                     No teams yet — waiting for first aggregator tick.
@@ -267,14 +285,30 @@ function AdminTable({ onLoggedOut }: AdminTableProps) {
   );
 }
 
+function countPending(deltas: DeltaMap): number {
+  let count = 0;
+  for (const perCategory of Object.values(deltas)) {
+    if (!perCategory) continue;
+    for (const category of CATEGORIES) {
+      const raw = perCategory[category];
+      if (!raw) continue;
+      const trimmed = raw.trim();
+      if (trimmed.length === 0) continue;
+      const n = Number(trimmed);
+      if (Number.isInteger(n) && n !== 0) count += 1;
+    }
+  }
+  return count;
+}
+
 type RowProps = {
   team: AdminBonusTeam;
-  delta: string;
-  onDeltaChange: (v: string) => void;
+  deltas: Partial<Record<BonusCategory, string>>;
+  onDeltaChange: (category: BonusCategory, value: string) => void;
   onToggleActive: (active: boolean) => void;
 };
 
-function AdminRow({ team, delta, onDeltaChange, onToggleActive }: RowProps) {
+function AdminRow({ team, deltas, onDeltaChange, onToggleActive }: RowProps) {
   const dimmed = team.active ? '' : 'opacity-50';
   return (
     <tr className={`border-b border-line-light dark:border-dark-line ${dimmed}`}>
@@ -296,22 +330,30 @@ function AdminRow({ team, delta, onDeltaChange, onToggleActive }: RowProps) {
         </label>
       </td>
       <td className="px-3 py-2 sm:py-3 text-center tabular text-sm">
-        {team.il_points.toLocaleString('en-US')}
+        {team.immersivelab_points.toLocaleString('en-US')}
       </td>
       <td className="px-3 py-2 sm:py-3 text-center tabular text-sm">
-        {team.bonus_points.toLocaleString('en-US')}
+        {team.mario_points.toLocaleString('en-US')}
       </td>
-      <td className="px-3 py-2 sm:py-3 text-right">
-        <input
-          type="number"
-          inputMode="numeric"
-          value={delta}
-          onChange={(e) => onDeltaChange(e.target.value)}
-          placeholder="0"
-          aria-label={`Delta for ${team.teamName}`}
-          className="w-24 px-2 py-1 text-right rounded-standard border border-line-light dark:border-dark-line bg-surface-white dark:bg-dark-card text-ink-black dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-brand-green"
-        />
+      <td className="px-3 py-2 sm:py-3 text-center tabular text-sm">
+        {team.crokinole_points.toLocaleString('en-US')}
       </td>
+      <td className="px-3 py-2 sm:py-3 text-center tabular text-sm">
+        {team.helping_points.toLocaleString('en-US')}
+      </td>
+      {CATEGORIES.map((category) => (
+        <td key={category} className="px-3 py-2 sm:py-3 text-right">
+          <input
+            type="number"
+            inputMode="numeric"
+            value={deltas[category] ?? ''}
+            onChange={(e) => onDeltaChange(category, e.target.value)}
+            placeholder="0"
+            aria-label={`Delta ${CATEGORY_LABEL[category]} for ${team.teamName}`}
+            className="w-24 px-2 py-1 text-right rounded-standard border border-line-light dark:border-dark-line bg-surface-white dark:bg-dark-card text-ink-black dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-brand-green"
+          />
+        </td>
+      ))}
       <td className="px-3 py-2 sm:py-3 text-right tabular font-bold text-sm sm:text-base text-ink-black dark:text-dark-text">
         {team.total.toLocaleString('en-US')}
       </td>

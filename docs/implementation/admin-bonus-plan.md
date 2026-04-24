@@ -1,75 +1,84 @@
 # Admin Bonus Points Plan
 
-On-site (offline) challenges during the event award points that the Immersive Labs API cannot know about. An authenticated admin page lets organisers add/edit per-team bonus points during the day; these are merged into the leaderboard total alongside `Account.points`.
+On-site (offline) challenges and organiser-awarded points that the Immersive Labs API cannot know about. An authenticated admin page lets organisers add/edit per-team bonus points during the day; these are merged into the leaderboard alongside `Account.points`.
 
-Status: **approved — open decisions resolved (see Discussion section), ready to build.**
+Status: **v1 shipped on `develop` (commits `6b7bf2c`, `5624013`, `d7d15d9`, `bf437a7`). v1.1 redesign below — three bonus categories — in planning.**
 
 ## Goals
 
 - Award and edit bonus points per team from a simple admin UI during the 8-hour event.
+- Track **three separate bonus streams**:
+  - **Mario Party** — on-site challenge, shown as its own column on the public leaderboard.
+  - **Crokinole** — on-site challenge, shown as its own column on the public leaderboard.
+  - **Helping** — day-to-day contributions / organiser help. **Merged into the Immersive Labs points column** on the public leaderboard (hidden as a separate line).
 - Persist bonuses across container restarts.
 - Keep IL data untouched — bonuses live in a **separate** SQLite file.
-- Keep an audit trail of every change (who, when, delta, reason).
 - Single shared admin credential — no user management for a one-day event.
 
-## Non-goals (v1)
+## Non-goals (v1.1)
 
+- Admin-managed category list (categories are fixed in code).
 - Per-admin user accounts / roles.
-- Negative leaderboard rankings, per-challenge breakdowns, public bonus log.
+- Per-category leaderboards for spectators (only the combined public leaderboard is exposed; per-category breakdown lives in the CSV export).
+- Negative leaderboard rankings, per-challenge history, public bonus log.
 - Retroactive editing of IL points (bonuses are additive only).
 
-## Data model
+## Data model (v1.1)
 
-Separate SQLite file `data/bonus.sqlite` on the same named Docker volume as `snapshot.json` / `token.json`. Isolated from any future IL mirror DB to keep concerns separate and make backup/restore trivial.
+Separate SQLite file `data/bonus.sqlite` on the same named Docker volume as `snapshot.json` / `token.json`. Categories are fixed, so a per-column schema is simpler than a `(team_id, category)` row-per-category table and keeps the leaderboard merge to a single JOIN.
 
 ```sql
--- Current bonus total per team (editable).
 CREATE TABLE team_bonus (
-  team_id     TEXT PRIMARY KEY,
-  team_name   TEXT NOT NULL,
-  points      INTEGER NOT NULL DEFAULT 0,
-  active      INTEGER NOT NULL DEFAULT 1,  -- 0 = hidden from public leaderboard
-  updated_at  TEXT NOT NULL,       -- ISO-8601 UTC
-  updated_by  TEXT                  -- admin identifier (e.g. "admin")
+  team_id            TEXT PRIMARY KEY,
+  team_name          TEXT NOT NULL,
+  mario_points       INTEGER NOT NULL DEFAULT 0,
+  crokinole_points   INTEGER NOT NULL DEFAULT 0,
+  helping_points     INTEGER NOT NULL DEFAULT 0,
+  active             INTEGER NOT NULL DEFAULT 1,  -- 0 = hidden from public leaderboard
+  updated_at         TEXT NOT NULL,                -- ISO-8601 UTC
+  updated_by         TEXT                          -- admin identifier (e.g. "admin")
 );
-
 ```
 
-Rationale: one editable row per team keeps the merge trivial (single JOIN). No history table in v1 — the live `team_bonus` state is the only record, plus server logs for admin writes.
+Migration from v1: the `team_bonus` table currently has a single `points` column. For the Green Gauntlet event use-case the DB starts empty per event, so a clean recreate is acceptable. If existing data must be preserved, copy `points` → `helping_points` as the safest default (see TBC list below).
+
+Keep `PRAGMA journal_mode=WAL`, keep the same `BONUS_DB_PATH`, keep the same named volume.
 
 ## Team sync
 
-On every aggregator run, the proxy upserts one row per IL team into `team_bonus` (`INSERT OR IGNORE`), seeded with `points = 0`. Teams come from the IL team list already fetched during aggregation — no extra API call. This guarantees all 30 teams show up even before anyone opens the admin page, and new teams added mid-event appear on the next tick.
-
-If a team is renamed in IL, the next sync updates `team_name`.
+Unchanged from v1. On every aggregator run, the proxy `INSERT OR IGNORE`s one row per IL team into `team_bonus`, seeded with all three category columns at 0. Rename in IL → `team_name` updated on the next tick.
 
 ## Leaderboard merge
 
-`aggregation.md` currently returns `{ team_id, team_name, points }` from `Account.points`. Extend the aggregator to LEFT JOIN `team_bonus`:
+Aggregator rule per team:
 
 ```
-total = il_points + COALESCE(team_bonus.points, 0)
+il_out = il_raw + helping_points
+total  = il_out + mario_points + crokinole_points
 ```
 
-The API response for `/api/leaderboard` gains two fields:
+Public `/api/leaderboard` response per team:
 
 ```json
 {
   "team_id": "…",
   "team_name": "…",
-  "il_points": 1200,
-  "bonus_points": 150,
-  "total": 1350
+  "il_points": 1200,     // il_raw + helping_points (helping is hidden from the public)
+  "mario_points": 80,
+  "crokinole_points": 40,
+  "total": 1320
 }
 ```
 
-Ranking uses `total`. Tie-break rule stays unchanged (see [aggregation.md](aggregation.md)).
+Ranking is by `total`. Tie-break rule unchanged (see [aggregation.md](aggregation.md)).
 
-The snapshot cache key/shape needs bumping so stale snapshots don't serve old totals — invalidate on bonus write.
+Inactive teams (`active = 0`) are excluded from `/api/leaderboard` entirely — not rendered, not ranked, ranks of remaining teams recomputed as if the team didn't exist.
+
+Snapshot cache key is bumped so v1-shape snapshots don't get served after upgrade. Cache is invalidated on every bonus write (batch commit **or** active toggle).
 
 ## Auth
 
-Single shared credential, env-configured:
+Unchanged from v1.
 
 - `ADMIN_PASSWORD` — required in prod, server refuses to start without it.
 - `ADMIN_SESSION_SECRET` — HMAC key for signed session cookies.
@@ -79,11 +88,9 @@ Flow:
 1. `POST /api/admin/login` with `{ password }`. Compare with `crypto.timingSafeEqual` against `ADMIN_PASSWORD`. On success, set signed httpOnly cookie `gg_admin` (SameSite=Strict, Secure, 48 h TTL).
 2. All `/api/admin/*` routes require a valid cookie; otherwise 401.
 3. `POST /api/admin/logout` clears the cookie.
-4. Rate-limit login to e.g. 5 attempts / 15 min per IP (reuse the existing rate-limit middleware from [server-proxy.md](server-proxy.md)).
+4. Global rate-limit on login: 20 attempts / 5 min across all IPs (see Decisions log A).
 
-No CSRF token needed if we restrict to SameSite=Strict **and** require `Content-Type: application/json` on mutating routes (fetch-only, no form posts). Revisit if we ever embed the admin UI in a different origin.
-
-See [../guidelines/SECURITY.md](../guidelines/SECURITY.md) for cookie flags and secret handling.
+No CSRF token — SameSite=Strict + JSON-only mutating routes is enough for this threat model. See [../guidelines/SECURITY.md](../guidelines/SECURITY.md).
 
 ## Endpoints
 
@@ -93,50 +100,113 @@ All under `/api/admin/*`, JSON in/out, cookie-auth.
 | ------ | --------------------------------- | ---------------------------------------------------- |
 | POST   | `/api/admin/login`                | `{ password }` → sets cookie                         |
 | POST   | `/api/admin/logout`               | clears cookie                                        |
-| GET    | `/api/admin/bonus`                | list all teams with `il_points`, `bonus_points`, `total`, `updated_at` |
-| POST   | `/api/admin/bonus/batch`          | `{ updates: [{ teamId, delta }, ...] }` — batch apply multiple signed deltas in a single transaction. Rejects the whole batch if any resulting total would be < 0. Single cache invalidation at the end. |
-| PATCH  | `/api/admin/bonus/:teamId/active` | `{ active: boolean }` — show/hide team on public leaderboard. Invalidates cache + emits SSE. |
-| GET    | `/api/admin/export.csv`           | final standings CSV (see Q5 decision)                |
+| GET    | `/api/admin/bonus`                | list all teams with per-category breakdown (see below) |
+| POST   | `/api/admin/bonus/batch`          | apply multiple category-tagged deltas in one transaction |
+| PATCH  | `/api/admin/bonus/:teamId/active` | `{ active: boolean }` — show/hide team on public leaderboard |
+| GET    | `/api/admin/export.csv`           | final standings CSV with full breakdown              |
 
-Batch commit endpoint:
+### `GET /api/admin/bonus`
 
-1. For each `{ teamId, delta }` in the payload, read current `points`, compute new total.
-2. Reject the whole batch if any resulting total would be < 0.
-3. UPDATE all `team_bonus` rows in a single transaction.
-4. Invalidate leaderboard snapshot cache and emit SSE `leaderboard-updated`.
-5. Return updated rows.
+Returns, per team (admin sees **helping split out** — unlike the public leaderboard):
+
+```json
+{
+  "team_id": "…",
+  "team_name": "…",
+  "immersivelab_points": 1150,   // IL Account.points, before helping is merged
+  "helping_points": 50,
+  "mario_points": 80,
+  "crokinole_points": 40,
+  "total": 1320,
+  "active": true,
+  "updated_at": "2026-…Z"
+}
+```
+
+The admin response uses `immersivelab_points` (raw, unmerged) to avoid colliding with the public `/api/leaderboard` field `il_points`, which carries the **merged** `il + helping` value. Two different audiences, two explicit names.
+
+### `POST /api/admin/bonus/batch`
+
+Request body:
+
+```json
+{
+  "updates": [
+    { "teamId": "…", "category": "mario",     "delta":  10 },
+    { "teamId": "…", "category": "crokinole", "delta":  -5 },
+    { "teamId": "…", "category": "helping",   "delta":  20 }
+  ]
+}
+```
+
+Semantics:
+
+1. `category` validated against the hardcoded enum `['mario', 'crokinole', 'helping']`; anything else → 400.
+2. For each update, read the current category value and compute the new one.
+3. Reject the whole batch (422) if **any resulting per-category total would be < 0**.
+4. Apply all updates in a single transaction.
+5. Invalidate aggregator cache + emit one SSE event at the end.
+6. Return the updated rows in the same shape as `GET /api/admin/bonus`.
+
+Duplicate `{teamId, category}` within one batch: values are **summed** (so two `+5` entries on the same team+category apply as `+10`). This keeps the UI simple — if the admin types into the same field twice in different sessions, nothing is silently dropped.
+
+### `GET /api/admin/export.csv`
+
+Columns, in order:
+
+```
+team_id, team_name, immersivelab_points, helping_points, mario_points, crokinole_points, total, rank
+```
+
+`immersivelab_points` is the IL value **before** helping is merged — the CSV preserves the full breakdown for post-event analysis. Name matches the admin `GET /api/admin/bonus` response; the public `/api/leaderboard` field `il_points` is the merged value and is deliberately not used here.
 
 ## Admin UI
 
-New React route `/admin`:
+React route `/admin`:
 
-- **Unauthenticated** → centred login card, password field, error message on 401.
+- **Unauthenticated** → centred login card, password field, error on 401.
 - **Authenticated** → table:
 
-| Team      | Active | IL points | Bonus total | Delta input | Total |
-| --------- | ------ | --------- | ----------- | ----------- | ----- |
-| Team Oak  | [x]    | 1200      | 150         | [    ]      | 1350  |
+| Team     | Active | IL raw | Mario | Crokinole | Helping | Δ Mario | Δ Crokinole | Δ Helping | Total |
+| -------- | ------ | ------ | ----- | --------- | ------- | ------- | ----------- | --------- | ----- |
+| Team Oak | [x]    | 1150   | 80    | 40        | 50      | [   ]   | [   ]       | [   ]     | 1320  |
 
 Behaviour:
 
-- Delta input per row, but **one shared "Apply" button** at the top of the table commits all pending deltas at once via `POST /api/admin/bonus/batch`. Positive adds, negative subtracts. No per-row submit, no quick `+5 / +10 / −10` buttons.
-- Admin fills deltas for any subset of teams, reviews, then clicks Apply. Single transaction — if any row would go negative, the whole batch is rejected and nothing is written.
-- On success, the admin UI refetches `/api/admin/bonus` to show new totals; inputs clear. Public leaderboard receives an SSE push (see Discussion C) and refetches within ~100 ms — no 30 s wait.
-- Auto-refresh every 15 s (shorter than public 30 s polling) so multiple admins stay in sync.
-- Show a banner if another admin modified a row since last load.
+- Three delta inputs per row (one per category). Positive adds, negative subtracts. One shared **Apply** button at the top commits all pending deltas (across all rows and all categories) via `POST /api/admin/bonus/batch`.
+- Suggest different background tints per category column so the organiser doesn't put Mario points into the Crokinole input by accident.
+- Single transaction — if any resulting category total would go negative, the whole batch is rejected and nothing is written. UI shows which row + which category triggered the rejection.
+- On success, UI refetches `/api/admin/bonus`; inputs clear. Public leaderboard receives the SSE push and refetches within ~100 ms.
+- Auto-refresh every 15 s so multiple admins stay in sync.
+- Per-team active toggle column; clicking calls `PATCH /api/admin/bonus/:teamId/active` immediately (not batched). Inactive rows remain visible in the admin table (greyed out) so organisers can reactivate.
 
-Styling follows [../guidelines/STYLING.md](../guidelines/STYLING.md); components in TS per [../guidelines/TYPESCRIPT.md](../guidelines/TYPESCRIPT.md); testing per [../guidelines/TESTING.md](../guidelines/TESTING.md) — unit-test the SQLite layer + supertest the endpoints end-to-end.
+Styling: [../guidelines/STYLING.md](../guidelines/STYLING.md). Types: [../guidelines/TYPESCRIPT.md](../guidelines/TYPESCRIPT.md). Tests: [../guidelines/TESTING.md](../guidelines/TESTING.md).
+
+## Public leaderboard UI
+
+The dashboard grows two columns between the existing IL points column and the total:
+
+| Rank | Team | IL points | Mario | Crokinole | Total |
+
+`IL points` now includes helping; the dashboard does **not** call out helping separately. If a team has 0 in Mario or Crokinole, the cell still renders (as `0`) so spectators can see where they stand even before playing a game.
+
+## SSE push
+
+Unchanged from v1. `GET /api/leaderboard/stream` emits a `leaderboard-updated` SSE event (wire protocol `event: leaderboard-updated`) whenever the aggregator cache is invalidated: bonus batch commit, active toggle, or IL snapshot refresh. (Internally the Node `EventEmitter` uses the channel name `update`; what clients subscribe to is `leaderboard-updated`.)
+
+Public clients subscribe to the stream and refetch `/api/leaderboard` on every event. The 30 s poll stays as a fallback for dropped connections.
 
 ## Persistence & deployment
 
-- Docker volume mount already holds `snapshot.json` + `token.json`; add `bonus.sqlite` next to them.
-- Use `better-sqlite3` (sync, zero-config, already a common choice for Node single-process apps) — one module wrapping all queries.
-- Run `PRAGMA journal_mode=WAL` on open for safer concurrent reads while admin writes.
-- Backup: since it's one file, a simple `cp bonus.sqlite bonus.sqlite.bak` cron inside the container is enough for event day. Not needed for v1.
+Unchanged from v1.
 
-Update [deployment.md](deployment.md) to document the new file path and env vars.
+- `bonus.sqlite` lives on the Docker named volume alongside `snapshot.json` + `token.json`.
+- `better-sqlite3` with `PRAGMA journal_mode=WAL`.
+- Backup for event day: not implemented (single-file DB, `cp` is trivial if ever needed).
 
-## Env vars (additions)
+See [deployment.md](deployment.md) and [env-config.md](env-config.md).
+
+## Env vars
 
 ```
 ADMIN_PASSWORD=...                 # required; server fails to start without it
@@ -144,75 +214,53 @@ ADMIN_SESSION_SECRET=...           # required; 32+ bytes random
 BONUS_DB_PATH=/data/bonus.sqlite   # default; override for tests
 ```
 
-Add to `.env.example` and document in [env-config.md](env-config.md).
+Already in `.env.example` from v1.
 
-## Open questions
+## Build order (v1.1)
 
-1. ~~**Undo UX**~~ — **Decided:** no undo button. An editable bonus field per team is enough for v1; corrections are manual re-entry. History drawer remains for audit.
-2. ~~**Bonus visibility on public leaderboard**~~ — **Decided:** public leaderboard shows three columns — `il_points`, `bonus_points`, `total`. Ranking is by `total` only; the other two are informational.
-3. ~~**Multiple admins simultaneously**~~ — **Decided:** last-write-wins. No `If-Match` / optimistic locking. History trail covers disputes.
-4. ~~**Negative deltas**~~ — **Decided:** the bonus field is a **delta input**, not an absolute set. Typing `10` adds 10; typing `-10` subtracts 10. Resulting total is bounded ≥ 0 (subtractions that would go negative are rejected).
-5. ~~**Export**~~ — **Decided:** yes. Add `GET /api/admin/export.csv` returning final standings with `team_id, team_name, il_points, bonus_points, total, rank`. Admin-auth required.
+1. DB migration: add three per-category columns, drop (or copy from) `points`.
+2. [server/bonusDb.ts](server/bonusDb.ts): widen the store API to accept `(teamId, category, delta)`; update batch transaction + negative guard per category.
+3. [server/aggregate.ts](server/aggregate.ts): new merge formula (`il_out = il_raw + helping_points`; `total = il_out + mario + crokinole`). Bump snapshot cache key.
+4. Admin endpoints: update `GET /api/admin/bonus`, `POST /api/admin/bonus/batch` payload, CSV columns. Validate category enum.
+5. Admin React UI: three delta inputs per row, shared Apply, per-column tint.
+6. Public dashboard UI: add Mario and Crokinole columns, keep IL as the merged column.
+7. Tests: extend [server/__tests__/bonusDb.test.ts](server/__tests__/bonusDb.test.ts) + [server/__tests__/admin.test.ts](server/__tests__/admin.test.ts) to cover all three categories, mixed batches, invalid category names, and the updated CSV shape. Add aggregator test for the new formula.
 
-## Discussion — additional points to resolve
+## TBC — confirm before build step starts
 
-Items surfaced during review, beyond the original open questions. Each needs a decision before build.
+_All three resolved — see v1.1 decisions below._
 
-### A. Rate-limit scope on `/api/admin/login`
+## Decisions log
 
-Draft reuses the existing per-IP limiter (5 attempts / 15 min). At a physical event, multiple organisers share the venue NAT — one fat-fingered password locks everyone out.
+Kept for historical context so future contributors understand why the feature looks the way it does.
 
-**Decided:** global limiter, since there is a single shared credential anyway. Target: 20 attempts / 5 min across all IPs, and log every failed attempt to the server log for post-event review.
+### v1 decisions (shipped)
 
-### B. Session TTL vs event length
+1. **Undo UX** — no undo button; editable fields + manual re-entry are enough.
+2. **Bonus visibility on public leaderboard** — v1 showed `il_points`, `bonus_points`, `total`. v1.1 replaces this with the categorised shape above.
+3. **Multiple admins simultaneously** — last-write-wins; no optimistic locking.
+4. **Negative deltas** — the bonus field is a delta, not an absolute set. Resulting total bounded ≥ 0 per category.
+5. **Export** — admin-auth CSV.
 
-Cookie TTL = 8 h = event length. If an organiser logs in at setup (T-2h), their cookie expires two hours before the end. No refresh mechanism in draft.
+### v1 discussion items (Decisions A–H)
 
-**Decided:** 48 h fixed TTL. Covers setup, event, teardown without any coupling to event dates. Organisers can always re-log-in if needed.
+- **A. Rate-limit scope** — global limiter, 20 attempts / 5 min; every failed attempt logged.
+- **B. Session TTL** — 48 h fixed, decoupled from event dates.
+- **C. Snapshot invalidation vs polling** — SSE push `GET /api/leaderboard/stream`, 30 s poll kept as fallback.
+- **D. Team seeding trigger** — aggregator-driven, not UI-driven. `INSERT OR IGNORE` every tick.
+- **E. Login audit** — no `admin_login_log` table; server logs only.
+- **F. `reason` / history table** — dropped entirely. Live `team_bonus` is the only record. No `bonus_history` table, no "History drawer". (Earlier drafts of this plan referred to a history trail; that is not built and is not planned.)
+- **G. Upper bound on a single delta** — no cap.
+- **H. Deactivation** — per-team `active` flag; inactive teams are excluded from ranks entirely, admin can reactivate.
 
-### C. Snapshot invalidation vs client polling
+### v1.1 decisions (this plan)
 
-Draft invalidates the aggregator cache on bonus write. Public clients poll every 30 s, which leaves stale totals visible for up to one interval.
-
-**Decided:** public dashboard must update instantly after an admin commit. Implementation: expose an SSE endpoint `GET /api/leaderboard/stream` that emits a `leaderboard-updated` event whenever the aggregator cache is invalidated (bonus batch commit **or** IL snapshot refresh). Public clients keep the 30 s poll as a fallback, but also subscribe to the SSE stream and refetch `/api/leaderboard` immediately on event. Admin batch commit therefore triggers: transaction → cache bust → SSE emit → all connected clients refetch within ~100 ms.
-
-### D. Team seeding trigger
-
-Draft seeds `team_bonus` rows "on admin page load". If no admin opens the page before a bonus is awarded via API/script, seeding is skipped and the endpoint 404s.
-
-**Decided:** seed inside the aggregator run. Every aggregator tick `INSERT OR IGNORE` one row per IL team into `team_bonus` with `points = 0`. Rows exist as soon as the backend has seen a team — independent of UI activity. New teams added mid-event are picked up on the next tick.
-
-### E. Login audit
-
-`bonus_history` logs mutations but nothing records *who logged in when*.
-
-**Decided:** skip. No `admin_login_log` table. Failed login attempts still go to the server log (per Discussion A) — enough for a one-day event with a single shared credential.
-
-### F. `reason` required vs optional
-
-**Decided:** drop `reason` entirely in v1. Also drop the `bonus_history` table and its endpoint — live `team_bonus` state is the only record; server logs capture admin writes for post-event review if needed.
-
-### G. Upper bound on a single delta
-
-**Decided:** no cap in v1. Organisers are trusted; `bonus_history` is there to catch mistakes. Revisit only if a fat-finger incident actually happens.
-
-### H. Deletion / disqualification
-
-Not in draft: what if a team needs to be hidden (DQ, withdrawal)?
-
-**Decided:** add a per-team **active toggle** in the admin panel.
-- Schema: `team_bonus` gains `active INTEGER NOT NULL DEFAULT 1` (SQLite boolean).
-- Endpoint: `PATCH /api/admin/bonus/:teamId/active` with `{ active: boolean }`. Invalidates cache + emits SSE push, same as a batch commit.
-- Aggregator: inactive teams are **excluded** from `/api/leaderboard` output entirely — not rendered, not ranked, ranks of remaining teams recomputed as if the team didn't exist.
-- Admin UI: extra toggle column per row. Inactive rows remain visible in the admin table (greyed out) so organisers can reactivate at any time.
-- Reactivation restores the team with its current `il_points + bonus_points`; no data is lost during deactivation.
-
-## Build order (once approved)
-
-1. SQLite module + migration runner.
-2. Admin auth middleware + login/logout endpoints.
-3. Bonus CRUD endpoints + history.
-4. Aggregator merge + snapshot invalidation.
-5. Admin React route + table.
-6. Tests (unit + supertest).
-7. Docs: update [deployment.md](deployment.md), [env-config.md](env-config.md), [aggregation.md](aggregation.md), [../data-flow.md](../data-flow.md).
+1. **Fixed categories** — `mario`, `crokinole`, `helping` are hardcoded in code, not admin-managed.
+2. **Helping merges into IL publicly** — the public leaderboard field `il_points` = `il_raw + helping_points`; admin UI still shows them split.
+3. **One delta input per category in the admin UI** — not a category picker, not per-category tabs.
+4. **Admin UI column order** — Mario, then Crokinole, then Helping (challenges first, contribution points last).
+5. **Batch semantics unchanged** — whole-batch reject if any **per-category** resulting total would go negative.
+6. **Duplicate `{teamId, category}` in one batch** — summed, not rejected.
+7. **SSE event name** — public wire event is `leaderboard-updated`; internal EventEmitter channel is `update`. Both kept as-is.
+8. **DB migration from v1** — clean recreate. No prior event has been run on v1, so there is no real data to preserve.
+9. **Raw-IL field name** — `immersivelab_points` on the admin `GET /api/admin/bonus` response and in the CSV export. Deliberately distinct from the public `il_points` (which is the merged value) to avoid name collision.

@@ -11,12 +11,20 @@ export type Team = {
   rank: number;
   uuid: string;
   displayName: string;
-  points: number;
+  /** Raw Immersive Labs `Account.points`. Admin-only; not on the public wire. */
+  immersivelab_points: number;
+  /** Bonus helping points. Admin-only; not on the public wire (merged into il_points). */
+  helping_points: number;
+  /** Public column: `immersivelab_points + helping_points`. */
   il_points: number;
-  bonus_points: number;
+  mario_points: number;
+  crokinole_points: number;
   total: number;
   lastActivityAt: string | null;
 };
+
+/** Shape emitted to the public dashboard — admin-only fields scrubbed. */
+export type PublicTeam = Omit<Team, 'immersivelab_points' | 'helping_points'>;
 
 export type AccountSource = {
   walkAccounts(): AsyncIterable<Account>;
@@ -28,7 +36,7 @@ export type LeaderboardPayload = {
   updatedAt: string;
   phase: Phase;
   eventWindow: EventWindow;
-  teams: Team[];
+  teams: PublicTeam[];
 };
 
 export type AggregatorDeps = {
@@ -40,7 +48,10 @@ export type AggregatorDeps = {
 };
 
 type TeamDraft = Omit<Team, 'rank'>;
-type Snapshot = { payload: LeaderboardPayload; builtAt: number };
+type InternalSnapshot = {
+  payload: Omit<LeaderboardPayload, 'teams'> & { teams: Team[] };
+  builtAt: number;
+};
 
 export function phaseFor(now: number, env: Env): Phase {
   const start = Date.parse(env.EVENT_START_AT);
@@ -57,24 +68,27 @@ export function rankTeams(
   const drafts: TeamDraft[] = [];
   for (const a of accounts) {
     const bonus = bonusByTeamId.get(a.uuid);
-    // Exclude inactive teams entirely.
     if (bonus && bonus.active === 0) continue;
-    const il = a.points ?? 0;
-    const bp = bonus ? bonus.points : 0;
+    const raw = a.points ?? 0;
+    const helping = bonus ? bonus.helping_points : 0;
+    const mario = bonus ? bonus.mario_points : 0;
+    const crokinole = bonus ? bonus.crokinole_points : 0;
+    const il = raw + helping;
     drafts.push({
       uuid: a.uuid,
       displayName: a.displayName,
-      points: il + bp,
+      immersivelab_points: raw,
+      helping_points: helping,
       il_points: il,
-      bonus_points: bp,
-      total: il + bp,
+      mario_points: mario,
+      crokinole_points: crokinole,
+      total: il + mario + crokinole,
       lastActivityAt: a.lastActivityAt ?? null,
     });
   }
   return drafts.sort(compareTeams).map(assignRank);
 }
 
-// Higher total first; earlier activity breaks ties; null activity sorts last.
 function compareTeams(a: TeamDraft, b: TeamDraft): number {
   if (b.total !== a.total) return b.total - a.total;
   const aLast = parseActivity(a.lastActivityAt);
@@ -91,21 +105,26 @@ function assignRank(draft: TeamDraft, i: number): Team {
   return { rank: i + 1, ...draft };
 }
 
+function toPublicTeam(t: Team): PublicTeam {
+  const { immersivelab_points: _raw, helping_points: _help, ...rest } = t;
+  return rest;
+}
+
 export class LeaderboardAggregator {
   private readonly env: Env;
   private readonly client: AccountSource;
   private readonly now: () => number;
-  private readonly store: JsonStore<Snapshot>;
+  private readonly store: JsonStore<InternalSnapshot>;
   private readonly bonusDb: BonusDb | undefined;
   private readonly events: LeaderboardEvents | undefined;
-  private snapshot: Snapshot | null = null;
+  private snapshot: InternalSnapshot | null = null;
   private inflight: Promise<LeaderboardPayload> | null = null;
 
   constructor(deps: AggregatorDeps) {
     this.env = deps.env;
     this.client = deps.client;
     this.now = deps.now ?? (() => Date.now());
-    this.store = new JsonStore<Snapshot>(path.join(this.env.DATA_DIR, 'snapshot.json'));
+    this.store = new JsonStore<InternalSnapshot>(path.join(this.env.DATA_DIR, 'snapshot.json'));
     this.bonusDb = deps.bonusDb;
     this.events = deps.events;
   }
@@ -129,11 +148,25 @@ export class LeaderboardAggregator {
 
     if (phase === 'pre') return this.emptyPayload('pre');
     if (phase === 'ended' && this.snapshot) {
-      return { ...this.snapshot.payload, phase: 'ended' };
+      return this.toPublicPayload({ ...this.snapshot.payload, phase: 'ended' });
     }
-    if (this.isSnapshotFresh()) return this.snapshot!.payload;
+    if (this.isSnapshotFresh()) return this.toPublicPayload(this.snapshot!.payload);
 
     return this.rebuildWithFallback();
+  }
+
+  /**
+   * Admin-only accessor: returns the full team list including `immersivelab_points`
+   * and `helping_points`. Triggers a rebuild/cache-hit the same way the public
+   * route does.
+   */
+  async getAdminTeams(): Promise<{ updatedAt: string; teams: Team[] }> {
+    await this.getLeaderboard();
+    if (!this.snapshot) return { updatedAt: new Date(this.now()).toISOString(), teams: [] };
+    return {
+      updatedAt: this.snapshot.payload.updatedAt,
+      teams: this.snapshot.payload.teams,
+    };
   }
 
   private isSnapshotFresh(): boolean {
@@ -148,7 +181,7 @@ export class LeaderboardAggregator {
     try {
       return await this.inflight;
     } catch (err) {
-      if (this.snapshot) return this.snapshot.payload;
+      if (this.snapshot) return this.toPublicPayload(this.snapshot.payload);
       throw err;
     }
   }
@@ -156,7 +189,6 @@ export class LeaderboardAggregator {
   private async rebuild(): Promise<LeaderboardPayload> {
     const accounts = await this.collectAccounts();
 
-    // Seed bonus rows for all known teams on every tick.
     if (this.bonusDb) {
       this.bonusDb.upsertTeamSeeds(
         accounts.map((a) => ({ teamId: a.uuid, teamName: a.displayName })),
@@ -167,22 +199,31 @@ export class LeaderboardAggregator {
       for (const row of this.bonusDb.getAll()) bonusByTeamId.set(row.team_id, row);
     }
 
-    const payload: LeaderboardPayload = {
+    const internalPayload = {
       updatedAt: new Date(this.now()).toISOString(),
       phase: phaseFor(this.now(), this.env),
       eventWindow: this.eventWindow(),
       teams: rankTeams(accounts, bonusByTeamId),
     };
-    const snapshot: Snapshot = { payload, builtAt: this.now() };
+    const snapshot: InternalSnapshot = { payload: internalPayload, builtAt: this.now() };
     this.snapshot = snapshot;
     await this.store.save(snapshot);
-    return payload;
+    return this.toPublicPayload(internalPayload);
   }
 
   private async collectAccounts(): Promise<Account[]> {
     const accounts: Account[] = [];
     for await (const account of this.client.walkAccounts()) accounts.push(account);
     return accounts;
+  }
+
+  private toPublicPayload(internal: InternalSnapshot['payload']): LeaderboardPayload {
+    return {
+      updatedAt: internal.updatedAt,
+      phase: internal.phase,
+      eventWindow: internal.eventWindow,
+      teams: internal.teams.map(toPublicTeam),
+    };
   }
 
   private emptyPayload(phase: Phase): LeaderboardPayload {

@@ -21,7 +21,8 @@ const CELL = {
   AVATAR: 'hidden sm:table-cell px-2 py-3 sm:py-4 w-14',
   NAME: 'px-2 sm:px-4 py-3 sm:py-4 text-ink-black dark:text-dark-text font-medium text-sm sm:text-base 2xl:text-xl truncate max-w-0',
   IL: 'hidden lg:table-cell px-2 sm:px-4 py-3 sm:py-4 text-center tabular text-sm 2xl:text-base text-ink-mid dark:text-dark-dim w-36',
-  BONUS: 'hidden lg:table-cell px-2 sm:px-4 py-3 sm:py-4 text-right tabular text-sm 2xl:text-base text-ink-mid dark:text-dark-dim w-24',
+  MARIO: 'hidden lg:table-cell px-2 sm:px-4 py-3 sm:py-4 text-right tabular text-sm 2xl:text-base text-ink-mid dark:text-dark-dim w-20',
+  CROKINOLE: 'hidden lg:table-cell px-2 sm:px-4 py-3 sm:py-4 text-right tabular text-sm 2xl:text-base text-ink-mid dark:text-dark-dim w-24',
   TOTAL: 'px-2 sm:px-4 py-3 sm:py-4 text-right tabular font-bold text-base sm:text-lg 2xl:text-2xl w-24 sm:w-32',
   ACTIVITY: 'hidden md:table-cell px-4 py-4 text-right text-ink-mid dark:text-dark-dim text-sm 2xl:text-base w-40',
 } as const;
@@ -31,7 +32,6 @@ const NUMBER_TEXT = 'tabular font-bold text-base sm:text-lg 2xl:text-2xl';
 export function TeamRow({ team, flashed }: Props) {
   const isTopThree = team.rank <= 3;
   const accent = isTopThree ? 'text-brand-green' : 'text-ink-black dark:text-dark-text';
-  const hasBonus = team.bonus_points > 0;
 
   return (
     <tr
@@ -52,10 +52,20 @@ export function TeamRow({ team, flashed }: Props) {
 
       <td className={CELL.IL}>{team.il_points.toLocaleString('en-US')}</td>
 
-      <td className={CELL.BONUS}>
-        {hasBonus ? (
+      <td className={CELL.MARIO}>
+        {team.mario_points > 0 ? (
           <span className="text-brand-green font-medium">
-            +{team.bonus_points.toLocaleString('en-US')}
+            +{team.mario_points.toLocaleString('en-US')}
+          </span>
+        ) : (
+          <span>—</span>
+        )}
+      </td>
+
+      <td className={CELL.CROKINOLE}>
+        {team.crokinole_points > 0 ? (
+          <span className="text-brand-green font-medium">
+            +{team.crokinole_points.toLocaleString('en-US')}
           </span>
         ) : (
           <span>—</span>

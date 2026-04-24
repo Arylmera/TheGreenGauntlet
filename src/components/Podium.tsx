@@ -70,7 +70,7 @@ const POINTS_TEXT: Record<Rank, string> = {
 
 export function Podium({ top }: Props) {
   const byRank = new Map(top.map((t) => [t.rank as Rank, t]));
-  const topPoints = byRank.get(1)?.points ?? 0;
+  const topPoints = byRank.get(1)?.total ?? 0;
 
   return (
     <section
@@ -80,7 +80,7 @@ export function Podium({ top }: Props) {
       {PODIUM_ORDER.map((rank) => {
         const team = byRank.get(rank);
         if (!team) return null;
-        const scale = computeScale(rank, topPoints, team.points);
+        const scale = computeScale(rank, topPoints, team.total);
         return <PodiumStep key={rank} rank={rank} team={team} scale={scale} />;
       })}
     </section>
@@ -113,7 +113,7 @@ function PodiumStep({ rank, team, scale }: StepProps) {
         {team.displayName}
       </h2>
       <p className={`mt-1 sm:mt-2 text-brand-green font-bold tabular ${POINTS_TEXT[rank]}`}>
-        {team.points.toLocaleString('en-US')}
+        {team.total.toLocaleString('en-US')}
       </p>
       <p className="hidden sm:block mt-0.5 sm:mt-1 text-ink-mid dark:text-dark-dim text-[10px] sm:text-xs 2xl:text-sm">
         {formatRelative(team.lastActivityAt)}
