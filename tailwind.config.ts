@@ -1,8 +1,10 @@
 import type { Config } from 'tailwindcss';
 
+const withVar = (name: string) => `rgb(var(${name}) / <alpha-value>)`;
+
 const config: Config = {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
-  darkMode: 'class',
+  darkMode: ['class', '[data-theme="dark"]'],
   theme: {
     extend: {
       colors: {
@@ -16,23 +18,23 @@ const config: Config = {
           dim: '#6b7178',
         },
         brand: {
-          green: '#00915a',
+          green: withVar('--accent'),
           deep: '#007a4b',
           forest: '#005a36',
           mint: '#d6ecdf',
         },
         ink: {
-          black: '#1a1a1a',
-          charcoal: '#4a4a4a',
-          mid: '#8c8c8c',
+          black: withVar('--text'),
+          charcoal: withVar('--text-mid'),
+          mid: withVar('--text-dim'),
         },
         surface: {
-          white: '#ffffff',
-          off: '#f5f5f5',
-          panel: '#fafafa',
+          white: withVar('--card'),
+          off: withVar('--page'),
+          panel: withVar('--panel'),
         },
         line: {
-          light: '#e6e6e6',
+          light: withVar('--line'),
           input: '#c4c4c4',
         },
         semantic: {
@@ -41,13 +43,24 @@ const config: Config = {
           info: '#1d72b8',
         },
         medal: {
-          gold: '#d4af37',
-          silver: '#c0c0c0',
-          bronze: '#cd7f32',
+          gold: withVar('--medal-gold'),
+          silver: withVar('--medal-silver'),
+          bronze: withVar('--medal-bronze'),
+        },
+        mario: {
+          sky: '#5c94fc',
+          parchment: '#f8f4e3',
+          brick: '#b53120',
+          brickLight: '#e52521',
+          pipe: '#00a800',
+          pipeDark: '#007a00',
+          coin: '#ffd700',
+          star: '#ffea00',
         },
       },
       fontFamily: {
         sans: ['BNPPSans', 'Arial', 'Helvetica Neue', 'Helvetica', 'sans-serif'],
+        pixel: ['"Press Start 2P"', 'BNPPSans', 'monospace'],
       },
       boxShadow: {
         'lvl-1': 'rgba(0, 0, 0, 0.06) 0px 1px 2px',
@@ -67,7 +80,7 @@ const config: Config = {
         tv: '1920px',
       },
       fontSize: {
-        'display': ['clamp(2rem, 3.5vw, 3rem)', { lineHeight: '1.15', letterSpacing: '-0.01em', fontWeight: '700' }],
+        display: ['clamp(2rem, 3.5vw, 3rem)', { lineHeight: '1.15', letterSpacing: '-0.01em', fontWeight: '700' }],
         'page-title': ['clamp(1.5rem, 2.5vw, 2rem)', { lineHeight: '1.2', fontWeight: '700' }],
         'numeric-xl': ['clamp(1.5rem, 3vw, 2.75rem)', { lineHeight: '1.1', fontWeight: '700' }],
         'numeric-lg': ['clamp(1.25rem, 2vw, 1.75rem)', { lineHeight: '1.1', fontWeight: '700' }],
@@ -81,10 +94,26 @@ const config: Config = {
           '0%': { backgroundColor: '#1f3a2d' },
           '100%': { backgroundColor: 'transparent' },
         },
+        'flash-mario': {
+          '0%': { backgroundColor: '#ffea00' },
+          '100%': { backgroundColor: 'transparent' },
+        },
+        'mario-bounce': {
+          '0%, 100%': { transform: 'translateY(0) scale(1)' },
+          '30%': { transform: 'translateY(-8px) scale(1.04)' },
+          '60%': { transform: 'translateY(0) scale(0.98)' },
+        },
+        twinkle: {
+          '0%, 100%': { opacity: '0.2', transform: 'scale(0.8) rotate(0deg)' },
+          '50%': { opacity: '1', transform: 'scale(1.2) rotate(20deg)' },
+        },
       },
       animation: {
         flash: 'flash 800ms ease-out',
         'flash-dark': 'flash-dark 800ms ease-out',
+        'flash-mario': 'flash-mario 800ms ease-out',
+        'mario-bounce': 'mario-bounce 500ms ease-out',
+        twinkle: 'twinkle 1.6s ease-in-out infinite',
       },
     },
   },

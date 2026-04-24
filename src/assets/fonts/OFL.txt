@@ -1,0 +1,8 @@
+Place PressStart2P-Regular.woff2 in this directory.
+
+Source: https://fonts.google.com/specimen/Press+Start+2P
+License: SIL Open Font License v1.1 (OFL)
+Include the upstream OFL.txt verbatim alongside the woff2 file.
+
+Until the file is present, the theme falls back to BNPPSans via the
+font-family stack declared in src/styles.css.

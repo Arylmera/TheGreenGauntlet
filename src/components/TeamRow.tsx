@@ -1,6 +1,9 @@
+import { useEffect, useRef, useState } from 'react';
 import type { Team } from '../types';
 import { TeamAvatar } from './TeamAvatar';
 import { formatRelative } from '../utils/formatRelative';
+import { useArcade } from '../context/ArcadeContext';
+import { CoinIcon } from './mario/CoinIcon';
 
 type Props = {
   team: Team;
@@ -15,6 +18,7 @@ const ROW_CLASS = `
 `;
 
 const FLASH_CLASS = 'animate-flash dark:animate-flash-dark';
+const FLASH_MARIO = 'animate-flash-mario';
 
 const CELL = {
   RANK: 'px-2 sm:px-4 py-3 sm:py-4 2xl:py-5 w-12 sm:w-16 lg:w-20 text-center',
@@ -27,19 +31,44 @@ const CELL = {
   ACTIVITY: 'hidden md:table-cell px-4 py-4 text-right text-ink-mid dark:text-dark-dim text-sm 2xl:text-base w-40',
 } as const;
 
-const NUMBER_TEXT = 'tabular font-bold text-base sm:text-lg 2xl:text-2xl';
+const NUMBER_TEXT = 'tabular font-bold text-base sm:text-lg 2xl:text-2xl inline-block';
+
+function prefersReducedMotion(): boolean {
+  return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+}
 
 export function TeamRow({ team, flashed }: Props) {
   const isTopThree = team.rank <= 3;
   const accent = isTopThree ? 'text-brand-green' : 'text-ink-black dark:text-dark-text';
+  const { theme, playCoin, playBounce } = useArcade();
+  const isMario = theme === 'mario';
+
+  const [bounce, setBounce] = useState(false);
+  const prevRank = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (prevRank.current !== null && prevRank.current !== team.rank && isMario && !prefersReducedMotion()) {
+      setBounce(true);
+      playBounce();
+      const t = window.setTimeout(() => setBounce(false), 500);
+      return () => window.clearTimeout(t);
+    }
+    prevRank.current = team.rank;
+  }, [team.rank, isMario, playBounce]);
+
+  useEffect(() => {
+    if (flashed && isMario) playCoin();
+  }, [flashed, isMario, playCoin]);
+
+  const flashClass = flashed ? (isMario ? FLASH_MARIO : FLASH_CLASS) : '';
 
   return (
     <tr
-      className={`${ROW_CLASS} ${flashed ? FLASH_CLASS : ''}`}
+      className={`${ROW_CLASS} ${flashClass}`}
       data-key={team.displayName}
     >
       <td className={CELL.RANK}>
-        <span className={`${NUMBER_TEXT} ${accent}`}>{team.rank}</span>
+        <span className={`${NUMBER_TEXT} ${accent} ${bounce ? 'mario-bounce' : ''}`}>{team.rank}</span>
       </td>
 
       <td className={CELL.AVATAR}>
@@ -73,7 +102,10 @@ export function TeamRow({ team, flashed }: Props) {
       </td>
 
       <td className={CELL.TOTAL}>
-        <span className={accent}>{team.total.toLocaleString('en-US')}</span>
+        <span className={`${accent} inline-flex items-center gap-1 justify-end`}>
+          {team.total.toLocaleString('en-US')}
+          {isMario && <CoinIcon size={14} />}
+        </span>
       </td>
 
       <td className={CELL.ACTIVITY}>

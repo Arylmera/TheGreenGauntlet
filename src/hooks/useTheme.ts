@@ -1,13 +1,21 @@
 import { useCallback, useEffect, useState } from 'react';
 
-export type Theme = 'light' | 'dark';
+export type Theme = 'light' | 'dark' | 'mario';
 
 const STORAGE_KEY = 'gg.theme';
+const CYCLE: Theme[] = ['light', 'dark', 'mario'];
+
+function coerce(stored: string | null): Theme | null {
+  if (stored === 'light' || stored === 'dark' || stored === 'mario') return stored;
+  if (stored === 'true') return 'dark';
+  if (stored === 'false') return 'light';
+  return null;
+}
 
 function readInitial(): Theme {
   try {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (stored === 'light' || stored === 'dark') return stored;
+    const stored = coerce(window.localStorage.getItem(STORAGE_KEY));
+    if (stored) return stored;
   } catch {
     // ignore — storage blocked
   }
@@ -33,7 +41,10 @@ export function useTheme(): { theme: Theme; toggle: () => void; set: (t: Theme) 
   }, [theme]);
 
   const set = useCallback((t: Theme) => setThemeState(t), []);
-  const toggle = useCallback(() => setThemeState((t) => (t === 'dark' ? 'light' : 'dark')), []);
+  const toggle = useCallback(
+    () => setThemeState((t) => CYCLE[(CYCLE.indexOf(t) + 1) % CYCLE.length] ?? 'light'),
+    [],
+  );
 
   return { theme, toggle, set };
 }

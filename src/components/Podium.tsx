@@ -3,6 +3,9 @@ import { formatRelative } from '../utils/formatRelative';
 import podiumGold from '../assets/podium-gold.png';
 import podiumSilver from '../assets/podium-silver.png';
 import podiumBronze from '../assets/podium-bronze.png';
+import { useArcade } from '../context/ArcadeContext';
+import { MedalIcon } from './mario/MedalIcon';
+import { CoinIcon } from './mario/CoinIcon';
 
 type Props = {
   top: Team[];
@@ -71,37 +74,50 @@ const POINTS_TEXT: Record<Rank, string> = {
 export function Podium({ top }: Props) {
   const byRank = new Map(top.map((t) => [t.rank as Rank, t]));
   const topPoints = byRank.get(1)?.total ?? 0;
+  const { theme } = useArcade();
+  const isMario = theme === 'mario';
 
   return (
-    <section
-      aria-label="Top 3"
-      className="flex items-end justify-center gap-2 sm:gap-4 2xl:gap-8 mb-6 sm:mb-8 2xl:mb-10"
-    >
-      {PODIUM_ORDER.map((rank) => {
-        const team = byRank.get(rank);
-        if (!team) return null;
-        const scale = computeScale(rank, topPoints, team.total);
-        return <PodiumStep key={rank} rank={rank} team={team} scale={scale} />;
-      })}
+    <section aria-label="Top 3" className="mb-6 sm:mb-8 2xl:mb-10">
+      <div className="flex items-end justify-center gap-4 sm:gap-8 lg:gap-12 2xl:gap-16 relative">
+        {PODIUM_ORDER.map((rank) => {
+          const team = byRank.get(rank);
+          if (!team) return null;
+          const scale = computeScale(rank, topPoints, team.total);
+          return (
+            <PodiumStep
+              key={rank}
+              rank={rank}
+              team={team}
+              scale={scale}
+              isMario={isMario}
+            />
+          );
+        })}
+      </div>
     </section>
   );
 }
 
-type StepProps = { rank: Rank; team: Team; scale: number };
+type StepProps = { rank: Rank; team: Team; scale: number; isMario: boolean };
 
-function PodiumStep({ rank, team, scale }: StepProps) {
+function PodiumStep({ rank, team, scale, isMario }: StepProps) {
+  const marioClasses = isMario
+    ? `pipe-step ${rank === 1 ? 'mario-sparkle' : ''}`
+    : '';
   return (
     <article
       style={{ ['--podium-scale' as string]: scale }}
       className={`
-        flex flex-col items-center justify-end
+        relative flex flex-col items-center justify-end
         bg-surface-white dark:bg-dark-card rounded-comfy border border-line-light dark:border-dark-line
         px-2 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-5 2xl:px-10 2xl:py-8
         ${WIDTH[rank]} ${HEIGHT_MIN} ${HEIGHT_SCALED} ${SHADOW[rank]}
+        ${marioClasses}
         transition-[height,box-shadow] duration-300
       `}
     >
-      <PodiumMedal rank={rank} />
+      <PodiumMedal rank={rank} isMario={isMario} />
       <h2
         className={`
           ${NAME_TEXT[rank]}
@@ -112,8 +128,9 @@ function PodiumStep({ rank, team, scale }: StepProps) {
       >
         {team.displayName}
       </h2>
-      <p className={`mt-1 sm:mt-2 text-brand-green font-bold tabular ${POINTS_TEXT[rank]}`}>
+      <p className={`mt-1 sm:mt-2 text-brand-green font-bold tabular inline-flex items-center gap-1 ${POINTS_TEXT[rank]}`}>
         {team.total.toLocaleString('en-US')}
+        {isMario && <CoinIcon size={20} />}
       </p>
       <p className="hidden sm:block mt-0.5 sm:mt-1 text-ink-mid dark:text-dark-dim text-[10px] sm:text-xs 2xl:text-sm">
         {formatRelative(team.lastActivityAt)}
@@ -122,14 +139,18 @@ function PodiumStep({ rank, team, scale }: StepProps) {
   );
 }
 
-function PodiumMedal({ rank }: { rank: Rank }) {
+function PodiumMedal({ rank, isMario }: { rank: Rank; isMario: boolean }) {
   return (
     <div className="mb-2 sm:mb-3">
-      <img
-        src={PODIUM_IMG[rank]}
-        alt={PODIUM_ALT[rank]}
-        className={`${MEDAL_SIZE[rank]} object-contain`}
-      />
+      {isMario ? (
+        <MedalIcon rank={rank} className={`${MEDAL_SIZE[rank]} object-contain`} />
+      ) : (
+        <img
+          src={PODIUM_IMG[rank]}
+          alt={PODIUM_ALT[rank]}
+          className={`${MEDAL_SIZE[rank]} object-contain`}
+        />
+      )}
     </div>
   );
 }

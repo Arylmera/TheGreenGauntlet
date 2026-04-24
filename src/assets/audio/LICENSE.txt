@@ -1,0 +1,12 @@
+Drop CC0 / public-domain sound effects in this directory:
+
+  coin.ogg    — short "coin pickup" chime, ~200ms, -6 dB peak
+  bounce.ogg  — soft bounce / bump, ~300ms
+
+Recommended source: https://kenney.nl/assets/interface-sounds (CC0)
+or https://freesound.org (filter by Creative Commons 0).
+
+DO NOT use ripped Nintendo SFX — those are trademarked.
+
+Until files are dropped in, useSound() fails silently (no playback,
+no console errors). The rest of the UI works unchanged.
