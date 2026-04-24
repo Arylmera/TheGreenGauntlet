@@ -25,6 +25,7 @@ export type AggregatorDeps = {
 type InternalSnapshot = {
   payload: Omit<LeaderboardPayload, 'teams'> & { teams: Team[] };
   builtAt: number;
+  accounts: Account[];
 };
 
 export class LeaderboardAggregator {
@@ -54,15 +55,43 @@ export class LeaderboardAggregator {
     return this.snapshot ? this.now() - this.snapshot.builtAt : null;
   }
 
-  /** Bust cached snapshot, rebuild in background, and push fresh payload to SSE clients. */
+  /**
+   * Re-rank using cached IL accounts + fresh bonus DB, and push to SSE clients.
+   * Avoids hitting the IL API on bonus edits (IL data hasn't changed). Falls back
+   * to a full rebuild if no cached accounts are available.
+   */
   invalidate(): void {
-    this.snapshot = null;
+    if (this.snapshot?.accounts?.length) {
+      const payload = this.rerankFromCache(this.snapshot.accounts);
+      this.events?.emitUpdate(payload);
+      return;
+    }
     if (!this.events) return;
     void this.rebuildWithFallback()
       .then((payload) => this.events?.emitUpdate(payload))
       .catch(() => {
         // Swallow: next client request will retry. SSE clients keep last known state.
       });
+  }
+
+  private rerankFromCache(accounts: Account[]): LeaderboardPayload {
+    const bonusByTeamId = this.loadBonusIndex(accounts);
+    const internalPayload = {
+      updatedAt: new Date(this.now()).toISOString(),
+      phase: phaseFor(this.now(), this.env),
+      eventWindow: this.eventWindow(),
+      teams: rankTeams(accounts, bonusByTeamId),
+    };
+    const snapshot: InternalSnapshot = {
+      payload: internalPayload,
+      builtAt: this.snapshot?.builtAt ?? this.now(),
+      accounts,
+    };
+    this.snapshot = snapshot;
+    void this.store.save(snapshot).catch(() => {
+      // Persistence is best-effort; in-memory snapshot is still authoritative.
+    });
+    return this.toPublicPayload(internalPayload);
   }
 
   async getLeaderboard(): Promise<LeaderboardPayload> {
@@ -118,7 +147,11 @@ export class LeaderboardAggregator {
       eventWindow: this.eventWindow(),
       teams: rankTeams(accounts, bonusByTeamId),
     };
-    const snapshot: InternalSnapshot = { payload: internalPayload, builtAt: this.now() };
+    const snapshot: InternalSnapshot = {
+      payload: internalPayload,
+      builtAt: this.now(),
+      accounts,
+    };
     this.snapshot = snapshot;
     await this.store.save(snapshot);
     return this.toPublicPayload(internalPayload);
