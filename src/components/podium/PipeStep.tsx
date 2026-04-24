@@ -14,7 +14,7 @@ export function PipeStep({ rank, team, ratio, points }: Props) {
 
   return (
     <article
-      className={`relative flex flex-col items-center justify-end ${isFirst ? 'mario-sparkle' : ''}`}
+      className="relative flex flex-col items-center justify-end"
       style={{ width: `min(${w}px, 30vw)` }}
     >
       <div
@@ -26,7 +26,7 @@ export function PipeStep({ rank, team, ratio, points }: Props) {
 
       <div
         className="pipe w-full flex flex-col items-center justify-start px-3 sm:px-4 pt-6 pb-0"
-        style={{ height: `clamp(180px, ${h}px, ${h}px)` }}
+        style={{ height: `clamp(150px, ${h}px, ${h}px)` }}
       >
         <div className="plaque w-full px-3 py-3 text-center relative mt-1">
           <span className="plaque-tape tight-px">RANK {rank}</span>

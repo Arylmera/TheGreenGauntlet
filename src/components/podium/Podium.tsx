@@ -27,7 +27,7 @@ function computeScale(rank: Rank, topPoints: number, points: number): number {
 function pipeRatios(pts1: number, pts2: number, pts3: number): Record<Rank, number> {
   const ratio1 = 1;
   const ratio2 = Math.max(0.78, Math.min(0.94, pts1 > 0 ? pts2 / pts1 : 0.85));
-  const ratio3 = Math.max(0.6, Math.min(ratio2 - 0.06, pts1 > 0 ? pts3 / pts1 : 0.72));
+  const ratio3 = Math.max(0.72, Math.min(ratio2 - 0.04, pts1 > 0 ? pts3 / pts1 : 0.78));
   return { 1: ratio1, 2: ratio2, 3: ratio3 };
 }
 
@@ -48,7 +48,7 @@ export function Podium({ top, category = 'total' }: Props) {
 
   if (isMario) {
     return (
-      <section aria-label="Top 3" className="relative z-20 -mb-14 pt-6 sm:pt-8 lg:pt-10">
+      <section aria-label="Top 3" className="relative z-20 -mb-14">
         <div className="flex items-end justify-center gap-4 sm:gap-8 lg:gap-14 relative">
           {PODIUM_ORDER.map((rank) => {
             const team = byRank.get(rank);
