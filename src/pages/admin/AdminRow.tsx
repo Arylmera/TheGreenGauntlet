@@ -45,7 +45,11 @@ export function AdminRow({ team, deltas, onDeltaChange, onToggleActive, isMario 
             aria-label={`Active ${team.teamName}`}
             className="sr-only peer"
           />
-          <span className="relative w-10 h-5 rounded-full bg-line-light dark:bg-dark-line transition-colors peer-checked:bg-brand-green peer-focus-visible:ring-2 peer-focus-visible:ring-brand-green peer-focus-visible:ring-offset-2 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:h-4 after:w-4 after:rounded-full after:bg-white after:shadow after:transition-transform peer-checked:after:translate-x-5" />
+          {isMario ? (
+            <span className="mushroom-toggle" />
+          ) : (
+            <span className="relative w-10 h-5 rounded-full bg-line-light dark:bg-dark-line transition-colors peer-checked:bg-brand-green peer-focus-visible:ring-2 peer-focus-visible:ring-brand-green peer-focus-visible:ring-offset-2 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:h-4 after:w-4 after:rounded-full after:bg-white after:shadow after:transition-transform peer-checked:after:translate-x-5" />
+          )}
         </label>
       </td>
       <td className={numCls}>{team.immersivelab_points.toLocaleString('en-US')}</td>

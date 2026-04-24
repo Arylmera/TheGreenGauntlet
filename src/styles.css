@@ -616,6 +616,60 @@
    ========================================================= */
 .mario-bounce { animation: mario-bounce 500ms ease-out; }
 
+/* =========================================================
+   Mario mushroom toggle (admin panel active switch)
+   ========================================================= */
+:root[data-theme='mario'] .mushroom-toggle {
+  position: relative;
+  display: inline-block;
+  width: 52px;
+  height: 26px;
+  border-radius: 13px;
+  background: #fffaea;
+  border: 3px solid var(--mario-ink);
+  box-shadow: inset 0 3px 0 rgba(0,0,0,0.12), 0 2px 0 rgba(0,0,0,0.25);
+  transition: background 160ms ease;
+  vertical-align: middle;
+}
+:root[data-theme='mario'] .mushroom-toggle::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 45%;
+  background: linear-gradient(180deg, #b0b0b0 0%, #8a8a8a 100%);
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+  border-bottom: 2px solid var(--mario-ink);
+  transition: background 160ms ease;
+}
+:root[data-theme='mario'] .mushroom-toggle::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 40%, var(--mario-ink) 0 1.5px, transparent 2px),
+    radial-gradient(circle at 68% 62%, var(--mario-ink) 0 1.5px, transparent 2px),
+    #fffaea;
+  border: 2px solid var(--mario-ink);
+  box-shadow: inset 0 2px 0 rgba(255,255,255,0.7), 0 1px 0 rgba(0,0,0,0.3);
+  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1), filter 160ms ease;
+}
+:root[data-theme='mario'] input:checked + .mushroom-toggle::before {
+  background: linear-gradient(180deg, #ff4a3a 0%, #d0271d 100%);
+}
+:root[data-theme='mario'] input:checked + .mushroom-toggle::after {
+  transform: translateX(22px);
+  filter: drop-shadow(0 0 3px #ffea00);
+}
+:root[data-theme='mario'] input:focus-visible + .mushroom-toggle {
+  outline: 3px solid #ffd700;
+  outline-offset: 2px;
+}
+
 /* Delta (+N) accent for Mario/Crokinole bonus cells */
 :root[data-theme='mario'] .delta { color: #0a7a2a; }
 
