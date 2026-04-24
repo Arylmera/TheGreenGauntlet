@@ -1,7 +1,7 @@
-import type { Team } from '../types';
-import { formatRelative } from '../utils/formatRelative';
-import { MedalIcon } from './mario/MedalIcon';
-import { CoinIcon } from './mario/CoinIcon';
+import type { Team } from '../../types';
+import { formatRelative } from '../../utils/formatRelative';
+import { MedalIcon } from '../mario/MedalIcon';
+import { CoinIcon } from '../mario/CoinIcon';
 import type { Rank } from './podium.constants';
 import { PIPE_HEIGHT_BASE_PX, PIPE_WIDTH_PX } from './podium.constants';
 

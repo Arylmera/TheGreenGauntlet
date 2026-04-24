@@ -1,4 +1,4 @@
-import type { Category } from '../types';
+import type { Category } from '../../types';
 
 const CATEGORY_LABELS: Record<Exclude<Category, 'total'>, { std: string; mario: string }> = {
   immersivelab_points: { std: 'Immersive Lab', mario: 'IMMERSIVE LAB' },

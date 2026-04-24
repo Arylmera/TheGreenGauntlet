@@ -1,4 +1,4 @@
-import { HamburgerMenu } from '../components/HamburgerMenu';
+import { HamburgerMenu } from '../components/menu/HamburgerMenu';
 import { SkyStage } from '../components/mario/Clouds';
 import { useTheme } from '../hooks/useTheme';
 import { useAdminAuth } from '../hooks/useAdminAuth';

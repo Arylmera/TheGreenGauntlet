@@ -1,6 +1,6 @@
-import type { Category, Team } from '../types';
-import { CATEGORY_SCORE_FIELD } from '../types';
-import { useArcade } from '../context/ArcadeContext';
+import type { Category, Team } from '../../types';
+import { CATEGORY_SCORE_FIELD } from '../../types';
+import { useArcade } from '../../context/ArcadeContext';
 import { PanelStep } from './PanelStep';
 import { PipeStep } from './PipeStep';
 import type { Rank } from './podium.constants';

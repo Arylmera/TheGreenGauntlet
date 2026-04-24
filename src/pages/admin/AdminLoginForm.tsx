@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { HamburgerMenu } from '../../components/HamburgerMenu';
+import { HamburgerMenu } from '../../components/menu/HamburgerMenu';
 import { SkyStage } from '../../components/mario/Clouds';
 import type { Theme } from '../../hooks/useTheme';
 

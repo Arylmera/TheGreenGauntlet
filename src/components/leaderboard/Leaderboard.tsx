@@ -1,8 +1,8 @@
 import { useMemo, useRef, useState } from 'react';
-import type { Category, Team } from '../types';
-import { useArcade } from '../context/ArcadeContext';
-import { useFlashedTeams } from '../hooks/useFlashedTeams';
-import { useRowAnimations } from '../hooks/useRowAnimations';
+import type { Category, Team } from '../../types';
+import { useArcade } from '../../context/ArcadeContext';
+import { useFlashedTeams } from '../../hooks/useFlashedTeams';
+import { useRowAnimations } from '../../hooks/useRowAnimations';
 import { LeaderboardTableHead } from './LeaderboardTableHead';
 import { LeaderboardToolbar } from './LeaderboardToolbar';
 import { TeamRow } from './TeamRow';

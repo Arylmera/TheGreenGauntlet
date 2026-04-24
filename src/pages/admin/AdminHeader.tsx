@@ -1,4 +1,4 @@
-import { HamburgerMenu } from '../../components/HamburgerMenu';
+import { HamburgerMenu } from '../../components/menu/HamburgerMenu';
 import type { Theme } from '../../hooks/useTheme';
 
 type Props = {

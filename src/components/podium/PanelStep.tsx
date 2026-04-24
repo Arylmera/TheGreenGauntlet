@@ -1,8 +1,8 @@
-import type { Team } from '../types';
-import { formatRelative } from '../utils/formatRelative';
-import podiumBronze from '../assets/podium-bronze.png';
-import podiumGold from '../assets/podium-gold.png';
-import podiumSilver from '../assets/podium-silver.png';
+import type { Team } from '../../types';
+import { formatRelative } from '../../utils/formatRelative';
+import podiumBronze from '../../assets/podium-bronze.png';
+import podiumGold from '../../assets/podium-gold.png';
+import podiumSilver from '../../assets/podium-silver.png';
 import type { Rank } from './podium.constants';
 
 const PODIUM_IMG: Record<Rank, string> = {

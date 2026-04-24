@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
 import { ArcadeProvider } from '../context/ArcadeContext';
-import { Footer } from '../components/Footer';
-import { Header } from '../components/Header';
-import { Leaderboard } from '../components/Leaderboard';
-import { Podium } from '../components/Podium';
-import { SkeletonBoard } from '../components/SkeletonBoard';
+import { Footer } from '../components/layout/Footer';
+import { Header } from '../components/layout/Header';
+import { Leaderboard } from '../components/leaderboard/Leaderboard';
+import { Podium } from '../components/podium/Podium';
+import { SkeletonBoard } from '../components/leaderboard/SkeletonBoard';
 import { SkyStage } from '../components/mario/Clouds';
 import { useLeaderboard } from '../hooks/useLeaderboard';
 import { useSound } from '../hooks/useSound';

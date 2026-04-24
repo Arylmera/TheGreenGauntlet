@@ -1,6 +1,6 @@
-import type { Category } from '../types';
+import type { Category } from '../../types';
 import { LeaderboardTabs } from './LeaderboardTabs';
-import { CoinIcon } from './mario/CoinIcon';
+import { CoinIcon } from '../mario/CoinIcon';
 
 type Props = {
   isMario: boolean;

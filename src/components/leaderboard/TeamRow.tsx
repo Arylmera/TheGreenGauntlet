@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
-import type { Category, Team } from '../types';
-import { CATEGORY_SCORE_FIELD } from '../types';
-import { useArcade } from '../context/ArcadeContext';
-import { useRankBounce } from '../hooks/useRankBounce';
-import { formatRelative } from '../utils/formatRelative';
+import type { Category, Team } from '../../types';
+import { CATEGORY_SCORE_FIELD } from '../../types';
+import { useArcade } from '../../context/ArcadeContext';
+import { useRankBounce } from '../../hooks/useRankBounce';
+import { formatRelative } from '../../utils/formatRelative';
 import { TeamAvatar } from './TeamAvatar';
 import { MarioTeamRow } from './TeamRow.mario';
 
