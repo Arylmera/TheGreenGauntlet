@@ -43,7 +43,7 @@ export function requireAdmin(env: Env) {
 
 export function registerAdminAuthRoutes(app: FastifyInstance, env: Env): void {
   const limiter = createLimiter(20, 5 * 60_000);
-  const secure = env.NODE_ENV === 'production';
+  const secure = env.COOKIE_SECURE;
 
   app.post('/api/admin/login', async (req, reply) => {
     const now = Date.now();
