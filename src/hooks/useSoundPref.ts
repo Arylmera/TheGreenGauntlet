@@ -1,32 +1,17 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
+import { useLocalStorage } from './useLocalStorage';
 
 const STORAGE_KEY = 'gg.sound';
 
-function readInitial(): boolean {
-  try {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (stored === 'on') return true;
-    if (stored === 'off') return false;
-  } catch {
-    // ignore
-  }
-  return false; // default muted
-}
-
 export function useSoundPref(): { enabled: boolean; toggle: () => void; set: (v: boolean) => void } {
-  const [enabled, setEnabled] = useState<boolean>(() => readInitial());
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, enabled ? 'on' : 'off');
-    } catch {
-      // ignore
-    }
-  }, [enabled]);
+  const [enabled, setEnabled] = useLocalStorage<boolean>(STORAGE_KEY, false, {
+    parse: (raw) => (raw === 'on' ? true : raw === 'off' ? false : null),
+    serialize: (v) => (v ? 'on' : 'off'),
+  });
 
   return {
     enabled,
-    toggle: useCallback(() => setEnabled((v) => !v), []),
-    set: useCallback((v: boolean) => setEnabled(v), []),
+    toggle: useCallback(() => setEnabled((v) => !v), [setEnabled]),
+    set: useCallback((v: boolean) => setEnabled(v), [setEnabled]),
   };
 }
