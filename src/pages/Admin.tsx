@@ -7,6 +7,8 @@ import {
   setTeamActive,
 } from '../api/admin';
 import type { AdminBonusTeam, BonusCategory } from '../types';
+import { HamburgerMenu } from '../components/HamburgerMenu';
+import { useTheme } from '../hooks/useTheme';
 
 const REFRESH_MS = 15_000;
 
@@ -24,6 +26,7 @@ export function AdminPage() {
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loginBusy, setLoginBusy] = useState(false);
+  const { theme, set: setTheme } = useTheme();
 
   const tryList = useCallback(async (): Promise<boolean> => {
     try {
@@ -63,7 +66,10 @@ export function AdminPage() {
 
   if (authed === null) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-surface-off dark:bg-dark-page text-ink-mid dark:text-dark-dim">
+      <div className="admin min-h-screen flex items-center justify-center bg-surface-off dark:bg-dark-page text-ink-mid dark:text-dark-dim">
+        <div className="absolute top-3 right-3">
+          <HamburgerMenu theme={theme} onSetTheme={setTheme} />
+        </div>
         Loading…
       </div>
     );
@@ -71,7 +77,10 @@ export function AdminPage() {
 
   if (!authed) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-surface-off dark:bg-dark-page px-4">
+      <div className="admin relative min-h-screen flex items-center justify-center bg-surface-off dark:bg-dark-page px-4">
+        <div className="absolute top-3 right-3">
+          <HamburgerMenu theme={theme} onSetTheme={setTheme} />
+        </div>
         <form
           onSubmit={onSubmit}
           className="w-full max-w-sm bg-surface-white dark:bg-dark-card rounded-comfy border border-line-light dark:border-dark-line shadow-lvl-1 p-6 space-y-4"
@@ -109,12 +118,22 @@ export function AdminPage() {
     );
   }
 
-  return <AdminTable onLoggedOut={() => setAuthed(false)} />;
+  return (
+    <AdminTable
+      onLoggedOut={() => setAuthed(false)}
+      theme={theme}
+      onSetTheme={setTheme}
+    />
+  );
 }
 
-type AdminTableProps = { onLoggedOut: () => void };
+type AdminTableProps = {
+  onLoggedOut: () => void;
+  theme: ReturnType<typeof useTheme>['theme'];
+  onSetTheme: (t: ReturnType<typeof useTheme>['theme']) => void;
+};
 
-function AdminTable({ onLoggedOut }: AdminTableProps) {
+function AdminTable({ onLoggedOut, theme, onSetTheme }: AdminTableProps) {
   const [teams, setTeams] = useState<AdminBonusTeam[]>([]);
   const [deltas, setDeltas] = useState<DeltaMap>({});
   const [busy, setBusy] = useState(false);
@@ -198,7 +217,7 @@ function AdminTable({ onLoggedOut }: AdminTableProps) {
   const pendingCount = countPending(deltas);
 
   return (
-    <div className="min-h-screen bg-surface-off dark:bg-dark-page">
+    <div className="admin min-h-screen bg-surface-off dark:bg-dark-page">
       <header className="bg-surface-white dark:bg-dark-card border-b border-line-light dark:border-dark-line px-4 sm:px-6 py-3 flex items-center justify-between">
         <div>
           <h1 className="text-lg sm:text-xl font-semibold text-ink-black dark:text-dark-text">
@@ -210,7 +229,8 @@ function AdminTable({ onLoggedOut }: AdminTableProps) {
             </p>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          <HamburgerMenu theme={theme} onSetTheme={onSetTheme} />
           <a
             href="/api/admin/export.csv"
             className="px-3 py-2 rounded-standard border border-line-light dark:border-dark-line text-sm text-ink-black dark:text-dark-text hover:bg-surface-panel dark:hover:bg-dark-hover"
