@@ -1,20 +1,24 @@
+type CoinSize = 'sm' | 'md' | 'lg' | 'xl';
+
 type Props = {
   className?: string;
+  /** Preferred API: named size matching .coin-sm/md/lg/xl (14/22/36/56 px). */
+  coinSize?: CoinSize;
+  /** Legacy numeric size — mapped to the closest named bucket for callers that pass pixels. */
   size?: number;
+  spin?: boolean;
 };
 
-export function CoinIcon({ className, size = 16 }: Props) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      className={className}
-      aria-hidden
-    >
-      <circle cx="12" cy="12" r="10" fill="#ffd700" stroke="#b88a00" strokeWidth="1.5" />
-      <circle cx="12" cy="12" r="6" fill="none" stroke="#b88a00" strokeWidth="1.25" />
-      <path d="M12 8v8M10.5 10h3M10.5 14h3" stroke="#b88a00" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  );
+function pickSize(size: number | undefined, coinSize: CoinSize | undefined): CoinSize {
+  if (coinSize) return coinSize;
+  if (size == null) return 'sm';
+  if (size >= 48) return 'xl';
+  if (size >= 30) return 'lg';
+  if (size >= 18) return 'md';
+  return 'sm';
+}
+
+export function CoinIcon({ className = '', size, coinSize, spin = false }: Props) {
+  const cls = `coin coin-${pickSize(size, coinSize)}${spin ? ' spin' : ''}${className ? ' ' + className : ''}`;
+  return <span className={cls} aria-hidden />;
 }

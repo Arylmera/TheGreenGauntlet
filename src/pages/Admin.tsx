@@ -8,6 +8,7 @@ import {
 } from '../api/admin';
 import type { AdminBonusTeam, BonusCategory } from '../types';
 import { HamburgerMenu } from '../components/HamburgerMenu';
+import { SkyStage } from '../components/mario/Clouds';
 import { useTheme } from '../hooks/useTheme';
 
 const REFRESH_MS = 15_000;
@@ -64,13 +65,16 @@ export function AdminPage() {
     }
   };
 
+  const isMario = theme === 'mario';
+
   if (authed === null) {
     return (
-      <div className="admin min-h-screen flex items-center justify-center bg-surface-off dark:bg-dark-page text-ink-mid dark:text-dark-dim">
-        <div className="absolute top-3 right-3">
+      <div className="admin relative min-h-screen flex items-center justify-center bg-surface-off dark:bg-dark-page text-ink-mid dark:text-dark-dim">
+        {isMario && <SkyStage />}
+        <div className="absolute top-3 right-3 z-40">
           <HamburgerMenu theme={theme} onSetTheme={setTheme} />
         </div>
-        Loading…
+        <span className={isMario ? 'font-pixel text-white tight-px relative z-10' : ''}>Loading…</span>
       </div>
     );
   }
@@ -78,19 +82,32 @@ export function AdminPage() {
   if (!authed) {
     return (
       <div className="admin relative min-h-screen flex items-center justify-center bg-surface-off dark:bg-dark-page px-4">
-        <div className="absolute top-3 right-3">
+        {isMario && <SkyStage />}
+        <div className="absolute top-3 right-3 z-40">
           <HamburgerMenu theme={theme} onSetTheme={setTheme} />
         </div>
         <form
           onSubmit={onSubmit}
-          className="w-full max-w-sm bg-surface-white dark:bg-dark-card rounded-comfy border border-line-light dark:border-dark-line shadow-lvl-1 p-6 space-y-4"
+          className={
+            isMario
+              ? 'relative z-10 w-full max-w-sm scroll-panel p-6 space-y-4'
+              : 'w-full max-w-sm bg-surface-white dark:bg-dark-card rounded-comfy border border-line-light dark:border-dark-line shadow-lvl-1 p-6 space-y-4'
+          }
         >
-          <h1 className="text-xl font-semibold text-ink-black dark:text-dark-text">
-            Admin sign-in
+          <h1 className={
+            isMario
+              ? 'font-pixel text-[color:var(--mario-ink)] text-[14px] tight-px'
+              : 'text-xl font-semibold text-ink-black dark:text-dark-text'
+          }>
+            {isMario ? 'ADMIN · SIGN IN' : 'Admin sign-in'}
           </h1>
           <label className="block">
-            <span className="block text-sm text-ink-charcoal dark:text-dark-mid mb-1">
-              Password
+            <span className={
+              isMario
+                ? 'block font-pixel text-[10px] text-[color:var(--mario-ink)] mb-2 tight-px'
+                : 'block text-sm text-ink-charcoal dark:text-dark-mid mb-1'
+            }>
+              {isMario ? 'PASSWORD' : 'Password'}
             </span>
             <input
               type="password"
@@ -98,20 +115,28 @@ export function AdminPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loginBusy}
-              className="w-full px-3 py-2 rounded-standard border border-line-light dark:border-dark-line bg-surface-white dark:bg-dark-card text-ink-black dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-brand-green"
+              className={
+                isMario
+                  ? 'pixel-input w-full'
+                  : 'w-full px-3 py-2 rounded-standard border border-line-light dark:border-dark-line bg-surface-white dark:bg-dark-card text-ink-black dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-brand-green'
+              }
             />
           </label>
           {loginError && (
-            <p className="text-sm text-semantic-danger" role="alert">
+            <p className={isMario ? 'font-crt text-[color:var(--mario-brick)] text-base' : 'text-sm text-semantic-danger'} role="alert">
               {loginError}
             </p>
           )}
           <button
             type="submit"
             disabled={loginBusy || password.length === 0}
-            className="w-full px-4 py-2 rounded-standard bg-brand-green text-white font-medium disabled:opacity-60"
+            className={
+              isMario
+                ? 'pixel-btn pixel-btn-green w-full'
+                : 'w-full px-4 py-2 rounded-standard bg-brand-green text-white font-medium disabled:opacity-60'
+            }
           >
-            {loginBusy ? 'Signing in…' : 'Sign in'}
+            {loginBusy ? (isMario ? 'SIGNING IN…' : 'Signing in…') : (isMario ? 'SIGN IN' : 'Sign in')}
           </button>
         </form>
       </div>
@@ -134,6 +159,7 @@ type AdminTableProps = {
 };
 
 function AdminTable({ onLoggedOut, theme, onSetTheme }: AdminTableProps) {
+  const isMario = theme === 'mario';
   const [teams, setTeams] = useState<AdminBonusTeam[]>([]);
   const [deltas, setDeltas] = useState<DeltaMap>({});
   const [busy, setBusy] = useState(false);
@@ -217,14 +243,30 @@ function AdminTable({ onLoggedOut, theme, onSetTheme }: AdminTableProps) {
   const pendingCount = countPending(deltas);
 
   return (
-    <div className="admin min-h-screen bg-surface-off dark:bg-dark-page">
-      <header className="bg-surface-white dark:bg-dark-card border-b border-line-light dark:border-dark-line px-4 sm:px-6 py-3 flex items-center justify-between">
+    <div className="admin relative min-h-screen bg-surface-off dark:bg-dark-page">
+      {isMario && <SkyStage />}
+      <header className={
+        isMario
+          ? 'relative z-40 px-4 sm:px-6 py-3 flex items-center justify-between'
+          : 'relative z-40 bg-surface-white dark:bg-dark-card border-b border-line-light dark:border-dark-line px-4 sm:px-6 py-3 flex items-center justify-between'
+      }>
         <div>
-          <h1 className="text-lg sm:text-xl font-semibold text-ink-black dark:text-dark-text">
-            Admin — Bonus points
+          <h1
+            className={
+              isMario
+                ? 'font-pixel text-white text-[14px] sm:text-[16px] tight-px'
+                : 'text-lg sm:text-xl font-semibold text-ink-black dark:text-dark-text'
+            }
+            style={
+              isMario
+                ? { textShadow: '-2px 0 #1a1a1a, 2px 0 #1a1a1a, 0 -2px #1a1a1a, 0 2px #1a1a1a, 0 3px 0 rgba(0,0,0,0.35)' }
+                : undefined
+            }
+          >
+            {isMario ? 'ADMIN · BONUS POINTS' : 'Admin — Bonus points'}
           </h1>
           {updatedAt && (
-            <p className="text-xs text-ink-mid dark:text-dark-dim">
+            <p className={isMario ? 'font-crt text-white text-base mt-1' : 'text-xs text-ink-mid dark:text-dark-dim'}>
               Last refresh {new Date(updatedAt).toLocaleTimeString()}
             </p>
           )}
@@ -233,46 +275,73 @@ function AdminTable({ onLoggedOut, theme, onSetTheme }: AdminTableProps) {
           <HamburgerMenu theme={theme} onSetTheme={onSetTheme} />
           <a
             href="/api/admin/export.csv"
-            className="px-3 py-2 rounded-standard border border-line-light dark:border-dark-line text-sm text-ink-black dark:text-dark-text hover:bg-surface-panel dark:hover:bg-dark-hover"
+            className={
+              isMario
+                ? 'pixel-btn pixel-btn-ghost'
+                : 'px-3 py-2 rounded-standard border border-line-light dark:border-dark-line text-sm text-ink-black dark:text-dark-text hover:bg-surface-panel dark:hover:bg-dark-hover'
+            }
           >
-            Export CSV
+            {isMario ? 'EXPORT CSV' : 'Export CSV'}
           </a>
           <button
             type="button"
             onClick={() => void onLogout()}
-            className="px-3 py-2 rounded-standard border border-line-light dark:border-dark-line text-sm text-ink-black dark:text-dark-text hover:bg-surface-panel dark:hover:bg-dark-hover"
+            className={
+              isMario
+                ? 'pixel-btn pixel-btn-ghost'
+                : 'px-3 py-2 rounded-standard border border-line-light dark:border-dark-line text-sm text-ink-black dark:text-dark-text hover:bg-surface-panel dark:hover:bg-dark-hover'
+            }
           >
-            Log out
+            {isMario ? 'LOG OUT' : 'Log out'}
           </button>
         </div>
       </header>
 
-      <main className="max-w-screen-2xl mx-auto w-full px-3 sm:px-6 py-4 sm:py-6">
-        <ApplyBar busy={busy} count={pendingCount} onApply={() => void onApply()} />
+      <main className="relative z-10 max-w-screen-2xl mx-auto w-full px-3 sm:px-6 py-4 sm:py-6">
+        <ApplyBar busy={busy} count={pendingCount} onApply={() => void onApply()} isMario={isMario} />
 
         {error && (
           <div
             role="alert"
-            className="my-3 rounded-standard border border-semantic-danger bg-[#fde8e8] dark:bg-[#3a1414] text-ink-black dark:text-dark-text px-3 py-2 text-sm"
+            className={
+              isMario
+                ? 'my-3 rounded-[3px] border-[3px] border-[color:var(--mario-brick)] bg-[#fde8e8] text-[color:var(--mario-ink)] px-3 py-2 font-crt text-lg'
+                : 'my-3 rounded-standard border border-semantic-danger bg-[#fde8e8] dark:bg-[#3a1414] text-ink-black dark:text-dark-text px-3 py-2 text-sm'
+            }
           >
             {error}
           </div>
         )}
 
-        <section className="bg-surface-white dark:bg-dark-card rounded-comfy border border-line-light dark:border-dark-line shadow-lvl-1 overflow-x-auto">
+        <section className={
+          isMario
+            ? 'scroll-panel overflow-x-auto'
+            : 'bg-surface-white dark:bg-dark-card rounded-comfy border border-line-light dark:border-dark-line shadow-lvl-1 overflow-x-auto'
+        }>
           <table className="w-full min-w-[960px]">
             <thead>
-              <tr className="bg-surface-off dark:bg-dark-hover text-ink-black dark:text-dark-text text-left text-xs sm:text-sm font-semibold">
-                <th className="px-3 py-2 sm:py-3">Team</th>
-                <th className="px-3 py-2 sm:py-3 w-20 text-center">Active</th>
-                <th className="px-3 py-2 sm:py-3 w-28 text-center whitespace-nowrap">IL raw</th>
-                <th className="px-3 py-2 sm:py-3 w-24 text-center whitespace-nowrap">Mario</th>
-                <th className="px-3 py-2 sm:py-3 w-24 text-center whitespace-nowrap">Crokinole</th>
-                <th className="px-3 py-2 sm:py-3 w-24 text-center whitespace-nowrap">Helping</th>
-                <th className="px-3 py-2 sm:py-3 w-28 text-right">Δ Mario</th>
-                <th className="px-3 py-2 sm:py-3 w-28 text-right">Δ Crokinole</th>
-                <th className="px-3 py-2 sm:py-3 w-28 text-right">Δ Helping</th>
-                <th className="px-3 py-2 sm:py-3 w-24 text-right">Total</th>
+              <tr
+                className={
+                  isMario
+                    ? 'text-[color:var(--mario-ink)] text-left font-pixel text-[10px] tight-px'
+                    : 'bg-surface-off dark:bg-dark-hover text-ink-black dark:text-dark-text text-left text-xs sm:text-sm font-semibold'
+                }
+                style={
+                  isMario
+                    ? { background: 'var(--mario-parchment-dark)', borderBottom: '4px solid var(--mario-ink)' }
+                    : undefined
+                }
+              >
+                <th className="px-3 py-2 sm:py-3">{isMario ? 'TEAM' : 'Team'}</th>
+                <th className="px-3 py-2 sm:py-3 w-20 text-center">{isMario ? 'ACTIVE' : 'Active'}</th>
+                <th className="px-3 py-2 sm:py-3 w-28 text-center whitespace-nowrap">{isMario ? 'IL RAW' : 'IL raw'}</th>
+                <th className="px-3 py-2 sm:py-3 w-24 text-center whitespace-nowrap">{isMario ? 'MARIO' : 'Mario'}</th>
+                <th className="px-3 py-2 sm:py-3 w-24 text-center whitespace-nowrap">{isMario ? 'CROKINOLE' : 'Crokinole'}</th>
+                <th className="px-3 py-2 sm:py-3 w-24 text-center whitespace-nowrap">{isMario ? 'HELPING' : 'Helping'}</th>
+                <th className="px-3 py-2 sm:py-3 w-28 text-right">{isMario ? 'Δ MARIO' : 'Δ Mario'}</th>
+                <th className="px-3 py-2 sm:py-3 w-28 text-right">{isMario ? 'Δ CROKINOLE' : 'Δ Crokinole'}</th>
+                <th className="px-3 py-2 sm:py-3 w-28 text-right">{isMario ? 'Δ HELPING' : 'Δ Helping'}</th>
+                <th className="px-3 py-2 sm:py-3 w-24 text-right">{isMario ? 'TOTAL' : 'Total'}</th>
               </tr>
             </thead>
             <tbody>
@@ -283,15 +352,20 @@ function AdminTable({ onLoggedOut, theme, onSetTheme }: AdminTableProps) {
                   deltas={deltas[t.teamId] ?? {}}
                   onDeltaChange={(category, value) => setDelta(t.teamId, category, value)}
                   onToggleActive={(active) => void onToggleActive(t.teamId, active)}
+                  isMario={isMario}
                 />
               ))}
               {teams.length === 0 && (
                 <tr>
                   <td
                     colSpan={10}
-                    className="px-4 py-6 text-center text-ink-mid dark:text-dark-dim text-sm"
+                    className={
+                      isMario
+                        ? 'px-4 py-6 text-center font-crt text-lg text-[color:var(--mario-ink-soft)]'
+                        : 'px-4 py-6 text-center text-ink-mid dark:text-dark-dim text-sm'
+                    }
                   >
-                    No teams yet — waiting for first aggregator tick.
+                    {isMario ? 'NO TEAMS YET — WAITING FOR AGGREGATOR…' : 'No teams yet — waiting for first aggregator tick.'}
                   </td>
                 </tr>
               )}
@@ -299,7 +373,7 @@ function AdminTable({ onLoggedOut, theme, onSetTheme }: AdminTableProps) {
           </table>
         </section>
 
-        <ApplyBar busy={busy} count={pendingCount} onApply={() => void onApply()} />
+        <ApplyBar busy={busy} count={pendingCount} onApply={() => void onApply()} isMario={isMario} />
       </main>
     </div>
   );
@@ -326,15 +400,30 @@ type RowProps = {
   deltas: Partial<Record<BonusCategory, string>>;
   onDeltaChange: (category: BonusCategory, value: string) => void;
   onToggleActive: (active: boolean) => void;
+  isMario: boolean;
 };
 
-function AdminRow({ team, deltas, onDeltaChange, onToggleActive }: RowProps) {
+function AdminRow({ team, deltas, onDeltaChange, onToggleActive, isMario }: RowProps) {
   const dimmed = team.active ? '' : 'opacity-50';
+  const rowCls = isMario
+    ? `scroll-row ${dimmed}`
+    : `border-b border-line-light dark:border-dark-line ${dimmed}`;
+  const nameCls = isMario
+    ? 'px-3 py-2 sm:py-3 font-pixel text-[11px] text-[color:var(--mario-ink)] tight-px'
+    : 'px-3 py-2 sm:py-3 text-ink-black dark:text-dark-text font-medium text-sm sm:text-base';
+  const numCls = isMario
+    ? 'px-3 py-2 sm:py-3 text-center num text-xl text-[color:var(--mario-ink)]'
+    : 'px-3 py-2 sm:py-3 text-center tabular text-sm';
+  const totalCls = isMario
+    ? 'px-3 py-2 sm:py-3 text-right num text-2xl font-bold text-[color:var(--mario-ink)]'
+    : 'px-3 py-2 sm:py-3 text-right tabular font-bold text-sm sm:text-base text-ink-black dark:text-dark-text';
+  const inputCls = isMario
+    ? 'pixel-input w-24 text-right'
+    : 'w-24 px-2 py-1 text-right rounded-standard border border-line-light dark:border-dark-line bg-surface-white dark:bg-dark-card text-ink-black dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-brand-green';
+
   return (
-    <tr className={`border-b border-line-light dark:border-dark-line ${dimmed}`}>
-      <td className="px-3 py-2 sm:py-3 text-ink-black dark:text-dark-text font-medium text-sm sm:text-base">
-        {team.teamName}
-      </td>
+    <tr className={rowCls}>
+      <td className={nameCls}>{team.teamName}</td>
       <td className="px-3 py-2 sm:py-3 text-center">
         <label className="inline-flex items-center cursor-pointer align-middle">
           <input
@@ -349,18 +438,10 @@ function AdminRow({ team, deltas, onDeltaChange, onToggleActive }: RowProps) {
           />
         </label>
       </td>
-      <td className="px-3 py-2 sm:py-3 text-center tabular text-sm">
-        {team.immersivelab_points.toLocaleString('en-US')}
-      </td>
-      <td className="px-3 py-2 sm:py-3 text-center tabular text-sm">
-        {team.mario_points.toLocaleString('en-US')}
-      </td>
-      <td className="px-3 py-2 sm:py-3 text-center tabular text-sm">
-        {team.crokinole_points.toLocaleString('en-US')}
-      </td>
-      <td className="px-3 py-2 sm:py-3 text-center tabular text-sm">
-        {team.helping_points.toLocaleString('en-US')}
-      </td>
+      <td className={numCls}>{team.immersivelab_points.toLocaleString('en-US')}</td>
+      <td className={numCls}>{team.mario_points.toLocaleString('en-US')}</td>
+      <td className={numCls}>{team.crokinole_points.toLocaleString('en-US')}</td>
+      <td className={numCls}>{team.helping_points.toLocaleString('en-US')}</td>
       {CATEGORIES.map((category) => (
         <td key={category} className="px-3 py-2 sm:py-3 text-right">
           <input
@@ -370,32 +451,42 @@ function AdminRow({ team, deltas, onDeltaChange, onToggleActive }: RowProps) {
             onChange={(e) => onDeltaChange(category, e.target.value)}
             placeholder="0"
             aria-label={`Delta ${CATEGORY_LABEL[category]} for ${team.teamName}`}
-            className="w-24 px-2 py-1 text-right rounded-standard border border-line-light dark:border-dark-line bg-surface-white dark:bg-dark-card text-ink-black dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-brand-green"
+            className={inputCls}
           />
         </td>
       ))}
-      <td className="px-3 py-2 sm:py-3 text-right tabular font-bold text-sm sm:text-base text-ink-black dark:text-dark-text">
-        {team.total.toLocaleString('en-US')}
-      </td>
+      <td className={totalCls}>{team.total.toLocaleString('en-US')}</td>
     </tr>
   );
 }
 
-type ApplyBarProps = { busy: boolean; count: number; onApply: () => void };
+type ApplyBarProps = { busy: boolean; count: number; onApply: () => void; isMario: boolean };
 
-function ApplyBar({ busy, count, onApply }: ApplyBarProps) {
+function ApplyBar({ busy, count, onApply, isMario }: ApplyBarProps) {
   return (
     <div className="my-3 flex items-center justify-end gap-3">
-      <span className="text-sm text-ink-mid dark:text-dark-dim">
-        {count === 0 ? 'No pending changes' : `${count} pending`}
+      <span className={
+        isMario
+          ? 'font-crt text-lg text-white'
+          : 'text-sm text-ink-mid dark:text-dark-dim'
+      }
+      style={isMario ? { textShadow: '0 2px 0 rgba(0,0,0,0.35)' } : undefined}
+      >
+        {count === 0
+          ? (isMario ? 'NO PENDING CHANGES' : 'No pending changes')
+          : (isMario ? `${count} PENDING` : `${count} pending`)}
       </span>
       <button
         type="button"
         onClick={onApply}
         disabled={busy || count === 0}
-        className="px-4 py-2 rounded-standard bg-brand-green text-white font-medium disabled:opacity-60"
+        className={
+          isMario
+            ? 'pixel-btn pixel-btn-green'
+            : 'px-4 py-2 rounded-standard bg-brand-green text-white font-medium disabled:opacity-60'
+        }
       >
-        {busy ? 'Applying…' : 'Apply'}
+        {busy ? (isMario ? 'APPLYING…' : 'Applying…') : (isMario ? 'APPLY' : 'Apply')}
       </button>
     </div>
   );

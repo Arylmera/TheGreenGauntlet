@@ -4,6 +4,7 @@ import { useTheme } from './hooks/useTheme';
 import { useSoundPref } from './hooks/useSoundPref';
 import { useSound } from './hooks/useSound';
 import { ArcadeProvider } from './context/ArcadeContext';
+import { SkyStage } from './components/mario/Clouds';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { Podium } from './components/Podium';
@@ -41,7 +42,8 @@ function PublicDashboard() {
 
   return (
     <ArcadeProvider value={arcadeValue}>
-      <div className="min-h-screen flex flex-col bg-surface-off dark:bg-dark-page">
+      <div className="min-h-screen flex flex-col bg-surface-off dark:bg-dark-page relative">
+        {theme === 'mario' && <SkyStage />}
         <Header
           updatedAt={updatedAt}
           theme={theme}
@@ -50,7 +52,7 @@ function PublicDashboard() {
           onToggleSound={toggleSound}
         />
 
-        <main className="flex-1 max-w-screen-2xl mx-auto w-full px-3 sm:px-6 2xl:px-10 py-4 sm:py-6 2xl:py-8">
+        <main className="relative z-10 flex-1 max-w-screen-2xl mx-auto w-full px-3 sm:px-6 2xl:px-10 py-4 sm:py-6 2xl:py-8">
           {error && consecutiveErrors >= 3 && (
             <div className="mb-6 rounded-standard border border-semantic-warning bg-[#fef5e5] dark:bg-[#3a2e14] text-ink-black dark:text-dark-text px-4 py-3 text-sm">
               Connection issue — showing last known standings.
@@ -79,7 +81,7 @@ function PublicDashboard() {
           {data && data.phase !== 'pre' && data.teams.length > 0 && (
             <>
               <Podium top={data.teams.slice(0, 3)} />
-              <div className="mario-land-zone -mx-3 sm:-mx-6 2xl:-mx-10 px-3 sm:px-6 2xl:px-10 pt-6 pb-10 flex-1">
+              <div className="pt-6 pb-10 flex-1">
                 <Leaderboard teams={data.teams} />
               </div>
             </>
