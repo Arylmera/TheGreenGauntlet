@@ -17,21 +17,29 @@ describe('BonusDb', () => {
     await fs.rm(tmp, { recursive: true, force: true });
   });
 
-  it('seeds new teams with points=0 and active=1', () => {
+  it('seeds new teams with all categories at 0 and active=1', () => {
     db.upsertTeamSeeds([
       { teamId: 't1', teamName: 'Team One' },
       { teamId: 't2', teamName: 'Team Two' },
     ]);
     const rows = db.getAll();
     expect(rows).toHaveLength(2);
-    expect(rows.every((r) => r.points === 0 && r.active === 1)).toBe(true);
+    expect(
+      rows.every(
+        (r) =>
+          r.mario_points === 0 &&
+          r.crokinole_points === 0 &&
+          r.helping_points === 0 &&
+          r.active === 1,
+      ),
+    ).toBe(true);
   });
 
-  it('is idempotent — re-seeding does not reset points', () => {
+  it('is idempotent — re-seeding does not reset category points', () => {
     db.upsertTeamSeeds([{ teamId: 't1', teamName: 'Team One' }]);
-    db.applyBatchDeltas([{ teamId: 't1', delta: 50 }], 'admin');
+    db.applyBatchDeltas([{ teamId: 't1', category: 'mario', delta: 50 }], 'admin');
     db.upsertTeamSeeds([{ teamId: 't1', teamName: 'Team One' }]);
-    expect(db.getAll()[0]?.points).toBe(50);
+    expect(db.getAll()[0]?.mario_points).toBe(50);
   });
 
   it('updates team_name when renamed', () => {
@@ -40,46 +48,61 @@ describe('BonusDb', () => {
     expect(db.getAll()[0]?.team_name).toBe('New Name');
   });
 
-  it('applies batch deltas atomically', () => {
+  it('applies batch deltas across categories atomically', () => {
     db.upsertTeamSeeds([
       { teamId: 'a', teamName: 'A' },
       { teamId: 'b', teamName: 'B' },
     ]);
     db.applyBatchDeltas(
       [
-        { teamId: 'a', delta: 30 },
-        { teamId: 'b', delta: 10 },
+        { teamId: 'a', category: 'mario', delta: 30 },
+        { teamId: 'a', category: 'crokinole', delta: 10 },
+        { teamId: 'b', category: 'helping', delta: 5 },
       ],
       'admin',
     );
     const rows = db.getAll();
-    expect(rows.find((r) => r.team_id === 'a')?.points).toBe(30);
-    expect(rows.find((r) => r.team_id === 'b')?.points).toBe(10);
+    const a = rows.find((r) => r.team_id === 'a');
+    const b = rows.find((r) => r.team_id === 'b');
+    expect(a?.mario_points).toBe(30);
+    expect(a?.crokinole_points).toBe(10);
+    expect(b?.helping_points).toBe(5);
   });
 
-  it('rejects entire batch if any result < 0', () => {
+  it('sums duplicate team+category in a single batch', () => {
+    db.upsertTeamSeeds([{ teamId: 'a', teamName: 'A' }]);
+    db.applyBatchDeltas(
+      [
+        { teamId: 'a', category: 'mario', delta: 20 },
+        { teamId: 'a', category: 'mario', delta: 7 },
+      ],
+      'admin',
+    );
+    expect(db.getAll()[0]?.mario_points).toBe(27);
+  });
+
+  it('rejects entire batch if any category result < 0', () => {
     db.upsertTeamSeeds([
       { teamId: 'a', teamName: 'A' },
       { teamId: 'b', teamName: 'B' },
     ]);
-    db.applyBatchDeltas([{ teamId: 'a', delta: 20 }], 'admin');
+    db.applyBatchDeltas([{ teamId: 'a', category: 'mario', delta: 20 }], 'admin');
     expect(() =>
       db.applyBatchDeltas(
         [
-          { teamId: 'a', delta: 5 },
-          { teamId: 'b', delta: -100 },
+          { teamId: 'a', category: 'mario', delta: 5 },
+          { teamId: 'b', category: 'crokinole', delta: -100 },
         ],
         'admin',
       ),
     ).toThrow(BonusDbError);
-    // a should remain unchanged because tx was rolled back.
-    expect(db.getAll().find((r) => r.team_id === 'a')?.points).toBe(20);
+    expect(db.getAll().find((r) => r.team_id === 'a')?.mario_points).toBe(20);
   });
 
   it('rejects unknown team in batch', () => {
     db.upsertTeamSeeds([{ teamId: 'a', teamName: 'A' }]);
     expect(() =>
-      db.applyBatchDeltas([{ teamId: 'zz', delta: 5 }], 'admin'),
+      db.applyBatchDeltas([{ teamId: 'zz', category: 'mario', delta: 5 }], 'admin'),
     ).toThrow(/unknown team/);
   });
 
@@ -97,10 +120,10 @@ describe('BonusDb', () => {
 
   it('persists across BonusDb instances (WAL)', () => {
     db.upsertTeamSeeds([{ teamId: 'a', teamName: 'A' }]);
-    db.applyBatchDeltas([{ teamId: 'a', delta: 42 }], 'admin');
+    db.applyBatchDeltas([{ teamId: 'a', category: 'helping', delta: 42 }], 'admin');
     db.close();
     const db2 = new BonusDb(path.join(tmp, 'bonus.sqlite'));
-    expect(db2.getAll()[0]?.points).toBe(42);
+    expect(db2.getAll()[0]?.helping_points).toBe(42);
     db2.close();
   });
 });

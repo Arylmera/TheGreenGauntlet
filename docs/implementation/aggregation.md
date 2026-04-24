@@ -25,12 +25,19 @@ See [dashboard-storage-plan.md](dashboard-storage-plan.md) §1 for why.
 ## Build steps
 1. `walkAccounts()` → `accounts[]`. Treat `points: null` as 0. Email-based filter (`@immersivelabs.pro`) is applied inside the client walker; see [immersiveLab-client.md](immersiveLab-client.md).
 2. **Team-bonus seeding + merge** (see [admin-bonus-plan.md](admin-bonus-plan.md)):
-   - `INSERT OR IGNORE` one row per walked team into `team_bonus (team_id, team_name, points=0, active=1)`. Guarantees bonus rows exist as soon as a team is seen, independent of the admin UI.
-   - LEFT JOIN each team to `team_bonus`: `il_points = Account.points`, `bonus_points = team_bonus.points ?? 0`, `total = il_points + bonus_points`.
+   - `INSERT OR IGNORE` one row per walked team into `team_bonus (team_id, team_name, mario_points=0, crokinole_points=0, helping_points=0, active=1)`. Guarantees bonus rows exist as soon as a team is seen, independent of the admin UI.
+   - LEFT JOIN each team to `team_bonus`. Three fixed categories:
+     - `mario_points`, `crokinole_points` — shown as their own columns on the public leaderboard.
+     - `helping_points` — merged into the IL column (hidden as a separate line from spectators).
+   - Merge formula:
+     ```
+     il_out = Account.points + helping_points
+     total  = il_out + mario_points + crokinole_points
+     ```
    - Drop teams where `team_bonus.active = 0` (hidden/DQ) — they are not rendered, not ranked.
 3. Sort desc by `total`. Tie-break: `lastActivityAt` asc (earlier finisher wins), then `displayName` asc.
 4. Scrub: drop any field not listed in the payload schema (email is already not yielded by the walker).
-5. Relabel for payload: `accounts` → `teams` (1 IL account per team; see [dashboard-storage-plan.md](dashboard-storage-plan.md) §4). Emit `il_points`, `bonus_points`, `total` (aliased as `points` for backwards-compatible sorting consumers if needed).
+5. Relabel for payload: `accounts` → `teams` (1 IL account per team; see [dashboard-storage-plan.md](dashboard-storage-plan.md) §4). Public payload emits `il_points` (= merged `il_out`), `mario_points`, `crokinole_points`, `total`. The raw IL (pre-merge) and `helping_points` stay server-side — they are only surfaced to the admin (`GET /api/admin/bonus`) and in the CSV export, where they are named `immersivelab_points` and `helping_points` respectively.
 
 No activity walk. No attempts walk. Retries naturally shadow because `Account.points` reflects current state.
 
@@ -49,21 +56,23 @@ Computed once per snapshot from `now` vs env bounds. Phase drives UI state and t
   "eventWindow": { "startAt": "ISO-8601", "endAt": "ISO-8601" },
   "teams": [
     {
+      "rank": 1,
       "uuid": "...",
       "displayName": "...",
-      "il_points": 1200,
-      "bonus_points": 150,
-      "total": 1350,
+      "il_points": 1250,
+      "mario_points": 80,
+      "crokinole_points": 40,
+      "total": 1370,
       "lastActivityAt": "..."
     }
   ]
 }
 ```
 
-Inactive teams (`team_bonus.active = 0`) are excluded from `teams[]`. `timeSpent` / `completedCount` are **not** emitted (they were attempts-path fields).
+`il_points` is already merged with helping (`Account.points + helping_points`). Inactive teams (`team_bonus.active = 0`) are excluded from `teams[]`. `timeSpent` / `completedCount` are **not** emitted (they were attempts-path fields). Helping and the raw IL value are admin-only — see [admin-bonus-plan.md](admin-bonus-plan.md) `GET /api/admin/bonus`.
 
 ## Cache invalidation + SSE
-Admin bonus writes (batch commit, active toggle) invalidate the in-memory snapshot and emit a `leaderboard-updated` event on `GET /api/leaderboard/stream` (SSE). Public clients refetch `/api/leaderboard` on event, so bonus changes propagate within ~100 ms instead of waiting for the 30 s client poll. See [admin-bonus-plan.md](admin-bonus-plan.md) Discussion C.
+Admin bonus writes (category-tagged batch commit, active toggle) invalidate the in-memory snapshot and emit a `leaderboard-updated` event on `GET /api/leaderboard/stream` (SSE). Public clients refetch `/api/leaderboard` on event, so bonus changes propagate within ~100 ms instead of waiting for the 30 s client poll. See [admin-bonus-plan.md](admin-bonus-plan.md) Decision log C.
 
 ## Verification
 - Two concurrent `/api/leaderboard` hits → one upstream rebuild (log once).

@@ -1,8 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import type { Env } from '../../env.js';
-import type { BonusDb } from '../../bonusDb.js';
-import { BonusDbError } from '../../bonusDb.js';
-import type { LeaderboardAggregator } from '../../aggregate.js';
+import type { BonusDb, BonusCategory } from '../../bonusDb.js';
+import { BonusDbError, isBonusCategory } from '../../bonusDb.js';
+import type { LeaderboardAggregator, Team } from '../../aggregate.js';
 import { requireAdmin } from './auth.js';
 
 export type AdminBonusDeps = {
@@ -16,23 +16,28 @@ export function registerAdminBonusRoutes(app: FastifyInstance, deps: AdminBonusD
   const auth = requireAdmin(env);
 
   app.get('/api/admin/bonus', { preHandler: auth }, async () => {
-    // Pull latest leaderboard so IL points are current.
-    const payload = await aggregator.getLeaderboard();
-    const ilByTeam = new Map(payload.teams.map((t) => [t.uuid, t]));
+    const admin = await aggregator.getAdminTeams();
+    const teamByUuid = new Map<string, Team>(admin.teams.map((t) => [t.uuid, t]));
     const rows = bonusDb.getAll();
     return {
-      updatedAt: payload.updatedAt,
+      updatedAt: admin.updatedAt,
       teams: rows.map((r) => {
-        const il = ilByTeam.get(r.team_id);
-        const il_points = il?.il_points ?? 0;
-        const bonus_points = r.points;
-        const total = il_points + bonus_points;
+        const team = teamByUuid.get(r.team_id);
+        const immersivelab_points = team?.immersivelab_points ?? 0;
+        const helping_points = r.helping_points;
+        const mario_points = r.mario_points;
+        const crokinole_points = r.crokinole_points;
+        const il_points = immersivelab_points + helping_points;
+        const total = il_points + mario_points + crokinole_points;
         return {
           teamId: r.team_id,
           teamName: r.team_name,
           active: r.active === 1,
+          immersivelab_points,
+          helping_points,
+          mario_points,
+          crokinole_points,
           il_points,
-          bonus_points,
           total,
           updated_at: r.updated_at,
           updated_by: r.updated_by,
@@ -46,19 +51,24 @@ export function registerAdminBonusRoutes(app: FastifyInstance, deps: AdminBonusD
     if (!Array.isArray(body.updates)) {
       return reply.code(400).send({ error: 'invalid_body', message: 'updates must be an array' });
     }
-    const deltas: { teamId: string; delta: number }[] = [];
+    const deltas: { teamId: string; category: BonusCategory; delta: number }[] = [];
     for (const raw of body.updates) {
       if (!raw || typeof raw !== 'object') {
         return reply.code(400).send({ error: 'invalid_body', message: 'each update must be an object' });
       }
-      const u = raw as { teamId?: unknown; delta?: unknown };
+      const u = raw as { teamId?: unknown; category?: unknown; delta?: unknown };
       if (typeof u.teamId !== 'string' || u.teamId.length === 0) {
         return reply.code(400).send({ error: 'invalid_body', message: 'teamId required' });
+      }
+      if (!isBonusCategory(u.category)) {
+        return reply
+          .code(400)
+          .send({ error: 'invalid_body', message: 'category must be one of mario | crokinole | helping' });
       }
       if (typeof u.delta !== 'number' || !Number.isInteger(u.delta)) {
         return reply.code(400).send({ error: 'invalid_body', message: 'delta must be an integer' });
       }
-      deltas.push({ teamId: u.teamId, delta: u.delta });
+      deltas.push({ teamId: u.teamId, category: u.category, delta: u.delta });
     }
 
     try {
@@ -69,7 +79,9 @@ export function registerAdminBonusRoutes(app: FastifyInstance, deps: AdminBonusD
         updated: updated.map((r) => ({
           teamId: r.team_id,
           teamName: r.team_name,
-          bonus_points: r.points,
+          mario_points: r.mario_points,
+          crokinole_points: r.crokinole_points,
+          helping_points: r.helping_points,
           active: r.active === 1,
           updated_at: r.updated_at,
         })),
@@ -107,10 +119,20 @@ export function registerAdminBonusRoutes(app: FastifyInstance, deps: AdminBonusD
   });
 
   app.get('/api/admin/export.csv', { preHandler: auth }, async (_req, reply) => {
-    const payload = await aggregator.getLeaderboard();
-    const header = 'team_id,team_name,il_points,bonus_points,total,rank';
-    const rows = payload.teams.map((t) =>
-      [t.uuid, csvEscape(t.displayName), t.il_points, t.bonus_points, t.total, t.rank].join(','),
+    const admin = await aggregator.getAdminTeams();
+    const header =
+      'team_id,team_name,immersivelab_points,helping_points,mario_points,crokinole_points,total,rank';
+    const rows = admin.teams.map((t) =>
+      [
+        t.uuid,
+        csvEscape(t.displayName),
+        t.immersivelab_points,
+        t.helping_points,
+        t.mario_points,
+        t.crokinole_points,
+        t.total,
+        t.rank,
+      ].join(','),
     );
     reply
       .header('content-type', 'text/csv; charset=utf-8')

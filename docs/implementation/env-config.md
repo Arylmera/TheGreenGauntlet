@@ -18,7 +18,7 @@ Server-only. Never exposed to browser/Vite.
 | `ADMIN_PASSWORD` | yes | — | Shared admin password for `/admin` page. Server refuses to start if missing. See [admin-bonus-plan.md](admin-bonus-plan.md). |
 | `ADMIN_SESSION_SECRET` | yes | — | HMAC key for signed admin session cookies. 32+ bytes random. Required. |
 | `ADMIN_SESSION_TTL_MS` | no | `172800000` | Admin cookie TTL (default 48 h). |
-| `BONUS_DB_PATH` | no | `${DATA_DIR}/bonus.sqlite` | SQLite file holding `team_bonus` + `bonus_history`. Override only for tests. |
+| `BONUS_DB_PATH` | no | `${DATA_DIR}/bonus.sqlite` | SQLite file holding `team_bonus` (per-team `mario_points`, `crokinole_points`, `helping_points`, plus `active`). Override only for tests. |
 
 ## Files
 - `.env.example` — documented, committed, no real values.

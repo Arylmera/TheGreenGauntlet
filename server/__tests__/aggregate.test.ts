@@ -45,7 +45,7 @@ describe('rankTeams', () => {
     ];
     const ranked = rankTeams(accounts);
     expect(ranked.map((t) => t.uuid)).toEqual(['d', 'c', 'b', 'a', 'e']);
-    expect(ranked[4]?.points).toBe(0);
+    expect(ranked[4]?.total).toBe(0);
   });
 
   it('returns empty array for no accounts', () => {
@@ -59,6 +59,56 @@ describe('rankTeams', () => {
       { uuid: 'c', displayName: 'C', points: 1, lastActivityAt: null },
     ]);
     expect(ranked.map((t) => t.rank)).toEqual([1, 2, 3]);
+  });
+
+  it('merges helping into il_points; keeps mario/crokinole separate; total sums all', () => {
+    const accounts: Account[] = [
+      { uuid: 'a', displayName: 'A', points: 100, lastActivityAt: null },
+    ];
+    const bonus = new Map([
+      [
+        'a',
+        {
+          team_id: 'a',
+          team_name: 'A',
+          mario_points: 10,
+          crokinole_points: 5,
+          helping_points: 20,
+          active: 1 as const,
+          updated_at: '',
+          updated_by: null,
+        },
+      ],
+    ]);
+    const ranked = rankTeams(accounts, bonus);
+    expect(ranked[0]?.il_points).toBe(120);
+    expect(ranked[0]?.mario_points).toBe(10);
+    expect(ranked[0]?.crokinole_points).toBe(5);
+    expect(ranked[0]?.total).toBe(135);
+  });
+
+  it('filters inactive teams', () => {
+    const accounts: Account[] = [
+      { uuid: 'a', displayName: 'A', points: 50, lastActivityAt: null },
+      { uuid: 'b', displayName: 'B', points: 20, lastActivityAt: null },
+    ];
+    const bonus = new Map([
+      [
+        'a',
+        {
+          team_id: 'a',
+          team_name: 'A',
+          mario_points: 0,
+          crokinole_points: 0,
+          helping_points: 0,
+          active: 0 as const,
+          updated_at: '',
+          updated_by: null,
+        },
+      ],
+    ]);
+    const ranked = rankTeams(accounts, bonus);
+    expect(ranked.map((t) => t.uuid)).toEqual(['b']);
   });
 
   it('falls back to displayName when points and activity tie exactly', () => {
@@ -108,7 +158,7 @@ describe('LeaderboardAggregator', () => {
     await agg.init();
     const payload = await agg.getLeaderboard();
     expect(payload.phase).toBe('live');
-    expect(payload.teams[0]?.points).toBe(42);
+    expect(payload.teams[0]?.total).toBe(42);
     const onDisk = JSON.parse(await fs.readFile(path.join(tmp, 'snapshot.json'), 'utf8'));
     expect(onDisk.payload.teams[0].uuid).toBe('x');
   });
@@ -182,7 +232,7 @@ describe('LeaderboardAggregator', () => {
     shouldFail = true;
     clock += 10_000;
     const stale = await agg.getLeaderboard();
-    expect(stale.teams[0]?.points).toBe(9);
+    expect(stale.teams[0]?.total).toBe(9);
   });
 
   it('upstream error with no snapshot → throws', async () => {
@@ -221,7 +271,7 @@ describe('LeaderboardAggregator', () => {
     await second.init();
     const payload = await second.getLeaderboard();
     expect(payload.phase).toBe('ended');
-    expect(payload.teams[0]?.points).toBe(11);
+    expect(payload.teams[0]?.total).toBe(11);
     expect(walk).not.toHaveBeenCalled();
   });
 
@@ -256,7 +306,7 @@ describe('LeaderboardAggregator', () => {
     clock = Date.parse('2026-05-01T18:00:00Z');
     const frozen = await agg.getLeaderboard();
     expect(frozen.phase).toBe('ended');
-    expect(frozen.teams[0]?.points).toBe(7);
+    expect(frozen.teams[0]?.total).toBe(7);
     expect(walk).toHaveBeenCalledTimes(1);
   });
 });

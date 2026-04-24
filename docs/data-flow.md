@@ -4,7 +4,7 @@ Site is public. Browser never sees an ImmersiveLab token. A backend proxy holds 
 
 > **Note:** teams receive fresh Immersive Labs accounts at `EVENT_START_AT`, so `Account.points` is event-scoped by construction. No `/v2/attempts` walk, no `completedAt` filtering. See [implementation/aggregation.md](implementation/aggregation.md) and [implementation/dashboard-storage-plan.md](implementation/dashboard-storage-plan.md).
 >
-> **Admin bonus layer:** on top of `Account.points`, an authenticated admin page awards per-team bonus points for on-site challenges. Bonuses live in a separate SQLite file (`bonus.sqlite`) and merge into the leaderboard total (`total = il_points + bonus_points`). Admin writes push via SSE so the public dashboard updates within ~100 ms. See [implementation/admin-bonus-plan.md](implementation/admin-bonus-plan.md).
+> **Admin bonus layer (three categories):** on top of `Account.points`, an authenticated admin page awards per-team bonus points across **three fixed categories** — `mario_points`, `crokinole_points`, `helping_points`. Bonuses live in a separate SQLite file (`bonus.sqlite`). Merge rule: `il_points = Account.points + helping_points` (helping is hidden from the public as a separate line); `total = il_points + mario_points + crokinole_points`. Admin writes push via SSE so the public dashboard updates within ~100 ms. See [implementation/admin-bonus-plan.md](implementation/admin-bonus-plan.md).
 
 ## Sequence
 
@@ -89,7 +89,10 @@ flowchart TD
 
 ## Aggregation rules
 - `Account.points: null` → treat as `0`.
-- Leaderboard `total = il_points + bonus_points`, where `il_points = Account.points` and `bonus_points` comes from `team_bonus.points` in `bonus.sqlite` (0 if the row is missing). Fresh accounts = event-scoped by construction; no `completedAt` filtering needed.
+- Leaderboard merge uses three bonus categories stored in `team_bonus` (`mario_points`, `crokinole_points`, `helping_points`, all defaulting to 0):
+  - `il_points` on the public wire = `Account.points + helping_points` (helping merged in, not shown as a separate column to spectators).
+  - `total = il_points + mario_points + crokinole_points`.
+  Fresh accounts = event-scoped by construction; no `completedAt` filtering needed.
 - Teams with `team_bonus.active = 0` are excluded from the payload (hidden / DQ).
 - **Event window** (`EVENT_START_AT` / `EVENT_END_AT`) drives **phase + freeze**, not scoring:
   - `now < EVENT_START_AT` → `phase = "pre"`, `teams: []` (protects against cred leaks before start).
@@ -101,7 +104,7 @@ flowchart TD
 
 ## Endpoints
 **Proxy → browser (public, read-only)**
-- `GET /api/leaderboard` — ranked team snapshot `{ teams: [{ il_points, bonus_points, total, ... }], phase, eventWindow, updatedAt }`.
+- `GET /api/leaderboard` — ranked team snapshot `{ teams: [{ il_points, mario_points, crokinole_points, total, ... }], phase, eventWindow, updatedAt }`. `il_points` already includes helping.
 - `GET /api/leaderboard/stream` — SSE, emits `leaderboard-updated` on cache invalidation.
 - `GET /api/health` — proxy + token status + `eventWindow`.
 

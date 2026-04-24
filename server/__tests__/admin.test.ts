@@ -106,8 +106,7 @@ describe('admin routes', () => {
     expect(res.statusCode).toBe(401);
   });
 
-  it('GET /api/admin/bonus returns list with il/bonus/total', async () => {
-    // Trigger one aggregator build so bonus rows are seeded.
+  it('GET /api/admin/bonus returns list with per-category breakdown', async () => {
     await harness.aggregator.getLeaderboard();
     const { cookie } = await login(harness.app);
     const res = await harness.app.inject({
@@ -119,8 +118,11 @@ describe('admin routes', () => {
     const body = res.json();
     expect(body.teams).toHaveLength(2);
     const t1 = body.teams.find((t: { teamId: string }) => t.teamId === 't1');
+    expect(t1.immersivelab_points).toBe(100);
+    expect(t1.helping_points).toBe(0);
+    expect(t1.mario_points).toBe(0);
+    expect(t1.crokinole_points).toBe(0);
     expect(t1.il_points).toBe(100);
-    expect(t1.bonus_points).toBe(0);
     expect(t1.total).toBe(100);
     expect(t1.active).toBe(true);
   });
@@ -133,7 +135,13 @@ describe('admin routes', () => {
       method: 'POST',
       url: '/api/admin/bonus/batch',
       headers: { cookie, 'content-type': 'application/json' },
-      payload: { updates: [{ teamId: 't1', delta: 50 }, { teamId: 't2', delta: 25 }] },
+      payload: {
+        updates: [
+          { teamId: 't1', category: 'mario', delta: 30 },
+          { teamId: 't1', category: 'helping', delta: 20 },
+          { teamId: 't2', category: 'crokinole', delta: 25 },
+        ],
+      },
     });
     expect(res.statusCode).toBe(200);
 
@@ -141,43 +149,71 @@ describe('admin routes', () => {
       method: 'GET',
       url: '/api/leaderboard',
     });
-    const teams = after.json().teams as { uuid: string; il_points: number; bonus_points: number; total: number }[];
+    const teams = after.json().teams as {
+      uuid: string;
+      il_points: number;
+      mario_points: number;
+      crokinole_points: number;
+      total: number;
+    }[];
     const t1 = teams.find((t) => t.uuid === 't1');
     const t2 = teams.find((t) => t.uuid === 't2');
-    expect(t1?.bonus_points).toBe(50);
+    // t1: IL 100 + helping 20 = 120 il_points; +mario 30 = 150 total.
+    expect(t1?.il_points).toBe(120);
+    expect(t1?.mario_points).toBe(30);
     expect(t1?.total).toBe(150);
-    expect(t2?.bonus_points).toBe(25);
+    // t2: IL 200 il_points; +crokinole 25 = 225 total.
+    expect(t2?.il_points).toBe(200);
+    expect(t2?.crokinole_points).toBe(25);
     expect(t2?.total).toBe(225);
-    // t2 should rank first (225 > 150).
     expect(teams[0]?.uuid).toBe('t2');
   });
 
-  it('batch rejects whole batch if any resulting total < 0', async () => {
+  it('batch rejects invalid category with 400', async () => {
     await harness.aggregator.getLeaderboard();
     const { cookie } = await login(harness.app);
-    // Seed t1 with 10; try to remove 20 and add 5 to t2 — whole batch rejected.
+    const res = await harness.app.inject({
+      method: 'POST',
+      url: '/api/admin/bonus/batch',
+      headers: { cookie, 'content-type': 'application/json' },
+      payload: { updates: [{ teamId: 't1', category: 'nope', delta: 5 }] },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('batch rejects whole batch if any category result < 0', async () => {
+    await harness.aggregator.getLeaderboard();
+    const { cookie } = await login(harness.app);
     await harness.app.inject({
       method: 'POST',
       url: '/api/admin/bonus/batch',
       headers: { cookie, 'content-type': 'application/json' },
-      payload: { updates: [{ teamId: 't1', delta: 10 }] },
+      payload: { updates: [{ teamId: 't1', category: 'mario', delta: 10 }] },
     });
     const res = await harness.app.inject({
       method: 'POST',
       url: '/api/admin/bonus/batch',
       headers: { cookie, 'content-type': 'application/json' },
-      payload: { updates: [{ teamId: 't1', delta: -20 }, { teamId: 't2', delta: 5 }] },
+      payload: {
+        updates: [
+          { teamId: 't1', category: 'mario', delta: -20 },
+          { teamId: 't2', category: 'crokinole', delta: 5 },
+        ],
+      },
     });
     expect(res.statusCode).toBe(409);
-    // Verify nothing changed.
     const list = await harness.app.inject({
       method: 'GET',
       url: '/api/admin/bonus',
       headers: { cookie },
     });
-    const teams = list.json().teams as { teamId: string; bonus_points: number }[];
-    expect(teams.find((t) => t.teamId === 't1')?.bonus_points).toBe(10);
-    expect(teams.find((t) => t.teamId === 't2')?.bonus_points).toBe(0);
+    const teams = list.json().teams as {
+      teamId: string;
+      mario_points: number;
+      crokinole_points: number;
+    }[];
+    expect(teams.find((t) => t.teamId === 't1')?.mario_points).toBe(10);
+    expect(teams.find((t) => t.teamId === 't2')?.crokinole_points).toBe(0);
   });
 
   it('PATCH active=false excludes team from public leaderboard', async () => {
@@ -203,7 +239,12 @@ describe('admin routes', () => {
       method: 'POST',
       url: '/api/admin/bonus/batch',
       headers: { cookie, 'content-type': 'application/json' },
-      payload: { updates: [{ teamId: 't1', delta: 200 }] },
+      payload: {
+        updates: [
+          { teamId: 't1', category: 'mario', delta: 120 },
+          { teamId: 't1', category: 'helping', delta: 80 },
+        ],
+      },
     });
     const res = await harness.app.inject({
       method: 'GET',
@@ -213,10 +254,12 @@ describe('admin routes', () => {
     expect(res.statusCode).toBe(200);
     expect(res.headers['content-type']).toMatch(/text\/csv/);
     const body = res.body;
-    expect(body).toMatch(/^team_id,team_name,il_points,bonus_points,total,rank/);
-    // t1 (100+200=300) should rank #1 over t2 (200).
+    expect(body).toMatch(
+      /^team_id,team_name,immersivelab_points,helping_points,mario_points,crokinole_points,total,rank/,
+    );
+    // t1 total = 100 (IL) + 80 (helping) + 120 (mario) = 300, ranks #1 over t2 (200).
     const lines = body.trim().split('\n');
-    expect(lines[1]).toMatch(/t1,Team One,100,200,300,1/);
+    expect(lines[1]).toMatch(/t1,Team One,100,80,120,0,300,1/);
   });
 
   it('logout clears cookie and subsequent request is 401', async () => {
@@ -271,7 +314,10 @@ describe('aggregator + bonus integration', () => {
     await aggregator.init();
     const first = await aggregator.getLeaderboard();
     expect(first.teams[0]?.total).toBe(200); // t2 wins w/ 200
-    bonusDb.applyBatchDeltas([{ teamId: 't1', delta: 500 }], 'admin');
+    bonusDb.applyBatchDeltas(
+      [{ teamId: 't1', category: 'mario', delta: 500 }],
+      'admin',
+    );
     aggregator.invalidate();
     const second = await aggregator.getLeaderboard();
     expect(second.teams[0]?.uuid).toBe('t1');

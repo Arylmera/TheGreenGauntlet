@@ -1,4 +1,4 @@
-import type { AdminBonusListResponse } from '../types';
+import type { AdminBonusListResponse, BonusBatchUpdate } from '../types';
 
 async function jsonRequest<T>(url: string, init: RequestInit): Promise<T> {
   const res = await fetch(url, {
@@ -38,9 +38,7 @@ export async function listBonus(): Promise<AdminBonusListResponse> {
   return jsonRequest<AdminBonusListResponse>('/api/admin/bonus', { method: 'GET' });
 }
 
-export async function applyBonusBatch(
-  updates: { teamId: string; delta: number }[],
-): Promise<void> {
+export async function applyBonusBatch(updates: BonusBatchUpdate[]): Promise<void> {
   await jsonRequest<{ ok: true }>('/api/admin/bonus/batch', {
     method: 'POST',
     body: JSON.stringify({ updates }),

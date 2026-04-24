@@ -87,7 +87,8 @@ export function Leaderboard({ teams }: Props) {
             <th className="hidden sm:table-cell px-2 py-3 w-14" aria-label="Team avatar" />
             <th className="px-2 sm:px-4 py-2 sm:py-3">Team</th>
             <th className="hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-3 text-center w-36 whitespace-nowrap">Immersive Lab</th>
-            <th className="hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-3 text-right w-24">Bonus</th>
+            <th className="hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-3 text-right w-20">Mario</th>
+            <th className="hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-3 text-right w-24">Crokinole</th>
             <th className="px-2 sm:px-4 py-2 sm:py-3 text-right w-24 sm:w-32">Total</th>
             <th className="hidden md:table-cell px-4 py-3 text-right w-40">Last activity</th>
           </tr>
@@ -98,7 +99,7 @@ export function Leaderboard({ teams }: Props) {
           ))}
           {visibleTeams.length === 0 && (
             <tr>
-              <td colSpan={7} className="px-4 py-6 text-center text-ink-mid dark:text-dark-dim text-sm">
+              <td colSpan={8} className="px-4 py-6 text-center text-ink-mid dark:text-dark-dim text-sm">
                 No teams match “{query}”.
               </td>
             </tr>
