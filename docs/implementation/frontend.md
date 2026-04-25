@@ -8,19 +8,23 @@ React SPA served by the Fastify process at `/`. Polls `/api/leaderboard` every 3
 
 ## Files (as shipped)
 - `index.html`, `src/main.tsx`, `src/App.tsx`.
+- `src/pages/PublicDashboard.tsx` — public leaderboard page composition.
+- `src/pages/Admin.tsx` + `src/pages/admin/` — admin SPA (login form, teams table, search bar, apply bar, announcement panel, header).
 - `src/api/client.ts` — `fetchLeaderboard()` calling `/api/leaderboard`.
 - `src/hooks/useLeaderboard.ts` — 30 s poll **plus** `EventSource('/api/leaderboard/stream')` subscription; pause on `document.hidden`; exponential backoff on error.
 - `src/hooks/useViewCategory.ts` — reads/writes `?view=total|il|mario|crokinole`.
-- `src/hooks/useArcade.ts` — theme (light / dark / mario) + sound toggle context.
-- `src/hooks/useFlashedTeams.ts`, `src/hooks/useRowAnimations.ts` — row-flash + FLIP reorder, suppressed on tab switch.
+- `src/hooks/useTheme.ts` — theme (light / dark / mario) context.
+- `src/hooks/useSound.ts` + `src/hooks/useSoundPref.ts` — arcade sound effects + persisted preference.
+- `src/hooks/useAdminAuth.ts`, `src/hooks/useAdminBonus.ts`, `src/hooks/useAnnouncement.ts` — admin/bonus/announcement state.
+- `src/hooks/useFlashedTeams.ts`, `src/hooks/useRowAnimations.ts`, `src/hooks/useRankBounce.ts` — row-flash + FLIP reorder, suppressed on tab switch.
+- `src/hooks/useDismissOnOutside.ts`, `src/hooks/useMenuArrowNav.ts`, `src/hooks/useInterval.ts`, `src/hooks/usePageVisible.ts`, `src/hooks/useLocalStorage.ts` — UI helpers.
 - `src/utils/rankByCategory.ts` — pure re-ranker; tests in `rankByCategory.test.ts`.
-- `src/components/LeaderboardTabs.tsx` — Total / IL / Mario / Crokinole tab strip; standard + Mario pixel variants. `overflow-x-auto` + `snap-x` on mobile.
-- `src/components/Leaderboard.tsx` — ranked list; columns collapse to the active category outside Total.
-- `src/components/TeamRow.tsx` + `src/components/TeamRow.mario.tsx` — row + Mario pixel variant.
-- `src/components/Podium.tsx` + `src/components/Podium.steps.tsx` — podium with points-proportional height, reused per tab.
-- `src/components/HamburgerMenu.tsx` + `src/components/HamburgerMenu.icons.tsx` — menu with theme switch (light/dark/mario) and sound toggle (arcade only).
+- `src/components/leaderboard/` — `Leaderboard.tsx`, `LeaderboardTabs.tsx`, `LeaderboardTableHead.tsx`, `LeaderboardToolbar.tsx`, `TeamRow.tsx`, `TeamRow.mario.tsx`, `TeamAvatar.tsx`, `SkeletonBoard.tsx`, `AnnouncementBanner.tsx`.
+- `src/components/podium/` — `Podium.tsx`, `PipeStep.tsx`, `PanelStep.tsx`, `podium.constants.ts` (points-proportional height, reused per tab).
+- `src/components/menu/` — `HamburgerMenu.tsx`, `HamburgerMenu.icons.tsx`, `HamburgerMenu.styles.ts`, `ThemeMenuItem.tsx`, `SoundMenuItem.tsx`. Menu also cross-links between leaderboard and admin.
+- `src/components/layout/` — `Header.tsx`, `Footer.tsx`.
+- `src/components/mario/` — `Clouds.tsx`, `CoinIcon.tsx`, `MedalIcon.tsx` (arcade-only chrome).
 - `src/components/UpdatedPill.tsx` — "Updated Xs ago" pill; arcade mode flips to `LIVE · HH:MM:SS` with a live dot.
-- `src/admin/` — `/admin` SPA route (login card + batch bonus table + active toggle + CSV link).
 
 ## Hook contract
 ```ts
@@ -104,6 +108,13 @@ useLeaderboard(): { data, updatedAt, loading, error, consecutiveErrors, refresh 
 ### Theme (hamburger menu)
 - `HamburgerMenu.tsx` exposes three themes: **light**, **dark**, **Mario arcade**.
 - Mario mode swaps in pixel-art row/podium/tab variants, enables sound effects (toggleable from the same menu), and flips `UpdatedPill` into `LIVE` mode. Footer stays visible in every theme.
+- The menu also surfaces a cross-link between leaderboard (`/`) and admin (`/admin`).
+
+### Announcement banner
+- `AnnouncementBanner.tsx` (in `components/leaderboard/`) renders a single dismissible banner above the podium when an admin announcement is active.
+- Driven by `useAnnouncement()`: fetches `GET /api/announcement`, refreshes on the same SSE `leaderboard-updated` event used for standings.
+- Dismissal is client-local, keyed by `messageId` in `localStorage` — publishing a new message (new id) re-shows the banner.
+- Authoring lives in `pages/admin/AnnouncementPanel.tsx` (publish / clear / preview), backed by `PUT|DELETE /api/admin/announcement`.
 
 ### Mock data for mockup phase
 - `src/mocks/leaderboard.live.json` — 30 teams, varied points, realistic `lastActivityAt` spread.

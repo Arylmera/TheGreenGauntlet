@@ -37,9 +37,10 @@ No token ever reaches the browser.
 
 ### Endpoints exposed by the proxy
 - `GET /api/leaderboard` — returns `{ teams: [{ uuid, displayName, immersivelab_points, il_points, mario_points, crokinole_points, total, lastActivityAt, rank }], phase, eventWindow, updatedAt }`, sorted by `total` desc. `il_points` is `Account.points + helping_points` (helping merged in silently); `immersivelab_points` is the raw pre-merge value used by the `Immersive Lab` tab. Aggregation + sorting happens server-side.
-- `GET /api/leaderboard/stream` — SSE. Emits `leaderboard-updated` on cache invalidation (admin write, active toggle, IL refresh). 25 s keepalive comment frames keep proxies from dropping the stream. See [implementation/admin-bonus-plan.md](implementation/admin-bonus-plan.md).
+- `GET /api/leaderboard/stream` — SSE. Emits `leaderboard-updated` on cache invalidation (admin bonus write, active toggle, announcement publish/clear, IL refresh). Bonus / active / announcement writes invalidate snapshot **without** triggering an IL fetch (avoids 429s under rapid admin edits). 25 s keepalive comment frames keep proxies from dropping the stream. See [implementation/admin-bonus-plan.md](implementation/admin-bonus-plan.md).
 - `GET /api/health` — proxy + token status + `eventWindow`.
-- `POST/GET/PATCH /api/admin/*` — cookie-authenticated admin surface for per-team bonus deltas + active toggle + CSV export. See [implementation/admin-bonus-plan.md](implementation/admin-bonus-plan.md).
+- `GET /api/announcement` — public read of the current admin-published banner (or `null`).
+- `POST/GET/PATCH /api/admin/*` — cookie-authenticated admin surface for per-team bonus deltas + active toggle + CSV export + announcement CRUD (`PUT|DELETE /api/admin/announcement`). See [implementation/admin-bonus-plan.md](implementation/admin-bonus-plan.md).
 
 ### Proxy internals
 - Single Node server on **Fastify** (chosen over Express for the faster static handler + schema support). Same process serves `dist/` (the Vite build output) as static assets. SPA fallback: unknown non-`/api` routes return `index.html`.
@@ -58,26 +59,35 @@ No token ever reaches the browser.
 ```
 src/
   api/
-    client.ts              // fetch('/api/leaderboard'), no auth
+    client.ts                       // fetch('/api/leaderboard'), no auth
   hooks/
-    useLeaderboard.ts      // 30s poll + SSE subscription to /api/leaderboard/stream
-    useViewCategory.ts     // reads/writes ?view=total|il|mario|crokinole
-    useArcade.ts           // theme + sound context (light / dark / mario arcade)
-    useFlashedTeams.ts     // row-flash diff suppressed across tab switches
-    usePageVisible.ts      // pause polling when document.hidden
+    useLeaderboard.ts               // 30s poll + SSE subscription to /api/leaderboard/stream
+    useViewCategory.ts              // reads/writes ?view=total|il|mario|crokinole
+    useTheme.ts                     // theme context (light / dark / mario)
+    useSound.ts, useSoundPref.ts    // arcade SFX + persisted preference
+    useAdminAuth.ts                 // login state, /api/admin/session
+    useAdminBonus.ts                // batch edits + Apply against /api/admin/bonus
+    useAnnouncement.ts              // /api/announcement reader, SSE-refreshed
+    useFlashedTeams.ts, useRowAnimations.ts, useRankBounce.ts
+    usePageVisible.ts, useInterval.ts, useLocalStorage.ts
+    useDismissOnOutside.ts, useMenuArrowNav.ts
   utils/
-    rankByCategory.ts      // pure re-rank helper per selected tab
+    rankByCategory.ts               // pure re-rank helper per selected tab
   components/
-    LeaderboardTabs.tsx    // Total / IL / Mario / Crokinole (standard + Mario variants)
-    Leaderboard.tsx        // ranked list; columns collapse to the active category outside Total
-    TeamRow.tsx
-    TeamRow.mario.tsx      // pixel-art variant
-    Podium.tsx
-    Podium.steps.tsx       // pipe/panel scaling variant
-    HamburgerMenu.tsx
-    HamburgerMenu.icons.tsx
-    UpdatedPill.tsx        // "Updated Xs ago" / "LIVE · HH:MM:SS"
-  admin/                   // /admin page (cookie-auth), bonus deltas + active toggle + CSV
+    leaderboard/                    // Leaderboard, LeaderboardTabs, LeaderboardTableHead,
+                                    //   LeaderboardToolbar, TeamRow(+.mario), TeamAvatar,
+                                    //   SkeletonBoard, AnnouncementBanner
+    podium/                         // Podium, PipeStep, PanelStep, podium.constants
+    menu/                           // HamburgerMenu(+icons/styles), ThemeMenuItem, SoundMenuItem
+    layout/                         // Header, Footer
+    mario/                          // Clouds, CoinIcon, MedalIcon
+    UpdatedPill.tsx
+  pages/
+    PublicDashboard.tsx
+    Admin.tsx
+    admin/                          // AdminLoginForm, AdminTeamsTable, AdminRow,
+                                    //   AdminEmptyRow, AdminTableHead, AdminHeader,
+                                    //   AdminSearchBar, ApplyBar, AnnouncementPanel
   App.tsx
   main.tsx
 ```
@@ -133,18 +143,22 @@ Browser only talks to the proxy at same origin, so no ImmersiveLab-side CORS con
 - `package.json`, `vite.config.ts`, `tsconfig.json`, `index.html`
 - `server/index.ts` — entrypoint (wires env, client, aggregator, SQLite, events, Fastify app)
 - `server/app.ts` — Fastify app builder, static serving, SPA fallback, CORS-off same-origin
-- `server/routes/health.ts`, `server/routes/leaderboard.ts` — public routes + SSE stream
-- `server/routes/admin/auth.ts`, `server/routes/admin/bonus.ts` — cookie-auth + bonus CRUD + `PATCH /active` + CSV export
-- `server/immersiveLab.ts` — token cache + paginated `/v2/accounts` walker + detail fetch (concurrency 8) + `@immersivelabs.pro` filter
-- `server/aggregate.ts` — aggregation + 10 s snapshot cache + phase + freeze + `team_bonus` LEFT JOIN + three-category merge
-- `server/bonusDb.ts` — `better-sqlite3` wrapper (WAL) for `team_bonus`
-- `server/leaderboardEvents.ts` — `EventEmitter` fan-out for SSE
-- `server/adminSession.ts` — HMAC-signed cookie helpers
+- `server/env.ts` — env schema + fail-fast validation
 - `server/snapshotStore.ts` — atomic load/save for `snapshot.json` + `token.json`
-- `src/api/client.ts`, `src/hooks/useLeaderboard.ts`, `src/hooks/useViewCategory.ts`, `src/hooks/useArcade.ts`
+- `server/logger.ts` — pino setup
+- `server/routes/health.ts`, `server/routes/leaderboard.ts` — public routes + SSE stream
+- `server/routes/admin/auth.ts` — login, session, logout (HMAC cookie)
+- `server/routes/admin/bonus.ts` (+ `bonus.dto.ts`, `bonus.validation.ts`) — bonus CRUD + `PATCH /active`
+- `server/routes/admin/announcement.ts` — admin CRUD + public `GET /api/announcement`
+- `server/routes/admin/exportCsv.ts` — auth-gated CSV export
+- `server/auth/` — `crypto.ts`, `sessionToken.ts`, `sessionCookie.ts` (HMAC + cookie helpers)
+- `server/immersivelab/` — `client.ts` (paginated walker + concurrency 8), `tokenManager.ts`, `schemas.ts`, `stubClient.ts`, with `@immersivelabs.pro` filter
+- `server/leaderboard/` — `aggregator.ts` (snapshot cache + phase + freeze + bonus merge), `ranking.ts`, `events.ts` (SSE EventEmitter), `types.ts`
+- `server/bonus/` — `db.ts` (`better-sqlite3` WAL), `schema.ts` (`team_bonus` + announcement table), `types.ts`
+- `src/api/client.ts`, `src/hooks/*.ts` (see [implementation/frontend.md](implementation/frontend.md))
 - `src/utils/rankByCategory.ts` (+ test)
-- `src/components/{Leaderboard,TeamRow,TeamRow.mario,Podium,Podium.steps,LeaderboardTabs,HamburgerMenu,HamburgerMenu.icons,UpdatedPill}.tsx`
-- `src/admin/` — `/admin` page (login card + bonus table + Apply batch + active toggle + CSV link)
+- `src/components/{leaderboard,podium,menu,layout,mario}/*` (see [implementation/frontend.md](implementation/frontend.md))
+- `src/pages/PublicDashboard.tsx`, `src/pages/Admin.tsx`, `src/pages/admin/*`
 - `src/App.tsx`, `src/main.tsx`
 - `.env.example` with proxy + admin vars
 - `Dockerfile` (multi-stage), `docker-compose.yml` (named volume `greengauntlet-data`)

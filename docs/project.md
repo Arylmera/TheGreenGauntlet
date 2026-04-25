@@ -27,6 +27,8 @@ That project is **per-account**, not per-team, so the team-aggregation layer is 
 - **On-site bonus points** — admin-only page (`/admin`) adds/edits per-team deltas across three fixed categories (`mario`, `crokinole`, `helping`). Persisted in `bonus.sqlite` on the named Docker volume; merged into the leaderboard. Writes push via SSE so spectators update within ~100 ms. See [implementation/admin-bonus-plan.md](implementation/admin-bonus-plan.md).
 - **Live push** — `GET /api/leaderboard/stream` (SSE) emits `leaderboard-updated` whenever the snapshot cache is invalidated (admin bonus write, active toggle, IL refresh). 30 s poll remains as fallback.
 - **Arcade/Mario theme** — optional hamburger-menu toggle (light / dark / Mario) with pixel-art variants of the tabs, podium, team rows, and footer.
+- **Admin-managed announcement banner** — `/admin` page can publish/clear a single banner that appears on the public dashboard. Persisted in `bonus.sqlite`, pushed to viewers via SSE; clients dismiss locally by `messageId`. See [implementation/admin-bonus-plan.md](implementation/admin-bonus-plan.md).
+- **Cross-page navigation** — leaderboard and admin pages cross-link in the hamburger menu.
 - **Display language: English only.** All UI copy, labels, and formatted output render in EN regardless of browser locale or account settings.
 
 ## Caveats / known limits
