@@ -19,33 +19,33 @@ export function PipeStep({ rank, team, ratio, points }: Props) {
     >
       <div
         className="relative mb-3 shrink-0"
-        style={{ width: 'clamp(64px, 108px, 108px)', aspectRatio: '1 / 1' }}
+        style={{ width: 'clamp(48px, 80px, 80px)', aspectRatio: '1 / 1' }}
       >
         <MedalIcon rank={rank} />
       </div>
 
       <div
-        className="pipe w-full flex flex-col items-center justify-start px-3 sm:px-4 pt-6 pb-0"
-        style={{ height: `clamp(150px, ${h}px, ${h}px)` }}
+        className="pipe w-full flex flex-col items-center justify-start px-2 sm:px-3 pt-4 pb-0"
+        style={{ height: `clamp(110px, ${h}px, ${h}px)` }}
       >
-        <div className="plaque w-full px-3 py-3 text-center relative mt-1">
+        <div className="plaque w-full px-2 py-2 text-center relative mt-1">
           <span className="plaque-tape tight-px">RANK {rank}</span>
           <h2
-            className="font-pixel text-[11px] sm:text-[13px] lg:text-[14px] text-[color:var(--mario-ink)] leading-snug break-words mt-1"
+            className="font-pixel text-[9px] sm:text-[10px] lg:text-[11px] text-[color:var(--mario-ink)] leading-snug break-words mt-3"
             title={team.displayName}
           >
             {team.displayName}
           </h2>
-          <p className="mt-3 flex items-center justify-center gap-2">
+          <p className="mt-1 flex items-center justify-center gap-1">
             <span
               className="num font-bold text-[color:var(--mario-ink)]"
-              style={{ fontSize: 'clamp(22px, 3vw, 36px)', lineHeight: 1 }}
+              style={{ fontSize: 'clamp(16px, 2.2vw, 26px)', lineHeight: 1 }}
             >
               {points.toLocaleString('en-US')}
             </span>
-            <CoinIcon coinSize={isFirst ? 'md' : 'sm'} spin />
+            <CoinIcon coinSize={isFirst ? 'sm' : 'sm'} spin />
           </p>
-          <p className="mt-2 font-crt text-[color:var(--mario-ink-soft)] text-sm sm:text-base">
+          <p className="mt-1 font-crt text-[color:var(--mario-ink-soft)] text-[10px] sm:text-xs">
             {formatRelative(team.lastActivityAt)}
           </p>
         </div>
