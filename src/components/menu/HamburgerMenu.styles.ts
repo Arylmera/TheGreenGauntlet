@@ -1,6 +1,10 @@
-export function hamburgerClasses(isMario: boolean, compact = false) {
+export function hamburgerClasses(
+  isMario: boolean,
+  compact: boolean | 'pill' = false,
+) {
   let size = 'w-11 h-11';
-  if (compact) size = isMario ? 'w-[43px] h-[43px]' : 'w-[38px] h-[38px]';
+  if (compact === 'pill') size = isMario ? 'w-[43px] h-[43px]' : 'w-[34px] h-[34px]';
+  else if (compact) size = isMario ? 'w-[43px] h-[43px]' : 'w-[38px] h-[38px]';
   return {
     trigger: isMario
       ? `inline-flex items-center justify-center ${size} bg-[color:var(--mario-parchment)] border-[3px] border-[color:var(--mario-ink)] rounded-[3px] text-[color:var(--mario-ink)] focus-ring transition-transform hover:-translate-y-px active:translate-y-px`

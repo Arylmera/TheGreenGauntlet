@@ -12,7 +12,7 @@ type Props = {
   onSetTheme: (t: Theme) => void;
   soundEnabled?: boolean;
   onToggleSound?: () => void;
-  compact?: boolean;
+  compact?: boolean | 'pill';
 };
 
 const THEME_OPTIONS: ReadonlyArray<{ value: Theme; label: string }> = [

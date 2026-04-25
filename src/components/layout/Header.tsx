@@ -71,6 +71,7 @@ export function Header({ updatedAt, theme, onSetTheme, soundEnabled, onToggleSou
             onSetTheme={onSetTheme}
             soundEnabled={soundEnabled}
             onToggleSound={onToggleSound}
+            compact={isMario ? false : 'pill'}
           />
         </div>
       </div>
