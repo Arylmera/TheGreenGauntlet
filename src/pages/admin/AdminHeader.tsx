@@ -49,7 +49,16 @@ export function AdminHeader({ isMario, updatedAt, theme, onSetTheme, onLogout }:
         )}
       </div>
       <div className="flex items-center gap-2">
-        <HamburgerMenu theme={theme} onSetTheme={onSetTheme} />
+        <a
+          href="/"
+          className={
+            isMario
+              ? 'pixel-btn pixel-btn-ghost'
+              : 'px-3 py-2 rounded-standard border border-line-light dark:border-dark-line text-sm text-ink-black dark:text-dark-text hover:bg-surface-panel dark:hover:bg-dark-hover'
+          }
+        >
+          {isMario ? 'LEADERBOARD' : 'Leaderboard'}
+        </a>
         <a
           href="/api/admin/export.csv"
           className={
@@ -71,6 +80,7 @@ export function AdminHeader({ isMario, updatedAt, theme, onSetTheme, onLogout }:
         >
           {isMario ? 'LOG OUT' : 'Log out'}
         </button>
+        <HamburgerMenu theme={theme} onSetTheme={onSetTheme} compact />
       </div>
     </header>
   );

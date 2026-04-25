@@ -74,6 +74,75 @@
     outline: none;
     box-shadow: rgba(0, 145, 90, 0.25) 0px 0px 0px 3px;
   }
+
+  .themed-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--accent)) transparent;
+  }
+  .themed-scroll::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  .themed-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .themed-scroll::-webkit-scrollbar-thumb {
+    background: rgb(var(--accent) / 0.55);
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  .themed-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--accent) / 0.85);
+    background-clip: padding-box;
+    border: 2px solid transparent;
+  }
+}
+
+/* Dark — softer thumb on dark surfaces */
+html.dark .themed-scroll {
+  scrollbar-color: #4a5666 transparent;
+}
+html.dark .themed-scroll::-webkit-scrollbar-thumb {
+  background: #4a5666;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+html.dark .themed-scroll::-webkit-scrollbar-thumb:hover {
+  background: #6b7a8c;
+  background-clip: padding-box;
+}
+
+/* Mario — pixel-style brick thumb on parchment track */
+:root[data-theme='mario'] .themed-scroll {
+  scrollbar-width: auto;
+  scrollbar-color: var(--mario-brick) var(--mario-parchment-dark);
+}
+:root[data-theme='mario'] .themed-scroll::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+:root[data-theme='mario'] .themed-scroll::-webkit-scrollbar-track {
+  background: var(--mario-parchment-dark);
+  border: 2px solid var(--mario-ink);
+}
+:root[data-theme='mario'] .themed-scroll::-webkit-scrollbar-thumb {
+  background: var(--mario-brick);
+  border: 2px solid var(--mario-ink);
+  border-radius: 0;
+  background-clip: border-box;
+  box-shadow:
+    inset 2px 2px 0 var(--mario-brick-light),
+    inset -2px -2px 0 var(--mario-brick-deep);
+}
+:root[data-theme='mario'] .themed-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--mario-coin);
+  box-shadow:
+    inset 2px 2px 0 #fff2a8,
+    inset -2px -2px 0 var(--mario-coin-deep);
+}
+:root[data-theme='mario'] .themed-scroll::-webkit-scrollbar-corner {
+  background: var(--mario-parchment-dark);
 }
 
 /* ============================================================

@@ -1,8 +1,14 @@
-export function hamburgerClasses(isMario: boolean) {
+export function hamburgerClasses(
+  isMario: boolean,
+  compact: boolean | 'pill' = false,
+) {
+  let size = 'w-11 h-11';
+  if (compact === 'pill') size = isMario ? 'w-[43px] h-[43px]' : 'w-[34px] h-[34px]';
+  else if (compact) size = isMario ? 'w-[43px] h-[43px]' : 'w-[38px] h-[38px]';
   return {
     trigger: isMario
-      ? 'inline-flex items-center justify-center w-11 h-11 bg-[color:var(--mario-parchment)] border-[3px] border-[color:var(--mario-ink)] rounded-[3px] text-[color:var(--mario-ink)] focus-ring transition-transform hover:-translate-y-px active:translate-y-px'
-      : 'inline-flex items-center justify-center w-11 h-11 rounded-standard bg-surface-off dark:bg-dark-card border border-line-light dark:border-dark-line text-ink-charcoal dark:text-dark-mid hover:bg-line-light dark:hover:bg-dark-hover focus-ring transition-colors',
+      ? `inline-flex items-center justify-center ${size} bg-[color:var(--mario-parchment)] border-[3px] border-[color:var(--mario-ink)] rounded-[3px] text-[color:var(--mario-ink)] focus-ring transition-transform hover:-translate-y-px active:translate-y-px`
+      : `inline-flex items-center justify-center ${size} rounded-standard bg-surface-off dark:bg-dark-card border border-line-light dark:border-dark-line text-ink-charcoal dark:text-dark-mid hover:bg-line-light dark:hover:bg-dark-hover focus-ring transition-colors`,
     panel: isMario
       ? 'absolute right-0 mt-2 z-50 min-w-[12rem] bg-[color:var(--mario-parchment)] border-[3px] border-[color:var(--mario-ink)] rounded-[3px] py-1 shadow-[0_4px_0_rgba(0,0,0,0.3)]'
       : 'absolute right-0 mt-2 z-50 min-w-[12rem] bg-surface-white dark:bg-dark-card border border-line-light dark:border-dark-line rounded-standard shadow-lvl-2 py-1',

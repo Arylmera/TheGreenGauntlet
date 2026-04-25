@@ -12,6 +12,7 @@ type Props = {
   onSetTheme: (t: Theme) => void;
   soundEnabled?: boolean;
   onToggleSound?: () => void;
+  compact?: boolean | 'pill';
 };
 
 const THEME_OPTIONS: ReadonlyArray<{ value: Theme; label: string }> = [
@@ -22,12 +23,18 @@ const THEME_OPTIONS: ReadonlyArray<{ value: Theme; label: string }> = [
 
 const ITEM_SELECTOR = '[role="menuitemradio"], [role="menuitemcheckbox"]';
 
-export function HamburgerMenu({ theme, onSetTheme, soundEnabled, onToggleSound }: Props) {
+export function HamburgerMenu({
+  theme,
+  onSetTheme,
+  soundEnabled,
+  onToggleSound,
+  compact,
+}: Props) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const isMario = theme === 'mario';
-  const cls = hamburgerClasses(isMario);
+  const cls = hamburgerClasses(isMario, compact);
 
   const close = useCallback(() => setOpen(false), []);
   const focusTrigger = useCallback(() => triggerRef.current?.focus(), []);

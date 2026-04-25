@@ -74,8 +74,8 @@ export function AdminTeamsTable({ onLoggedOut, theme, onSetTheme }: Props) {
         <section
           className={
             isMario
-              ? 'scroll-panel overflow-auto flex-1 min-h-0'
-              : 'bg-surface-white dark:bg-dark-card rounded-comfy border border-line-light dark:border-dark-line shadow-lvl-1 overflow-auto flex-1 min-h-0'
+              ? 'scroll-panel overflow-auto flex-1 min-h-0 themed-scroll'
+              : 'bg-surface-white dark:bg-dark-card rounded-comfy border border-line-light dark:border-dark-line shadow-lvl-1 overflow-auto flex-1 min-h-0 themed-scroll'
           }
         >
           <table className="w-full min-w-[960px]">

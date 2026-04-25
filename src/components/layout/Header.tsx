@@ -40,9 +40,8 @@ export function Header({ updatedAt, theme, onSetTheme, soundEnabled, onToggleSou
             <div className="flex flex-col min-w-0">
               <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                 <QBlock size={54} />
-                <h1 className="title-chunk text-[20px] sm:text-[26px] lg:text-[34px] xl:text-[42px] pl-[4px] pr-[2px]" style={{ overflow: 'visible' }}>
+                <h1 className="title-chunk whitespace-nowrap text-[20px] sm:text-[26px] lg:text-[34px] xl:text-[36px] pl-[4px] pr-[2px]" style={{ overflow: 'visible' }}>
                   <span className="green">THE GREEN</span>
-                  <br className="hidden sm:inline" />
                   <span className="gauntlet"> GAUNTLET</span>
                 </h1>
               </div>
@@ -71,6 +70,7 @@ export function Header({ updatedAt, theme, onSetTheme, soundEnabled, onToggleSou
             onSetTheme={onSetTheme}
             soundEnabled={soundEnabled}
             onToggleSound={onToggleSound}
+            compact={isMario ? false : 'pill'}
           />
         </div>
       </div>
