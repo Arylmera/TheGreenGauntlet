@@ -1,10 +1,16 @@
 import type { AdminBonusListResponse, BonusBatchUpdate } from '../types';
 
 async function jsonRequest<T>(url: string, init: RequestInit): Promise<T> {
+  const headers: Record<string, string> = {
+    ...(init.headers as Record<string, string> | undefined),
+  };
+  if (init.body !== undefined && init.body !== null) {
+    headers['content-type'] = 'application/json';
+  }
   const res = await fetch(url, {
     credentials: 'same-origin',
-    headers: { 'content-type': 'application/json' },
     ...init,
+    headers,
   });
   if (!res.ok) {
     let message = `request failed: ${res.status}`;
@@ -50,4 +56,26 @@ export async function setTeamActive(teamId: string, active: boolean): Promise<vo
     method: 'PATCH',
     body: JSON.stringify({ active }),
   });
+}
+
+export type AnnouncementResponse = {
+  message: string | null;
+  messageId: string | null;
+  updatedAt: string;
+  updatedBy: string | null;
+};
+
+export async function getAdminAnnouncement(): Promise<AnnouncementResponse> {
+  return jsonRequest<AnnouncementResponse>('/api/admin/announcement', { method: 'GET' });
+}
+
+export async function setAdminAnnouncement(message: string): Promise<AnnouncementResponse> {
+  return jsonRequest<AnnouncementResponse>('/api/admin/announcement', {
+    method: 'PUT',
+    body: JSON.stringify({ message }),
+  });
+}
+
+export async function clearAdminAnnouncement(): Promise<AnnouncementResponse> {
+  return jsonRequest<AnnouncementResponse>('/api/admin/announcement', { method: 'DELETE' });
 }

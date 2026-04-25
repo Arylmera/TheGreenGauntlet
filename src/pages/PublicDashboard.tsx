@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { ArcadeProvider } from '../context/ArcadeContext';
 import { Footer } from '../components/layout/Footer';
 import { Header } from '../components/layout/Header';
+import { AnnouncementBanner } from '../components/leaderboard/AnnouncementBanner';
 import { Leaderboard } from '../components/leaderboard/Leaderboard';
 import { Podium } from '../components/podium/Podium';
 import { SkeletonBoard } from '../components/leaderboard/SkeletonBoard';
@@ -53,6 +54,8 @@ export function PublicDashboard() {
         />
 
         <main className="relative z-10 flex-1 max-w-screen-2xl mx-auto w-full px-3 sm:px-6 2xl:px-10 py-4 sm:py-6 2xl:py-8">
+          <AnnouncementBanner theme={theme} />
+
           {error && consecutiveErrors >= 3 && (
             <div className="mb-6 rounded-standard border border-semantic-warning bg-[#fef5e5] dark:bg-[#3a2e14] text-ink-black dark:text-dark-text px-4 py-3 text-sm">
               Connection issue — showing last known standings.

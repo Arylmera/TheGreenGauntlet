@@ -7,6 +7,7 @@ import { AdminHeader } from './AdminHeader';
 import { AdminRow } from './AdminRow';
 import { AdminSearchBar } from './AdminSearchBar';
 import { AdminTableHead } from './AdminTableHead';
+import { AnnouncementPanel } from './AnnouncementPanel';
 import { ApplyBar } from './ApplyBar';
 
 type Props = {
@@ -50,6 +51,8 @@ export function AdminTeamsTable({ onLoggedOut, theme, onSetTheme }: Props) {
       />
 
       <main className="relative z-10 max-w-screen-2xl mx-auto w-full px-3 sm:px-6 py-4 sm:py-6">
+        <AnnouncementPanel isMario={isMario} onUnauthorized={onLoggedOut} />
+
         <div className="my-3 flex items-center justify-between gap-3 flex-wrap">
           <AdminSearchBar isMario={isMario} value={query} onChange={setQuery} />
           <ApplyBar busy={busy} count={pendingCount} onApply={onApply} isMario={isMario} />

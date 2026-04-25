@@ -11,6 +11,14 @@ export const CREATE_TABLE_SQL = `CREATE TABLE IF NOT EXISTS team_bonus (
   updated_by       TEXT
 )`;
 
+export const CREATE_ANNOUNCEMENT_TABLE_SQL = `CREATE TABLE IF NOT EXISTS announcement (
+  id          INTEGER PRIMARY KEY CHECK (id = 1),
+  message     TEXT,
+  message_id  TEXT,
+  updated_at  TEXT NOT NULL,
+  updated_by  TEXT
+)`;
+
 /**
  * v1 schema had a single `points` column. v1.1 replaces it with three
  * per-category columns. No prior event has been run on v1, so the safe
@@ -29,4 +37,9 @@ export function migrate(db: Db): void {
     }
   }
   db.exec(CREATE_TABLE_SQL);
+  db.exec(CREATE_ANNOUNCEMENT_TABLE_SQL);
+  db.prepare(
+    `INSERT OR IGNORE INTO announcement (id, message, message_id, updated_at, updated_by)
+     VALUES (1, NULL, NULL, ?, ?)`,
+  ).run(new Date().toISOString(), 'system');
 }
