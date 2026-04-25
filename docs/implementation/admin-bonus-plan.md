@@ -196,6 +196,69 @@ Unchanged from v1. `GET /api/leaderboard/stream` emits a `leaderboard-updated` S
 
 Public clients subscribe to the stream and refetch `/api/leaderboard` on every event. The 30 s poll stays as a fallback for dropped connections.
 
+## Announcements
+
+Admin-managed banner shown above the public leaderboard. Used for event news, schedule changes, and MC messages. Single message, no scheduling, no per-team targeting.
+
+### Storage
+
+Single-row table in the same `bonus.sqlite` file as the team bonuses (same named volume, same WAL settings).
+
+```sql
+CREATE TABLE announcement (
+  id          INTEGER PRIMARY KEY CHECK (id = 1),
+  message     TEXT,                      -- NULL → banner cleared
+  message_id  TEXT,                      -- UUID, regenerated on every set
+  updated_at  TEXT NOT NULL,             -- ISO-8601 UTC
+  updated_by  TEXT                       -- admin identifier
+);
+```
+
+No history. Clearing the banner sets `message = NULL` but keeps the row.
+
+### Constraints
+
+- Max length **280 chars** — exposed as `ANNOUNCEMENT_MAX_LENGTH` in [server/routes/admin/announcement.ts](server/routes/admin/announcement.ts).
+- Empty string or `null` clears the banner (PUT with empty string and DELETE are equivalent for the public side).
+
+### Endpoints
+
+| Method | Path                        | Auth   | Purpose                                                |
+| ------ | --------------------------- | ------ | ------------------------------------------------------ |
+| GET    | `/api/admin/announcement`   | admin  | Current message + metadata (DTO below).                |
+| PUT    | `/api/admin/announcement`   | admin  | Body `{ message: string }` — set/replace.              |
+| DELETE | `/api/admin/announcement`   | admin  | Clear the banner.                                      |
+| GET    | `/api/announcement`         | public | Same DTO; response sets `cache-control: no-store`.     |
+
+DTO:
+
+```json
+{
+  "message": "Lunch at 12:30 in the atrium.",
+  "messageId": "0fa1c0f4-…",
+  "updatedAt": "2026-04-25T10:42:00Z",
+  "updatedBy": "admin"
+}
+```
+
+400 `INVALID` if `message` is not a string, 400 `TOO_LONG` if it exceeds 280 chars.
+
+### Realtime
+
+PUT and DELETE call `aggregator.invalidate()`, which fires the existing `leaderboard-updated` SSE event. Public clients refetch `/api/announcement` alongside `/api/leaderboard` on every event, so a new message lands within ~100 ms; the 30 s poll covers dropped SSE connections.
+
+### Public UX
+
+[src/components/leaderboard/AnnouncementBanner.tsx](src/components/leaderboard/AnnouncementBanner.tsx) renders on `PublicDashboard`. Behaviour:
+
+- Hidden when `message` is null/empty.
+- Dismissible per browser via the `×` button. Dismissal is keyed by `messageId`, so when the admin posts a new message the banner reappears even for clients that previously dismissed.
+- Mario / default theme variants; `role="status"` + `aria-live="polite"` for screen readers.
+
+### Admin UI
+
+[src/pages/admin/AnnouncementPanel.tsx](src/pages/admin/AnnouncementPanel.tsx) on `/admin`: textarea, character counter against 280, **Save** (PUT) and **Clear** (DELETE) buttons. Errors surface inline. No history view.
+
 ## Persistence & deployment
 
 Unchanged from v1.
@@ -264,3 +327,4 @@ Kept for historical context so future contributors understand why the feature lo
 7. **SSE event name** — public wire event is `leaderboard-updated`; internal EventEmitter channel is `update`. Both kept as-is.
 8. **DB migration from v1** — clean recreate. No prior event has been run on v1, so there is no real data to preserve.
 9. **Raw-IL field name** — `immersivelab_points` on the admin `GET /api/admin/bonus` response and in the CSV export. Deliberately distinct from the public `il_points` (which is the merged value) to avoid name collision.
+10. **Announcement banner** — single admin-managed message, no scheduling, no per-team targeting, dismissal is client-side only and keyed by `messageId` so new messages reappear after dismissal.

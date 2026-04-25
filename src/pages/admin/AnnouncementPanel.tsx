@@ -83,10 +83,6 @@ export function AnnouncementPanel({ isMario, onUnauthorized }: Props) {
     ? 'scroll-panel p-2 sm:p-3 my-2'
     : 'bg-surface-white dark:bg-dark-card rounded-comfy border border-line-light dark:border-dark-line shadow-lvl-1 p-3 my-2';
 
-  const labelCls = isMario
-    ? 'block font-pixel text-[color:var(--mario-ink)] tight-px text-xs mb-0.5'
-    : 'block text-xs font-medium text-ink-charcoal dark:text-dark-mid mb-0.5';
-
   const textareaCls = isMario
     ? 'pixel-input w-full min-h-[48px]'
     : 'w-full min-h-[48px] rounded-standard border border-line-light dark:border-dark-line bg-surface-off dark:bg-dark-page text-ink-black dark:text-dark-text px-2 py-1 text-sm';

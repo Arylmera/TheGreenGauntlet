@@ -1,6 +1,5 @@
 import type { Category } from '../../types';
 import { LeaderboardTabs } from './LeaderboardTabs';
-import { CoinIcon } from '../mario/CoinIcon';
 
 type Props = {
   isMario: boolean;
@@ -9,6 +8,8 @@ type Props = {
   category: Category;
   onCategoryChange: ((next: Category) => void) | undefined;
   panelId: string;
+  showTopThree: boolean;
+  onToggleTopThree: (next: boolean) => void;
 };
 
 export function LeaderboardToolbar({
@@ -18,6 +19,8 @@ export function LeaderboardToolbar({
   category,
   onCategoryChange,
   panelId,
+  showTopThree,
+  onToggleTopThree,
 }: Props) {
   const toolbarCls = isMario
     ? 'scroll-header px-4 pt-14 pb-3 flex items-center justify-between gap-4 flex-wrap'
@@ -26,6 +29,47 @@ export function LeaderboardToolbar({
   const inputCls = isMario
     ? 'pixel-input w-full sm:w-56'
     : 'w-full sm:max-w-xs px-3 py-2 rounded-standard border border-line-light dark:border-dark-line bg-surface-white dark:bg-dark-card text-ink-black dark:text-dark-text text-sm placeholder:text-ink-mid dark:placeholder:text-dark-dim focus:outline-none focus:ring-2 focus:ring-brand-green';
+
+  const topThreeToggle = (
+    <label
+      className={
+        isMario
+          ? 'inline-flex items-center gap-2 cursor-pointer select-none'
+          : 'inline-flex items-center gap-2 cursor-pointer select-none text-sm text-ink-mid dark:text-dark-dim'
+      }
+      title="Show top 3 in the table"
+    >
+      <input
+        type="checkbox"
+        checked={showTopThree}
+        onChange={(e) => onToggleTopThree(e.target.checked)}
+        aria-label="Show top 3 in table"
+        className="sr-only peer"
+      />
+      {isMario ? (
+        <span className="mushroom-toggle" />
+      ) : (
+        <span className="relative w-10 h-5 rounded-full bg-line-light dark:bg-dark-line transition-colors peer-checked:bg-brand-green peer-focus-visible:ring-2 peer-focus-visible:ring-brand-green peer-focus-visible:ring-offset-2 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:h-4 after:w-4 after:rounded-full after:bg-white after:shadow after:transition-transform peer-checked:after:translate-x-5" />
+      )}
+      <span
+        className={
+          isMario
+            ? 'font-pixel text-white text-[10px] sm:text-[12px] tight-px'
+            : ''
+        }
+        style={
+          isMario
+            ? {
+                textShadow:
+                  '-1px 0 #1a1a1a, 1px 0 #1a1a1a, 0 -1px #1a1a1a, 0 1px #1a1a1a',
+              }
+            : undefined
+        }
+      >
+        Show top 3
+      </span>
+    </label>
+  );
 
   const searchInput = (
     <label className={isMario ? 'relative block w-full sm:w-56' : 'relative block sm:ml-auto w-full sm:w-auto'}>
@@ -42,35 +86,13 @@ export function LeaderboardToolbar({
 
   return (
     <div className={toolbarCls}>
-      {isMario ? (
-        <>
-          <div className="flex items-center gap-3 shrink-0">
-            <CoinIcon coinSize="md" spin />
-            <h2
-              className="font-pixel text-white text-[12px] sm:text-[14px] lg:text-[16px] tight-px"
-              style={{
-                textShadow:
-                  '-2px 0 #1a1a1a, 2px 0 #1a1a1a, 0 -2px #1a1a1a, 0 2px #1a1a1a, 0 3px 0 rgba(0,0,0,0.35)',
-              }}
-            >
-              LEADERBOARD · WORLD 1-1
-            </h2>
-          </div>
-          <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap ml-auto">
-            {onCategoryChange && (
-              <LeaderboardTabs value={category} onChange={onCategoryChange} panelId={panelId} />
-            )}
-            {searchInput}
-          </div>
-        </>
-      ) : (
-        <>
-          {onCategoryChange && (
-            <LeaderboardTabs value={category} onChange={onCategoryChange} panelId={panelId} />
-          )}
-          {searchInput}
-        </>
+      {onCategoryChange && (
+        <LeaderboardTabs value={category} onChange={onCategoryChange} panelId={panelId} />
       )}
+      <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap ml-auto">
+        {topThreeToggle}
+        {searchInput}
+      </div>
     </div>
   );
 }

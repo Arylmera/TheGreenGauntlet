@@ -18,13 +18,21 @@ const PANEL_ID = 'gg-leaderboard-panel';
 export function Leaderboard({ teams, category = 'total', onCategoryChange }: Props) {
   const tbodyRef = useRef<HTMLTableSectionElement | null>(null);
   const [query, setQuery] = useState('');
+  const [showTopThree, setShowTopThree] = useState(false);
   const { theme } = useArcade();
   const isMario = theme === 'mario';
 
+  const displayedTeams = useMemo(
+    () => (showTopThree ? teams : teams.slice(3)),
+    [teams, showTopThree],
+  );
+
   const visibleTeams = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return q ? teams.filter((t) => t.displayName.toLowerCase().includes(q)) : teams;
-  }, [teams, query]);
+    return q
+      ? displayedTeams.filter((t) => t.displayName.toLowerCase().includes(q))
+      : displayedTeams;
+  }, [displayedTeams, query]);
 
   useRowAnimations(tbodyRef, teams);
   const flashed = useFlashedTeams(teams, category);
@@ -41,7 +49,7 @@ export function Leaderboard({ teams, category = 'total', onCategoryChange }: Pro
       role="tabpanel"
       aria-labelledby={onCategoryChange ? `gg-tab-${category}` : undefined}
       aria-label={onCategoryChange ? undefined : 'Leaderboard'}
-      className={sectionCls}
+      className={`${sectionCls} flex flex-col flex-1 min-h-0`}
     >
       <LeaderboardToolbar
         isMario={isMario}
@@ -50,7 +58,10 @@ export function Leaderboard({ teams, category = 'total', onCategoryChange }: Pro
         category={category}
         onCategoryChange={onCategoryChange}
         panelId={PANEL_ID}
+        showTopThree={showTopThree}
+        onToggleTopThree={setShowTopThree}
       />
+      <div className="flex-1 min-h-0 overflow-y-auto">
       <table className="w-full table-fixed">
         <LeaderboardTableHead isMario={isMario} category={category} />
         <tbody ref={tbodyRef}>
@@ -72,12 +83,15 @@ export function Leaderboard({ teams, category = 'total', onCategoryChange }: Pro
                     : 'px-4 py-6 text-center text-ink-mid dark:text-dark-dim text-sm'
                 }
               >
-                No teams match “{query}”.
+                {query
+                  ? `No teams match “${query}”.`
+                  : 'Top 3 hidden — toggle “Show top 3” to see all teams.'}
               </td>
             </tr>
           )}
         </tbody>
       </table>
+      </div>
     </section>
   );
 }

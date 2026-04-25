@@ -1,7 +1,7 @@
 # TheGreenGauntlet
 
 [![CI](https://github.com/Arylmera/TheGreenGauntlet/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/Arylmera/TheGreenGauntlet/actions/workflows/ci.yml)
-![Status](https://img.shields.io/badge/status-planning-yellow)
+![Status](https://img.shields.io/badge/status-v1--shipped-brightgreen)
 ![Node](https://img.shields.io/badge/node-20%2B-green)
 ![License](https://img.shields.io/badge/license-internal-lightgrey)
 
@@ -22,13 +22,18 @@ Single-process Node/Express service that proxies the [Immersive Labs API](https:
 
 ```
 Browser (React + Vite)
-      │  30 s polling
+      │  SSE push + 30 s poll fallback
       ▼
-Node/Express (port 3000)
-  ├── /api/leaderboard  ← cached aggregate
-  └── syncService       ← OAuth2 + paginated walk
+Node/Fastify (port 3000)
+  ├── /api/leaderboard         ← cached aggregate
+  ├── /api/leaderboard/stream  ← SSE (leaderboard-updated)
+  ├── /api/announcement        ← public banner read
+  ├── /api/admin/*             ← cookie-auth (bonuses, announcement, CSV)
+  └── syncService              ← OAuth2 + paginated walk
       ▼
 Immersive Labs API  (https://api.immersivelabs.online)
+
+Persistence: snapshot.json + token.json + bonus.sqlite (named volume)
 ```
 
 See:
@@ -41,9 +46,10 @@ See:
 
 ## Tech stack
 
-- **Backend:** Node 20+, Express, native `fetch`.
+- **Backend:** Node 20+, Fastify, native `fetch`.
 - **Frontend:** React + Vite (served as static bundle by the same Node process).
-- **Persistence:** in-memory snapshot (10 s TTL) backed by two JSON files on a Docker named volume — `snapshot.json` + `token.json`. Atomic tmp + rename on write; loaded on boot.
+- **Persistence:** in-memory snapshot (10 s TTL) backed by `snapshot.json` + `token.json` (atomic tmp + rename) plus `bonus.sqlite` (`better-sqlite3`, WAL) for admin bonuses + announcement, all on a Docker named volume.
+- **Realtime:** SSE channel `leaderboard-updated`; 30 s client poll as fallback.
 - **Deploy:** single Docker image, port 3000, named volume mounted at `/app/data`.
 
 ## Configuration
@@ -52,18 +58,22 @@ All config via environment variables. Secrets live only in the backend — never
 
 | Variable | Purpose |
 |---|---|
+| `USE_STUB_UPSTREAM` | `true` → serve synthetic data, skip Immersive Labs calls. |
 | `IMMERSIVELAB_ACCESS_KEY` | OAuth2 username for `POST /v1/public/tokens`. |
 | `IMMERSIVELAB_SECRET_TOKEN` | OAuth2 password. |
+| `IMMERSIVELAB_BASE_URL` | Upstream base URL (default `https://api.immersivelabs.online`). |
 | `EVENT_START_AT` | ISO 8601 — drives `phase = "pre"` + pre-event gate. |
 | `EVENT_END_AT` | ISO 8601 — drives `phase = "ended"` + post-event freeze. |
-| `DATA_DIR` | Directory for `snapshot.json` + `token.json` (default `/app/data`, must be a named volume in prod). |
+| `DATA_DIR` | Directory for `snapshot.json` + `token.json` + `bonus.sqlite` (default `./data`; named volume in prod). |
 | `PORT` | HTTP listen port (default `3000`). |
+| `SNAPSHOT_TTL_MS` | Aggregator cache TTL (default `10000`). |
+| `ADMIN_PASSWORD` | Required. Shared admin password for `/admin`. |
+| `ADMIN_SESSION_SECRET` | Required. ≥ 32 random chars; HMAC key for the `gg_admin` signed cookie. |
+| `ADMIN_SESSION_TTL_MS` | Admin cookie lifetime (default `172800000` = 48 h). |
+| `BONUS_DB_PATH` | Override SQLite path (default `${DATA_DIR}/bonus.sqlite`). |
+| `COOKIE_SECURE` | Set `false` when running over plain HTTP (default `true`). |
 
 ## Local development
-
-> ⚠️ Not yet scaffolded — blocked on credentials and points-source decision (see [TODO.md](TODO.md)).
-
-Planned:
 
 ```bash
 # install
@@ -85,7 +95,16 @@ A previous per-account leaderboard exists at `devops-day-leaderboard` (Immersive
 
 ## Status
 
-Planning phase. See [TODO.md](TODO.md) for blockers. No code committed yet.
+**v1.1 shipped on `develop`.** Live features:
+
+- Per-team aggregated leaderboard with SSE push (`leaderboard-updated`) + 30 s client poll fallback.
+- Stub upstream mode for offline / pre-credential development (`USE_STUB_UPSTREAM=true`).
+- **Admin bonus panel** — three categories (Mario / Crokinole / Helping), batch commit with per-category negative-guard, per-team active toggle, CSV export. See [docs/implementation/admin-bonus-plan.md](docs/implementation/admin-bonus-plan.md).
+- **Admin announcement banner** — admin-managed message shown on the public dashboard, max 280 chars, dismissible per client (re-shows when a new message is posted).
+- Mario theme toggle, per-category leaderboard tabs, team search.
+- Persistence: `snapshot.json` + `token.json` + `bonus.sqlite` on a named Docker volume.
+
+See [TODO.md](TODO.md) for v2 / nice-to-haves.
 
 ## License
 
