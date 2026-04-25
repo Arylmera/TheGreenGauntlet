@@ -49,7 +49,6 @@ export function AdminHeader({ isMario, updatedAt, theme, onSetTheme, onLogout }:
         )}
       </div>
       <div className="flex items-center gap-2">
-        <HamburgerMenu theme={theme} onSetTheme={onSetTheme} />
         <a
           href="/"
           className={
@@ -81,6 +80,7 @@ export function AdminHeader({ isMario, updatedAt, theme, onSetTheme, onLogout }:
         >
           {isMario ? 'LOG OUT' : 'Log out'}
         </button>
+        <HamburgerMenu theme={theme} onSetTheme={onSetTheme} compact />
       </div>
     </header>
   );
