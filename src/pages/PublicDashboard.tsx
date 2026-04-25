@@ -102,7 +102,26 @@ export function PublicDashboard() {
           )}
         </main>
 
-        <Footer />
+        <Footer
+          rightSlot={
+            <a
+              href="/admin"
+              aria-label="Open admin panel"
+              className={
+                theme === 'mario'
+                  ? 'pixel-btn pixel-btn-green'
+                  : 'px-3 py-1.5 rounded-standard bg-brand-green text-white text-sm font-medium hover:opacity-90'
+              }
+              style={
+                theme === 'mario'
+                  ? { padding: '4px 10px', fontSize: '9px', borderWidth: '2px' }
+                  : undefined
+              }
+            >
+              {theme === 'mario' ? 'ADMIN' : 'Admin'}
+            </a>
+          }
+        />
       </div>
     </ArcadeProvider>
   );
