@@ -7,7 +7,8 @@ data
 coverage
 *.local
 .env
-.env.local
+.env.*
+!.env.example
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -16,3 +17,6 @@ coverage
 *.tsbuildinfo
 vite.config.d.ts
 vite.config.js
+tests/perf/results/*
+!tests/perf/results/.gitkeep
+.perf-data/
