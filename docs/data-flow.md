@@ -20,11 +20,11 @@ sequenceDiagram
     U->>FE: open site (no login)
     FE->>PX: GET /api/leaderboard/stream (SSE subscribe)
     PX-->>FE: event: leaderboard-updated (initial snapshot)
-    loop every 30s (pauses if document.hidden; fallback when SSE drops)
+    loop every 30s — pauses if document.hidden, fallback when SSE drops
         FE->>PX: GET /api/leaderboard
         alt phase == ended
             PX-->>FE: frozen last snapshot (no upstream call)
-        else cached <10s
+        else cached and fresh
             PX-->>FE: cached snapshot
         else stale
             PX->>PX: ensure access token (refresh if expired)
@@ -38,7 +38,7 @@ sequenceDiagram
             PX->>PX: filter accounts by @immersivelabs.pro email
             PX->>DB: INSERT OR IGNORE team_bonus row per team
             DB-->>PX: mario/crokinole/helping + active
-            PX->>PX: merge il_points = Account.points + helping; total = il + mario + crokinole
+            PX->>PX: merge il_points = Account.points + helping, total = il + mario + crokinole
             PX->>PX: drop teams where active=0
             PX->>PX: sort desc by total, tie-break by lastActivityAt, then displayName
             PX->>PX: scrub PII (drop email)
@@ -57,7 +57,7 @@ sequenceDiagram
     PX->>DB: transactional UPDATE per category
     DB-->>PX: updated rows
     PX->>PX: invalidate snapshot cache
-    PX-->>FE: SSE event: leaderboard-updated (on next /api/leaderboard)
+    PX-->>FE: SSE event - leaderboard-updated (on next /api/leaderboard)
     FE->>PX: GET /api/leaderboard (triggered by SSE)
     PX-->>FE: fresh snapshot (~100 ms end-to-end)
 ```
