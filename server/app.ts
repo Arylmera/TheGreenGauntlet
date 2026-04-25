@@ -11,6 +11,10 @@ import { registerHealthRoute } from './routes/health.js';
 import { registerLeaderboardRoute } from './routes/leaderboard.js';
 import { registerAdminAuthRoutes } from './routes/admin/auth.js';
 import { registerAdminBonusRoutes } from './routes/admin/bonus.js';
+import {
+  registerAdminAnnouncementRoutes,
+  registerPublicAnnouncementRoute,
+} from './routes/admin/announcement.js';
 import { registerAdminExportRoutes } from './routes/admin/exportCsv.js';
 
 export type AppDeps = {
@@ -42,6 +46,12 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
       bonusDb: deps.bonusDb,
       aggregator: deps.aggregator,
     });
+    registerAdminAnnouncementRoutes(app, {
+      env: deps.env,
+      bonusDb: deps.bonusDb,
+      aggregator: deps.aggregator,
+    });
+    registerPublicAnnouncementRoute(app, deps.bonusDb);
   }
   registerAdminExportRoutes(app, { env: deps.env, aggregator: deps.aggregator });
 

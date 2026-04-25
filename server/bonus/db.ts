@@ -1,5 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import Database, { type Database as Db } from 'better-sqlite3';
 import {
   BonusDbError,
@@ -126,6 +127,69 @@ export class BonusDb {
     });
 
     return tx(deltas);
+  }
+
+  getAnnouncement(): {
+    message: string | null;
+    messageId: string | null;
+    updatedAt: string;
+    updatedBy: string | null;
+  } {
+    const row = this.db
+      .prepare(
+        `SELECT message, message_id, updated_at, updated_by
+         FROM announcement WHERE id = 1`,
+      )
+      .get() as
+      | {
+          message: string | null;
+          message_id: string | null;
+          updated_at: string;
+          updated_by: string | null;
+        }
+      | undefined;
+    if (!row) {
+      const now = this.now();
+      return { message: null, messageId: null, updatedAt: now, updatedBy: null };
+    }
+    return {
+      message: row.message,
+      messageId: row.message_id,
+      updatedAt: row.updated_at,
+      updatedBy: row.updated_by,
+    };
+  }
+
+  setAnnouncement(
+    rawMessage: string | null,
+    updatedBy: string,
+  ): {
+    message: string | null;
+    messageId: string | null;
+    updatedAt: string;
+    updatedBy: string;
+  } {
+    const trimmed = (rawMessage ?? '').trim();
+    const now = this.now();
+    if (trimmed.length === 0) {
+      this.db
+        .prepare(
+          `UPDATE announcement
+           SET message = NULL, message_id = NULL, updated_at = ?, updated_by = ?
+           WHERE id = 1`,
+        )
+        .run(now, updatedBy);
+      return { message: null, messageId: null, updatedAt: now, updatedBy };
+    }
+    const messageId = randomUUID();
+    this.db
+      .prepare(
+        `UPDATE announcement
+         SET message = ?, message_id = ?, updated_at = ?, updated_by = ?
+         WHERE id = 1`,
+      )
+      .run(trimmed, messageId, now, updatedBy);
+    return { message: trimmed, messageId, updatedAt: now, updatedBy };
   }
 
   setActive(teamId: string, active: boolean, updatedBy: string): TeamBonusRow {

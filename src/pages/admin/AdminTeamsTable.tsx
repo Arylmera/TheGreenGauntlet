@@ -7,6 +7,7 @@ import { AdminHeader } from './AdminHeader';
 import { AdminRow } from './AdminRow';
 import { AdminSearchBar } from './AdminSearchBar';
 import { AdminTableHead } from './AdminTableHead';
+import { AnnouncementPanel } from './AnnouncementPanel';
 import { ApplyBar } from './ApplyBar';
 
 type Props = {
@@ -39,7 +40,7 @@ export function AdminTeamsTable({ onLoggedOut, theme, onSetTheme }: Props) {
   const onApply = () => void apply();
 
   return (
-    <div className="admin relative min-h-screen bg-surface-off dark:bg-dark-page">
+    <div className="admin relative h-screen overflow-hidden flex flex-col bg-surface-off dark:bg-dark-page">
       {isMario && <SkyStage />}
       <AdminHeader
         isMario={isMario}
@@ -49,7 +50,9 @@ export function AdminTeamsTable({ onLoggedOut, theme, onSetTheme }: Props) {
         onLogout={() => void logout()}
       />
 
-      <main className="relative z-10 max-w-screen-2xl mx-auto w-full px-3 sm:px-6 py-4 sm:py-6">
+      <main className="relative z-10 flex-1 min-h-0 max-w-screen-2xl mx-auto w-full px-3 sm:px-6 py-4 sm:py-6 flex flex-col">
+        <AnnouncementPanel isMario={isMario} onUnauthorized={onLoggedOut} />
+
         <div className="my-3 flex items-center justify-between gap-3 flex-wrap">
           <AdminSearchBar isMario={isMario} value={query} onChange={setQuery} />
           <ApplyBar busy={busy} count={pendingCount} onApply={onApply} isMario={isMario} />
@@ -71,8 +74,8 @@ export function AdminTeamsTable({ onLoggedOut, theme, onSetTheme }: Props) {
         <section
           className={
             isMario
-              ? 'scroll-panel overflow-x-auto'
-              : 'bg-surface-white dark:bg-dark-card rounded-comfy border border-line-light dark:border-dark-line shadow-lvl-1 overflow-x-auto'
+              ? 'scroll-panel overflow-auto flex-1 min-h-0'
+              : 'bg-surface-white dark:bg-dark-card rounded-comfy border border-line-light dark:border-dark-line shadow-lvl-1 overflow-auto flex-1 min-h-0'
           }
         >
           <table className="w-full min-w-[960px]">
