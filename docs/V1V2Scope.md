@@ -27,6 +27,8 @@
 | Public leaderboard columns | Variable (custom-challenge driven) | IL (merged with helping) + Mario + Crokinole + Total, re-ranked per selected category tab |
 | Category tabs | — | `Total` / `Immersive Lab` / `Mario` / `Crokinole`, deep-linked via `?view=` |
 | Theme | Single default | Light / dark / **Mario arcade** pixel theme toggled from hamburger menu, with sound effects in arcade mode |
+| Announcement banner | — | Admin-published single banner stored in `bonus.sqlite`, served via public `GET /api/announcement`, pushed via SSE, dismissed client-side per `messageId` |
+| Cross-page nav | — | Hamburger menu cross-links between `/` and `/admin` |
 | Custom display names | Supported (override API names) | Dropped — IL `displayName` is used directly |
 | Leaderboard visibility toggle | Admin-controlled whole-board | Per-team `active` flag — inactive teams excluded from ranks entirely |
 | Points model | Labs points + custom points, lifetime cumulative | `Account.points` (fresh accounts per event → lifetime = event) + three bonus categories |
@@ -54,6 +56,8 @@
 - `@immersivelabs.pro` participant filter in the walker to exclude non-participant accounts.
 - Short-TTL snapshot cache + single-flight to protect IL rate limits under many viewers.
 - Mario-arcade theme variants across tabs, podium, team rows, and footer.
+- Admin-managed announcement banner with SSE push + per-`messageId` client dismissal.
+- Bonus / active / announcement writes invalidate the snapshot **without** triggering an upstream IL fetch, protecting against 429s during rapid admin edits.
 
 ## What v1 intentionally drops
 - History / audit tables, attempts walk, `completedAt` filtering — not needed with fresh-per-event accounts.

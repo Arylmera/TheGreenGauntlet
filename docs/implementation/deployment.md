@@ -72,7 +72,7 @@ volumes:
 ```
 
 ## Volume
-- Named volume mounted at `/app/data` (default `DATA_DIR`). Holds `snapshot.json` + `token.json` + `bonus.sqlite` (admin bonus DB, see [admin-bonus-plan.md](admin-bonus-plan.md)). Survives container recreate, reboot, and image updates.
+- Named volume mounted at `/app/data` (default `DATA_DIR`). Holds `snapshot.json` + `token.json` + `bonus.sqlite` (admin bonus DB **and** announcement table, see [admin-bonus-plan.md](admin-bonus-plan.md)). Survives container recreate, reboot, and image updates.
 - `docker run -v greengauntlet-data:/app/data -p 3000:3000 ...` (or compose `volumes: [greengauntlet-data:/app/data]`).
 - Hosting-specific volume driver syntax decided at deploy time (Fly volume, Render disk, Railway volume).
 
@@ -86,10 +86,19 @@ volumes:
 6. First request triggers fresh rebuild in background; single-flight guards concurrent misses.
 
 ## Routing at runtime
-- `GET /api/*` → proxy handlers (public leaderboard, health, SSE stream).
-- `POST/GET/PATCH /api/admin/*` → admin handlers, cookie-auth (see [admin-bonus-plan.md](admin-bonus-plan.md)).
+- `GET /api/*` → proxy handlers (public leaderboard, health, SSE stream, public announcement).
+- `POST/GET/PATCH/PUT/DELETE /api/admin/*` → admin handlers, cookie-auth (bonus, active toggle, announcement, CSV export — see [admin-bonus-plan.md](admin-bonus-plan.md)).
 - `GET /assets/*` → static from `dist/assets`.
 - `GET /*` → `dist/index.html` (SPA fallback; React route `/admin` lives inside the bundle).
+
+## Server module layout (as shipped)
+After the `server/` split (commit c7ffd24):
+- `server/index.ts`, `server/app.ts`, `server/env.ts`, `server/logger.ts`, `server/snapshotStore.ts`
+- `server/auth/` — HMAC + cookie helpers
+- `server/immersivelab/` — token manager + paginated client + schemas (+ stub for tests)
+- `server/leaderboard/` — aggregator, ranking, SSE event emitter, types
+- `server/bonus/` — better-sqlite3 wrapper, schema (team_bonus + announcement), types
+- `server/routes/` — `health.ts`, `leaderboard.ts`, `admin/{auth,bonus,announcement,exportCsv}.ts`
 
 ## Dev workflow
 - `npm run dev` starts Vite (5173) + Node proxy (3000) via `concurrently`.

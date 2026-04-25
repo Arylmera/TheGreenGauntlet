@@ -14,7 +14,15 @@
     "preview": "vite preview",
     "lint": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.server.json",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "perf:mock-il": "node tests/perf/mock-il/server.mjs",
+    "perf:steady": "node tests/perf/run.mjs scenario-1-steady",
+    "perf:thundering-herd": "node tests/perf/run.mjs scenario-2-thundering-herd",
+    "perf:polling": "node tests/perf/run.mjs scenario-3-polling-fallback",
+    "perf:admin-batch": "node tests/perf/run.mjs scenario-4-admin-batch",
+    "perf:degraded": "node tests/perf/run.mjs scenario-5-degraded-upstream",
+    "perf:bruteforce": "node tests/perf/run.mjs scenario-6-admin-bruteforce",
+    "perf:soak": "node tests/perf/run.mjs scenario-7-soak"
   },
   "dependencies": {
     "@fastify/static": "^8.0.3",
