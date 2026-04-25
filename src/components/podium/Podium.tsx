@@ -69,7 +69,7 @@ export function Podium({ top, category = 'total' }: Props) {
   }
 
   return (
-    <section aria-label="Top 3" className="mb-6 sm:mb-8 2xl:mb-10">
+    <section aria-label="Top 3" className="mb-1 sm:mb-2">
       <div className="flex items-end justify-center gap-4 sm:gap-8 lg:gap-12 2xl:gap-16 relative">
         {PODIUM_ORDER.map((rank) => {
           const team = byRank.get(rank);

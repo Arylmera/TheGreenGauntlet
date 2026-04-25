@@ -18,12 +18,12 @@ const PODIUM_ALT: Record<Rank, string> = {
 };
 
 const HEIGHT_SCALED =
-  'h-[calc(13rem*var(--podium-scale))] sm:h-[calc(15rem*var(--podium-scale))] lg:h-[calc(18rem*var(--podium-scale))] 2xl:h-[calc(24rem*var(--podium-scale))]';
-const HEIGHT_MIN = 'min-h-44 sm:min-h-52 lg:min-h-60 2xl:min-h-80';
+  'h-[calc(12rem*var(--podium-scale))] sm:h-[calc(13rem*var(--podium-scale))] lg:h-[calc(15rem*var(--podium-scale))] 2xl:h-[calc(18rem*var(--podium-scale))]';
+const HEIGHT_MIN = 'min-h-40 sm:min-h-44 lg:min-h-52 2xl:min-h-64';
 const WIDTH: Record<Rank, string> = {
-  1: 'w-28 sm:w-40 lg:w-56 2xl:w-80',
-  2: 'w-24 sm:w-36 lg:w-52 2xl:w-72',
-  3: 'w-24 sm:w-36 lg:w-52 2xl:w-72',
+  1: 'w-24 sm:w-32 lg:w-44 2xl:w-56',
+  2: 'w-20 sm:w-28 lg:w-40 2xl:w-52',
+  3: 'w-20 sm:w-28 lg:w-40 2xl:w-52',
 };
 const SHADOW: Record<Rank, string> = {
   1: 'shadow-lvl-2',
@@ -31,9 +31,9 @@ const SHADOW: Record<Rank, string> = {
   3: 'shadow-lvl-1',
 };
 const MEDAL_SIZE: Record<Rank, string> = {
-  1: 'w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 2xl:w-36 2xl:h-36',
-  2: 'w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 2xl:w-28 2xl:h-28',
-  3: 'w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 2xl:w-28 2xl:h-28',
+  1: 'w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 2xl:w-20 2xl:h-20',
+  2: 'w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 2xl:w-16 2xl:h-16',
+  3: 'w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 2xl:w-16 2xl:h-16',
 };
 const NAME_TEXT: Record<Rank, string> = {
   1: 'text-sm sm:text-base lg:text-xl 2xl:text-2xl',
@@ -55,7 +55,7 @@ export function PanelStep({ rank, team, scale, points }: Props) {
       className={`
         relative flex flex-col items-center justify-end
         bg-surface-white dark:bg-dark-card rounded-comfy border border-line-light dark:border-dark-line
-        px-2 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-5 2xl:px-10 2xl:py-8
+        px-2 py-2 sm:px-3 sm:py-3 lg:px-4 lg:py-4 2xl:px-6 2xl:py-5
         ${WIDTH[rank]} ${HEIGHT_MIN} ${HEIGHT_SCALED} ${SHADOW[rank]}
         transition-[height,box-shadow] duration-300
       `}
