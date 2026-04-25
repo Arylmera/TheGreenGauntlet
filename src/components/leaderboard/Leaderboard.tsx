@@ -61,7 +61,7 @@ export function Leaderboard({ teams, category = 'total', onCategoryChange }: Pro
         showTopThree={showTopThree}
         onToggleTopThree={setShowTopThree}
       />
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto themed-scroll">
       <table className="w-full table-fixed">
         <LeaderboardTableHead isMario={isMario} category={category} />
         <tbody ref={tbodyRef}>
