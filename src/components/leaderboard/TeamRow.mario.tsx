@@ -5,14 +5,14 @@ import { formatRelative } from '../../utils/formatRelative';
 import { CoinIcon } from '../mario/CoinIcon';
 
 const MARIO_CELL = {
-  RANK: 'px-2 sm:px-4 py-3 sm:py-4 w-12 sm:w-16 lg:w-20 text-center',
-  AVATAR: 'hidden sm:table-cell px-2 py-3 sm:py-4 w-14',
-  NAME: 'px-2 sm:px-4 py-3 sm:py-4 text-[color:var(--mario-ink)] font-pixel tight-px text-[11px] lg:text-[12px] truncate max-w-0',
-  IL: 'hidden lg:table-cell px-2 sm:px-4 py-3 sm:py-4 text-center num text-xl text-[color:var(--mario-ink-soft)] w-44',
-  MARIO: 'hidden lg:table-cell px-2 sm:px-4 py-3 sm:py-4 text-center num text-xl w-24',
-  CROKINOLE: 'hidden lg:table-cell px-2 sm:px-4 py-3 sm:py-4 text-center num text-xl w-32',
-  TOTAL: 'px-2 sm:px-4 py-3 sm:py-4 text-center num font-bold text-2xl lg:text-3xl text-[color:var(--mario-ink)] w-24 sm:w-32',
-  ACTIVITY: 'hidden md:table-cell px-4 py-4 text-right font-crt text-lg text-[color:var(--mario-ink-soft)] w-40',
+  RANK: 'px-2 sm:px-4 py-2 sm:py-2.5 w-12 sm:w-16 lg:w-20 text-center',
+  AVATAR: 'hidden sm:table-cell px-2 py-2 sm:py-2.5 w-14',
+  NAME: 'px-2 sm:px-4 py-2 sm:py-2.5 text-[color:var(--mario-ink)] font-pixel tight-px text-[11px] lg:text-[12px] truncate max-w-0',
+  IL: 'hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-2.5 text-center num text-xl text-[color:var(--mario-ink-soft)] w-44',
+  MARIO: 'hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-2.5 text-center num text-xl w-24',
+  CROKINOLE: 'hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-2.5 text-center num text-xl w-32',
+  TOTAL: 'px-2 sm:px-4 py-2 sm:py-2.5 text-center num font-bold text-2xl lg:text-3xl text-[color:var(--mario-ink)] w-24 sm:w-32',
+  ACTIVITY: 'hidden md:table-cell px-4 py-2 sm:py-2.5 text-right font-crt text-lg text-[color:var(--mario-ink-soft)] w-40',
 } as const;
 
 function rankTone(rank: number): '' | 'gold' | 'silver' | 'bronze' {

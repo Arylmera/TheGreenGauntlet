@@ -573,12 +573,18 @@ html.dark .themed-scroll::-webkit-scrollbar-thumb:hover {
   background: #fffaea;
   border: 3px solid var(--mario-ink);
   border-radius: 3px;
-  padding: 10px 14px;
+  padding: 6px 10px;
   font-family: 'VT323', monospace;
-  font-size: 20px;
+  font-size: 16px;
   box-shadow: inset 0 3px 0 rgba(0,0,0,0.1);
   color: var(--mario-ink);
   outline: none;
+}
+@media (min-width: 640px) {
+  :root[data-theme='mario'] .pixel-input {
+    padding: 10px 14px;
+    font-size: 20px;
+  }
 }
 :root[data-theme='mario'] .pixel-input:focus { box-shadow: inset 0 3px 0 rgba(0,0,0,0.1), 0 0 0 3px #ffd700; }
 :root[data-theme='mario'] .pixel-input::placeholder { color: rgba(26,26,26,0.4); }

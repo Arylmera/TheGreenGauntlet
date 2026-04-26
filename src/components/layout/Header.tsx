@@ -24,7 +24,7 @@ export function Header({ updatedAt, theme, onSetTheme, soundEnabled, onToggleSou
       <div
         className={
           isMario
-            ? 'relative max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 lg:pt-8 pb-2 flex items-center justify-between gap-3 sm:gap-6 flex-wrap'
+            ? 'relative max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 sm:pt-6 lg:pt-8 pb-1 sm:pb-2 flex items-center justify-between gap-2 sm:gap-6'
             : 'relative max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 lg:py-5 flex items-center justify-between gap-3 sm:gap-6'
         }
       >
@@ -38,18 +38,18 @@ export function Header({ updatedAt, theme, onSetTheme, soundEnabled, onToggleSou
           )}
           {isMario ? (
             <div className="flex flex-col min-w-0">
-              <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                <QBlock size={54} />
-                <h1 className="title-chunk whitespace-nowrap text-[20px] sm:text-[26px] lg:text-[34px] xl:text-[36px] pl-[4px] pr-[2px]" style={{ overflow: 'visible' }}>
+              <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+                <QBlock className="w-7 h-7 text-[14px] sm:w-[54px] sm:h-[54px] sm:text-[30px]" />
+                <h1 className="title-chunk whitespace-nowrap text-[10px] sm:text-[26px] lg:text-[34px] xl:text-[36px] pl-[4px] pr-[2px]" style={{ overflow: 'visible' }}>
                   <span className="green">THE GREEN</span>
                   <span className="gauntlet"> GAUNTLET</span>
                 </h1>
               </div>
               <p
-                  className="font-crt text-white text-base sm:text-lg lg:text-xl mt-2 tight-px"
+                  className="font-crt text-white text-[11px] sm:text-lg lg:text-xl mt-1 sm:mt-2 tight-px truncate"
                   style={{ textShadow: '0 2px 0 rgba(0,0,0,0.35)' }}
                 >
-                  BNP Paribas Fortis · DevOps Day · Live Standings
+                  <span className="hidden sm:inline">BNP Paribas Fortis · DevOps Day · </span>Live Standings
                 </p>
             </div>
           ) : (
@@ -78,13 +78,9 @@ export function Header({ updatedAt, theme, onSetTheme, soundEnabled, onToggleSou
   );
 }
 
-function QBlock({ size }: { size: number }) {
+function QBlock({ className }: { className?: string }) {
   return (
-    <span
-      className="q-block"
-      style={{ width: size, height: size, fontSize: size * 0.55 }}
-      aria-hidden
-    >
+    <span className={`q-block shrink-0 ${className ?? ''}`} aria-hidden>
       ?
     </span>
   );
