@@ -22,7 +22,7 @@ export function UpdatedPill({ updatedAt }: Props) {
     return (
       <span className="pill-arcade" title={`Updated ${label}`} role="status" aria-live="polite">
         <span className="live-dot" aria-hidden />
-        <span>LIVE · {label}</span>
+        <span>LIVE<span className="hidden sm:inline"> · {label}</span></span>
       </span>
     );
   }

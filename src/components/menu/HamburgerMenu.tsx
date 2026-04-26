@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Theme } from '../../hooks/useTheme';
 import { useDismissOnOutside } from '../../hooks/useDismissOnOutside';
+import { useIsPhone } from '../../hooks/useIsPhone';
 import { useMenuArrowNav } from '../../hooks/useMenuArrowNav';
 import { HamburgerIcon } from './HamburgerMenu.icons';
 import { hamburgerClasses } from './HamburgerMenu.styles';
@@ -34,6 +35,11 @@ export function HamburgerMenu({
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const isMario = theme === 'mario';
+  const isPhone = useIsPhone();
+  const themeOptions = useMemo(
+    () => (isPhone ? THEME_OPTIONS.filter((o) => o.value !== 'mario') : THEME_OPTIONS),
+    [isPhone],
+  );
   const cls = hamburgerClasses(isMario, compact);
 
   const close = useCallback(() => setOpen(false), []);
@@ -85,7 +91,7 @@ export function HamburgerMenu({
           className={cls.panel}
         >
           <div className={cls.heading}>{isMario ? 'THEME' : 'Theme'}</div>
-          {THEME_OPTIONS.map((opt) => (
+          {themeOptions.map((opt) => (
             <ThemeMenuItem
               key={opt.value}
               value={opt.value}

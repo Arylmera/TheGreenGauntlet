@@ -1,5 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import { useLocalStorage } from './useLocalStorage';
+import { useIsPhone } from './useIsPhone';
 
 export type Theme = 'light' | 'dark' | 'mario';
 
@@ -23,11 +24,18 @@ function apply(theme: Theme): void {
   root.dataset.theme = theme;
 }
 
-export function useTheme(): { theme: Theme; toggle: () => void; set: (t: Theme) => void } {
-  const [theme, setThemeState] = useLocalStorage<Theme>(STORAGE_KEY, systemDefault, {
+export function useTheme(): {
+  theme: Theme;
+  storedTheme: Theme;
+  toggle: () => void;
+  set: (t: Theme) => void;
+} {
+  const [storedTheme, setThemeState] = useLocalStorage<Theme>(STORAGE_KEY, systemDefault, {
     parse: coerce,
     serialize: (t) => t,
   });
+  const isPhone = useIsPhone();
+  const theme: Theme = isPhone && storedTheme === 'mario' ? 'light' : storedTheme;
 
   useEffect(() => {
     apply(theme);
@@ -40,5 +48,5 @@ export function useTheme(): { theme: Theme; toggle: () => void; set: (t: Theme) 
     [setThemeState],
   );
 
-  return { theme, toggle, set };
+  return { theme, storedTheme, toggle, set };
 }

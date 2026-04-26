@@ -23,7 +23,7 @@ export function LeaderboardToolbar({
   onToggleTopThree,
 }: Props) {
   const toolbarCls = isMario
-    ? 'scroll-header px-4 pt-14 pb-3 flex items-center justify-between gap-4 flex-wrap'
+    ? 'scroll-header px-4 pt-8 sm:pt-10 pb-2 sm:pb-3 flex items-center justify-between gap-2 sm:gap-4 flex-wrap'
     : 'px-2 sm:px-4 py-2 sm:py-3 border-b border-line-light dark:border-dark-line bg-surface-off dark:bg-dark-hover flex items-center justify-between gap-3 flex-wrap';
 
   const inputCls = isMario

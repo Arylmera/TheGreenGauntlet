@@ -53,7 +53,7 @@ export function PublicDashboard() {
           onToggleSound={toggleSound}
         />
 
-        <main className="relative z-10 flex-1 min-h-0 max-w-screen-2xl mx-auto w-full px-3 sm:px-6 2xl:px-10 py-4 sm:py-6 2xl:py-8 flex flex-col">
+        <main className="relative z-10 flex-1 min-h-0 max-w-screen-2xl mx-auto w-full px-3 sm:px-6 2xl:px-10 py-3 sm:py-4 2xl:py-6 flex flex-col">
           <AnnouncementBanner theme={theme} />
 
           {error && consecutiveErrors >= 3 && (
@@ -95,7 +95,7 @@ export function PublicDashboard() {
           {data && data.phase !== 'pre' && data.teams.length > 0 && (
             <>
               <Podium top={viewTeams.slice(0, 3)} category={category} />
-              <div className="pt-2 flex-1 min-h-0 flex flex-col">
+              <div className={`${theme === 'mario' ? '' : 'pt-6'} flex-1 min-h-0 flex flex-col`}>
                 <Leaderboard teams={viewTeams} category={category} onCategoryChange={setCategory} />
               </div>
             </>

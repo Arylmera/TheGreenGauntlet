@@ -26,8 +26,8 @@ function computeScale(rank: Rank, topPoints: number, points: number): number {
 
 function pipeRatios(pts1: number, pts2: number, pts3: number): Record<Rank, number> {
   const ratio1 = 1;
-  const ratio2 = Math.max(0.78, Math.min(0.94, pts1 > 0 ? pts2 / pts1 : 0.85));
-  const ratio3 = Math.max(0.72, Math.min(ratio2 - 0.04, pts1 > 0 ? pts3 / pts1 : 0.78));
+  const ratio2 = Math.max(0.85, Math.min(0.94, pts1 > 0 ? pts2 / pts1 : 0.88));
+  const ratio3 = Math.max(0.78, Math.min(ratio2 - 0.05, pts1 > 0 ? pts3 / pts1 : 0.82));
   return { 1: ratio1, 2: ratio2, 3: ratio3 };
 }
 
@@ -48,8 +48,8 @@ export function Podium({ top, category = 'total' }: Props) {
 
   if (isMario) {
     return (
-      <section aria-label="Top 3" className="relative z-20 -mb-14">
-        <div className="flex items-end justify-center gap-4 sm:gap-8 lg:gap-14 relative">
+      <section aria-label="Top 3" className="relative z-20 -mb-6 sm:-mb-10">
+        <div className="flex items-end justify-center gap-2 sm:gap-8 lg:gap-14 relative">
           {PODIUM_ORDER.map((rank) => {
             const team = byRank.get(rank);
             if (!team) return null;
@@ -69,8 +69,8 @@ export function Podium({ top, category = 'total' }: Props) {
   }
 
   return (
-    <section aria-label="Top 3" className="mb-1 sm:mb-2">
-      <div className="flex items-end justify-center gap-4 sm:gap-8 lg:gap-12 2xl:gap-16 relative">
+    <section aria-label="Top 3" className="mb-3 sm:mb-4 2xl:mb-6">
+      <div className="flex items-end justify-center gap-2 sm:gap-8 lg:gap-12 2xl:gap-16 relative">
         {PODIUM_ORDER.map((rank) => {
           const team = byRank.get(rank);
           if (!team) return null;
