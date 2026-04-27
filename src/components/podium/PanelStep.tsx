@@ -18,11 +18,11 @@ const PODIUM_ALT: Record<Rank, string> = {
 };
 
 const HEIGHT_SCALED =
-  'h-[calc(7rem*var(--podium-scale))] sm:h-[calc(8rem*var(--podium-scale))] lg:h-[calc(8rem*var(--podium-scale))] 2xl:h-[calc(20rem*var(--podium-scale))]';
+  'h-[calc(7rem*var(--podium-scale))] sm:h-[calc(12rem*var(--podium-scale))] lg:h-[calc(13rem*var(--podium-scale))] 2xl:h-[calc(20rem*var(--podium-scale))]';
 const HEIGHT_MIN: Record<Rank, string> = {
-  1: 'min-h-36 sm:min-h-28 lg:min-h-28 2xl:min-h-80',
-  2: 'min-h-32 sm:min-h-24 lg:min-h-24 2xl:min-h-72',
-  3: 'min-h-28 sm:min-h-20 lg:min-h-20 2xl:min-h-64',
+  1: 'min-h-36 sm:min-h-44 lg:min-h-48 2xl:min-h-80',
+  2: 'min-h-32 sm:min-h-40 lg:min-h-44 2xl:min-h-72',
+  3: 'min-h-28 sm:min-h-36 lg:min-h-40 2xl:min-h-64',
 };
 const WIDTH: Record<Rank, string> = {
   1: 'w-[5.5rem] sm:w-32 lg:w-44 2xl:w-72',
