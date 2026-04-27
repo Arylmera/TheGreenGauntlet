@@ -18,16 +18,16 @@ const PODIUM_ALT: Record<Rank, string> = {
 };
 
 const HEIGHT_SCALED =
-  'h-[calc(7rem*var(--podium-scale))] sm:h-[calc(8rem*var(--podium-scale))] lg:h-[calc(8rem*var(--podium-scale))] 2xl:h-[calc(20rem*var(--podium-scale))]';
+  'h-[calc(6.3rem*var(--podium-scale))] sm:h-[calc(10.8rem*var(--podium-scale))] lg:h-[calc(11.7rem*var(--podium-scale))] 2xl:h-[calc(18rem*var(--podium-scale))]';
 const HEIGHT_MIN: Record<Rank, string> = {
-  1: 'min-h-36 sm:min-h-28 lg:min-h-28 2xl:min-h-80',
-  2: 'min-h-32 sm:min-h-24 lg:min-h-24 2xl:min-h-72',
-  3: 'min-h-28 sm:min-h-20 lg:min-h-20 2xl:min-h-64',
+  1: 'min-h-[8.1rem] sm:min-h-[9.9rem] lg:min-h-[10.8rem] 2xl:min-h-[18rem]',
+  2: 'min-h-[7.2rem] sm:min-h-[9rem] lg:min-h-[9.9rem] 2xl:min-h-[16.2rem]',
+  3: 'min-h-[6.3rem] sm:min-h-[8.1rem] lg:min-h-[9rem] 2xl:min-h-[14.4rem]',
 };
 const WIDTH: Record<Rank, string> = {
-  1: 'w-[5.5rem] sm:w-32 lg:w-44 2xl:w-72',
-  2: 'w-20 sm:w-28 lg:w-40 2xl:w-64',
-  3: 'w-20 sm:w-28 lg:w-40 2xl:w-64',
+  1: 'w-[4.95rem] sm:w-[7.2rem] lg:w-[9.9rem] 2xl:w-[16.2rem]',
+  2: 'w-[4.5rem] sm:w-[6.3rem] lg:w-[9rem] 2xl:w-[14.4rem]',
+  3: 'w-[4.5rem] sm:w-[6.3rem] lg:w-[9rem] 2xl:w-[14.4rem]',
 };
 const SHADOW: Record<Rank, string> = {
   1: 'shadow-lvl-2',
@@ -57,21 +57,21 @@ export function PanelStep({ rank, team, scale, points }: Props) {
     <article
       style={{ ['--podium-scale' as string]: scale }}
       className={`
-        relative flex flex-col items-center
+        relative flex flex-col items-center justify-end
         bg-surface-white dark:bg-dark-card rounded-comfy border border-line-light dark:border-dark-line
         px-1.5 pt-2 pb-2 sm:px-3 sm:pt-3 sm:pb-3 lg:px-4 lg:pt-4 lg:pb-4 2xl:px-8 2xl:pt-6 2xl:pb-6
         ${WIDTH[rank]} ${HEIGHT_MIN[rank]} ${HEIGHT_SCALED} ${SHADOW[rank]}
         transition-[height,box-shadow] duration-300
       `}
     >
-      <div className="mb-2 sm:mb-2 lg:mb-3 2xl:mb-4">
+      <div>
         <img
           src={PODIUM_IMG[rank]}
           alt={PODIUM_ALT[rank]}
           className={`${MEDAL_SIZE[rank]} object-contain drop-shadow-md`}
         />
       </div>
-      <div className="mt-auto flex flex-col items-center w-full">
+      <div className="flex flex-col items-center w-full">
         <h2
           className={`
             ${NAME_TEXT[rank]}

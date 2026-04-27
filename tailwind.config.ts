@@ -76,9 +76,6 @@ const config: Config = {
         comfy: '8px',
         rounded: '12px',
       },
-      screens: {
-        tv: '1920px',
-      },
       fontSize: {
         display: ['clamp(2rem, 3.5vw, 3rem)', { lineHeight: '1.15', letterSpacing: '-0.01em', fontWeight: '700' }],
         'page-title': ['clamp(1.5rem, 2.5vw, 2rem)', { lineHeight: '1.2', fontWeight: '700' }],
