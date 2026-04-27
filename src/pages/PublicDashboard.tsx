@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { ArcadeProvider } from '../context/ArcadeContext';
-import { Footer } from '../components/layout/Footer';
 import { Header } from '../components/layout/Header';
 import { AnnouncementBanner } from '../components/leaderboard/AnnouncementBanner';
 import { Leaderboard } from '../components/leaderboard/Leaderboard';
@@ -51,6 +50,24 @@ export function PublicDashboard() {
           onSetTheme={setTheme}
           soundEnabled={soundEnabled}
           onToggleSound={toggleSound}
+          rightSlot={
+            <a
+              href="/admin"
+              aria-label="Open admin panel"
+              className={
+                theme === 'mario'
+                  ? 'pixel-btn pixel-btn-green'
+                  : 'px-3 py-1.5 rounded-standard bg-brand-green text-white text-sm font-medium hover:opacity-90'
+              }
+              style={
+                theme === 'mario'
+                  ? { padding: '4px 10px', fontSize: '9px', borderWidth: '2px' }
+                  : undefined
+              }
+            >
+              {theme === 'mario' ? 'ADMIN' : 'Admin'}
+            </a>
+          }
         />
 
         <main className="relative z-10 flex-1 min-h-0 max-w-screen-2xl mx-auto w-full px-3 sm:px-6 2xl:px-10 py-3 sm:py-4 2xl:py-6 flex flex-col">
@@ -101,27 +118,6 @@ export function PublicDashboard() {
             </>
           )}
         </main>
-
-        <Footer
-          rightSlot={
-            <a
-              href="/admin"
-              aria-label="Open admin panel"
-              className={
-                theme === 'mario'
-                  ? 'pixel-btn pixel-btn-green'
-                  : 'px-3 py-1.5 rounded-standard bg-brand-green text-white text-sm font-medium hover:opacity-90'
-              }
-              style={
-                theme === 'mario'
-                  ? { padding: '4px 10px', fontSize: '9px', borderWidth: '2px' }
-                  : undefined
-              }
-            >
-              {theme === 'mario' ? 'ADMIN' : 'Admin'}
-            </a>
-          }
-        />
       </div>
     </ArcadeProvider>
   );

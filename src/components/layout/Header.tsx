@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import logo from '../../assets/logo.png';
 import { UpdatedPill } from '../UpdatedPill';
 import { HamburgerMenu } from '../menu/HamburgerMenu';
@@ -9,9 +10,10 @@ type Props = {
   onSetTheme: (t: Theme) => void;
   soundEnabled: boolean;
   onToggleSound: () => void;
+  rightSlot?: ReactNode;
 };
 
-export function Header({ updatedAt, theme, onSetTheme, soundEnabled, onToggleSound }: Props) {
+export function Header({ updatedAt, theme, onSetTheme, soundEnabled, onToggleSound, rightSlot }: Props) {
   const isMario = theme === 'mario';
   return (
     <header
@@ -37,34 +39,22 @@ export function Header({ updatedAt, theme, onSetTheme, soundEnabled, onToggleSou
             />
           )}
           {isMario ? (
-            <div className="flex flex-col min-w-0">
-              <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-                <QBlock className="w-7 h-7 text-[14px] sm:w-[54px] sm:h-[54px] sm:text-[30px]" />
-                <h1 className="title-chunk whitespace-nowrap text-[10px] sm:text-[26px] lg:text-[34px] xl:text-[36px] pl-[4px] pr-[2px]" style={{ overflow: 'visible' }}>
-                  <span className="green">THE GREEN</span>
-                  <span className="gauntlet"> GAUNTLET</span>
-                </h1>
-              </div>
-              <p
-                  className="font-crt text-white text-[11px] sm:text-lg lg:text-xl mt-1 sm:mt-2 tight-px truncate"
-                  style={{ textShadow: '0 2px 0 rgba(0,0,0,0.35)' }}
-                >
-                  <span className="hidden sm:inline">BNP Paribas Fortis · DevOps Day · </span>Live Standings
-                </p>
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+              <QBlock className="w-7 h-7 text-[14px] sm:w-[54px] sm:h-[54px] sm:text-[30px]" />
+              <h1 className="title-chunk whitespace-nowrap text-[10px] sm:text-[26px] lg:text-[34px] xl:text-[36px] pl-[4px] pr-[2px]" style={{ overflow: 'visible' }}>
+                <span className="green">THE GREEN</span>
+                <span className="gauntlet"> GAUNTLET</span>
+              </h1>
             </div>
           ) : (
-            <div className="flex flex-col min-w-0">
-              <h1 className="text-lg sm:text-xl lg:text-page-title text-ink-black dark:text-dark-text leading-none truncate">
-                The Green Gauntlet
-              </h1>
-              <p className="text-ink-charcoal dark:text-dark-mid text-xs sm:text-sm 2xl:text-base mt-0.5 sm:mt-1 tracking-tight truncate">
-                <span className="hidden sm:inline">BNP Paribas Fortis DevOps Day · </span>Live Standings
-              </p>
-            </div>
+            <h1 className="text-lg sm:text-xl lg:text-page-title text-ink-black dark:text-dark-text leading-none truncate">
+              The Green Gauntlet
+            </h1>
           )}
         </div>
         <div className="shrink-0 flex items-center gap-2 sm:gap-3">
           <UpdatedPill updatedAt={updatedAt} />
+          {rightSlot}
           <HamburgerMenu
             theme={theme}
             onSetTheme={onSetTheme}
