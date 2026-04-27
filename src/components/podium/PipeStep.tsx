@@ -14,7 +14,7 @@ export function PipeStep({ rank, team, ratio, points }: Props) {
   return (
     <article
       className="relative flex flex-col items-center justify-end"
-      style={{ width: `min(${w}px, 28vw)` }}
+      style={{ width: `clamp(140px, 28vw, ${w}px)` }}
     >
       <div
         className="relative mb-1 sm:mb-2 shrink-0"
@@ -24,7 +24,7 @@ export function PipeStep({ rank, team, ratio, points }: Props) {
       </div>
 
       <div
-        className="pipe w-full flex flex-col items-center justify-start px-3 sm:px-4 pt-3 sm:pt-6 lg:pt-8 2xl:pt-20 pb-2 sm:pb-0 min-h-[calc(7rem*var(--pipe-ratio))] sm:min-h-[calc(8rem*var(--pipe-ratio))] 2xl:min-h-[calc(20rem*var(--pipe-ratio))]"
+        className="pipe w-full flex flex-col items-center justify-start px-3 sm:px-4 pt-3 sm:pt-6 lg:pt-8 xl:pt-12 pb-2 sm:pb-0 min-h-[calc(7rem*var(--pipe-ratio))] sm:min-h-[calc(8rem*var(--pipe-ratio))] xl:min-h-[calc(12rem*var(--pipe-ratio))] 2xl:min-h-[calc(13rem*var(--pipe-ratio))]"
         style={{ ['--pipe-ratio' as string]: ratio }}
       >
         <div className="plaque w-full px-3 py-2 text-center relative mt-1">
