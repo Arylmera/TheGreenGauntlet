@@ -30,34 +30,77 @@ Rules:
 3. When adding a new convention the user confirms, append it to the relevant guideline file so it persists.
 
 ## Hot files (orientation map)
-Skim these summaries instead of re-reading the files just to orient. Still Read before Editing.
+**If a summary covers your need, do not Read the file.** Read only before Edit, or when the summary is insufficient. Verify paths with `Glob` if a summary feels stale.
+
+### `src/App.tsx`
+9-line router. `window.location.pathname.startsWith('/admin')` → `<AdminPage />`, else `<PublicDashboard />`. No state, no hooks. **Skip the Read** unless changing the routing rule itself.
 
 ### `src/pages/Admin.tsx`
-Root admin page. State machine: loading → login → teams table, gated by `useAdminAuth`.
-- Renders `AdminLoginForm` (unauthed) or `AdminTeamsTable` (authed); `HamburgerMenu` always.
-- Theme via `useTheme`; mario theme adds `<SkyStage>` background.
-- No business logic here — delegates to hooks/children.
+Root admin page. State machine: `authed === null` (loading) → `!authed` (login) → authed (teams table), gated by `useAdminAuth`.
+- Loading branch renders own `<HamburgerMenu>` + optional `<SkyStage>` (mario). Login/authed branches delegate chrome to `AdminLoginForm` / `AdminTeamsTable` and pass `theme` + `onSetTheme` down.
+- Theme from `useTheme`. No business logic — pure shell.
 
-### `src/components/Podium.tsx`
-Top-3 medal podium. Visual order `[2,1,3]` (silver–gold–bronze).
-- Props: `top: Team[]`, optional `category?: Category` (selects score field via `CATEGORY_SCORE_FIELD`).
-- Heights: rank 1 = 100%; ranks 2/3 scaled by point ratio, clamped 60–94%.
-- Responsive widths: `w-28 sm:w-40 lg:w-56 2xl:w-80`. Uses `useArcade` for theme.
+### `src/components/podium/Podium.tsx`
+Top-3 medal podium. Visual order `PODIUM_ORDER = [2, 1, 3]` (silver–gold–bronze).
+- Props: `top: Team[]`, optional `category?: Category` (selects score field via `CATEGORY_SCORE_FIELD` from `../../types`).
+- Mario theme renders `<PipeStep>` per rank with `pipeRatios()` (pts2/pts1 clamped 0.85–0.94, pts3 clamped 0.78–(ratio2−0.05)).
+- Default theme renders `<PanelStep>` per rank with `computeScale()` (rank 1 = 1.0; ranks 2/3 = `points/topPoints` clamped to `MIN_SCALE = 0.6`).
+- Sibling files in same dir: `PipeStep.tsx`, `PanelStep.tsx`, `podium.constants.ts` (`Rank` type lives there). Responsive widths and styling live in those step components, not in `Podium.tsx`.
+- Theme via `useArcade()`.
 
-### `src/styles.css` (section map)
-Mario is primary theme; light/dark via `.dark` class + CSS vars.
-- L1–150: `:root` CSS vars (`--mario-*` palette).
-- L151–400: pixel buttons (`.pixel-btn`), arcade pills (`.pill-arcade`), live-dot pulse.
-- L401–700: mushroom toggle (`.mushroom-toggle`), themed checkbox.
-- L701–900: animations (`.mario-bounce`, cloud lanes, coin spin).
-- L901–end: `prefers-reduced-motion`, delta accent colors, light/dark overrides.
-- All mario rules scoped to `:root[data-theme='mario']`.
+### `src/components/leaderboard/Leaderboard.tsx`
+Main leaderboard panel. Composes `<LeaderboardToolbar>` + `<table>` (`<LeaderboardTableHead>` + `<TeamRow>` rows).
+- Props: `teams: Team[]`, `category?: Category` (default `'total'`), optional `onCategoryChange`.
+- Local state: `query` (search filter on `displayName`), `showTopThree` (default `false` — top 3 hidden, toolbar toggle reveals them; podium covers them visually).
+- `displayedTeams = showTopThree ? teams : teams.slice(3)`; then case-insensitive substring filter by `query` → `visibleTeams`.
+- Hooks: `useArcade` (mario theme branch picks `scroll-panel` class), `useRowAnimations(tbodyRef, teams)` for rank-change pulses, `useFlashedTeams(teams, category)` for delta highlight.
+- Empty-state colspan: `category === 'total' ? 8 : 5`. ARIA: section is a `tabpanel` with `id="gg-leaderboard-panel"`, labelled by `gg-tab-${category}` when tabs exist.
+- Sibling files in same dir: `LeaderboardTabs.tsx`, `LeaderboardTableHead.tsx`, `LeaderboardToolbar.tsx`, `TeamRow.tsx` (+ `.mario` variant), `TeamAvatar.tsx`, `SkeletonBoard.tsx`, `AnnouncementBanner.tsx`.
 
-### `docs/implementation/admin-bonus-plan.md`
-- v1: shipped on develop. Undo = re-enter negative; last-write-wins; per-category clamp ≥ 0; auth-gated CSV export.
-- v1.1: three hardcoded categories — `mario`, `crokinole`, `helping`.
-  - Public leaderboard: `mario_points` and `crokinole_points` as own columns; `helping` merges into public `il_points`.
-  - Admin field name on bonus row: `immersivelab_points` (distinct from public `il_points`).
-  - Admin UI: one delta input per category, order Mario → Crokinole → Helping.
-  - Batch rejects if any category would go negative; duplicate `{teamId, category}` rows summed.
-  - SSE event: `leaderboard-updated`. Single banner, dismissed client-side by `messageId`.
+### `src/styles.css` (section map, ~760 lines)
+Mario is primary theme; light/dark via `.dark` class + CSS vars. **All mario-specific rules are scoped to `:root[data-theme='mario']`.**
+- L1–4: Tailwind directives.
+- L5–71: `@layer base` (resets, body fonts, focus styles).
+- L72–116: `@layer utilities`.
+- L117–152: themed-scroll (mario-skinned scrollbars).
+- L154–208: mario root vars (`--mario-*` palette) + body/surface overrides.
+- L209–301: sky stage, cloud lanes (`drift-clouds` keyframes L229), hill band, brick ground.
+- L276–351: mario footer, pixel borders, title chunk, Q-block.
+- L352–460: pipe styling (used by `PipeStep`), plaque + tape (used by `PanelStep`).
+- L461–518: keyframes (`coin-spin` L461) + sparkle.
+- L519–571: `prefers-reduced-motion: no-preference` block, scroll-panel/header/row, rank-badge.
+- L572–660: pixel inputs (`.pixel-input`, `.pixel-coin-input`), pixel buttons (`.pixel-btn` L632).
+- L662–697: pill-arcade (`.pill-arcade`), `pulse-live` keyframes (L685), `.mario-bounce` (L693).
+- L698–754: mushroom toggle (`.mushroom-toggle`), `.delta` accent.
+- L755–end: `@media (prefers-reduced-motion: reduce)` + light/dark overrides.
+
+### `docs/dashboard-plan.md` (~198 lines)
+Master plan for the public leaderboard. Read only if implementing a new endpoint or changing the architecture; otherwise this map is enough.
+- L3–8: Context (8h event, 30 teams, fresh IL accounts, single Node service).
+- L10–19: Auth model (proxy mandatory; secrets server-side only; ~10s aggregated cache).
+- L21–28: ImmersiveLab API facts (base URL, `POST /v1/public/tokens`, `/v2/accounts`, no leaderboard endpoint, no Event entity).
+- L30–57: Architecture + proxy endpoints. **Wire shape** of `GET /api/leaderboard` is here (L39): `{ uuid, displayName, immersivelab_points, il_points, mario_points, crokinole_points, total, lastActivityAt, rank }`. SSE stream + admin endpoints listed here too.
+- L45–57: Proxy internals (Fastify, snapshot cache, single-flight, freeze on `phase === 'ended'`, sort + tie-break).
+- L58–99: Frontend layout (`src/api`, `src/hooks`, `src/components/{leaderboard,podium,menu,layout,mario}`, `src/pages`).
+- L101–126: Responsive UX rules + breakpoints (`sm/md/lg/xl/2xl`) + TV mode (`?tv=1`).
+- L131–141: Env vars (`IMMERSIVELAB_*`, `EVENT_*`, `SNAPSHOT_TTL_MS`, `DATA_DIR`, `ADMIN_*`).
+- L142–164: Files-as-shipped manifest (server/* and src/* tree).
+- L166–193: Verification (curl checks, runtime layout, Docker volume).
+
+### `docs/data-flow.md` (~150 lines)
+Sequence + aggregation rules + security invariants. Read for refresher when touching the aggregator or admin write path.
+- L9–63: Mermaid sequence (public viewer SSE + 30s poll; admin POST → DB → invalidate cache → SSE → refetch ~100 ms).
+- L65–100: Mermaid data-shape diagram (proxy caches, bonus.sqlite, scrub PII before response).
+- L102–116: Auth bootstrap (token cache + token.json on volume + 401 retry).
+- L118–131: **Aggregation rules.** `Account.points: null → 0`. `il_points = Account.points + helping_points`. `total = il_points + mario_points + crokinole_points`. `active = 0` rows excluded entirely. Phase: `pre` returns `teams: []`; `ended` freezes snapshot.
+- L133–145: Endpoint inventory. Confirms unused IL endpoints (`/v2/activities`, `/v2/attempts`, `/v2/teams`, `/v2/teams/{id}/memberships`, deprecated `Account.teams`).
+- L147–151: Security invariants (no creds in browser bundle, no passthrough, scrub email).
+
+### `docs/implementation/admin-bonus-plan.md` (~330 lines)
+**v1.1 shipped on `develop`** (file's own first line). Three categories: `mario_points`, `crokinole_points`, `helping_points`. SQLite `team_bonus` store (`data/bonus.sqlite`, WAL).
+- Public wire: `mario_points` and `crokinole_points` are own columns; `helping_points` merges into public `il_points` and is hidden from spectators.
+- Aggregator merge: `il_out = il_raw + helping_points`; `total = il_out + mario_points + crokinole_points`. Inactive teams (`active = 0`) excluded entirely.
+- Admin UI: per-team batch deltas (Mario → Crokinole → Helping order). Batch rejects if any category would go negative; duplicate `{teamId, category}` rows summed.
+- Undo = re-enter negative delta; last-write-wins; per-category clamp ≥ 0; auth-gated CSV export.
+- SSE event `leaderboard-updated` on bonus write or active toggle. Single banner, dismissed client-side by `messageId`.
+- Files actually shipped: `server/bonusDb.ts`, `server/routes/admin/bonus.ts`, `server/aggregate.ts`, `src/admin/`. (Note: doc body still references old paths in places — trust the codebase if it diverges.)
