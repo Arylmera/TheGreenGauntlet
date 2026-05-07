@@ -47,7 +47,7 @@ export function MarioTeamRow({ team, category, bounce, flashClass, isTopThree }:
         <TeamAvatar size={36} />
       </td>
       <td className={MARIO_CELL.NAME}>
-        <span title={team.displayName}>{team.displayName}</span>
+        <span title={team.displayName} className="blur-target">{team.displayName}</span>
       </td>
       {isTotal ? (
         <>

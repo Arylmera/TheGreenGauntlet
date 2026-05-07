@@ -78,7 +78,7 @@ export function TeamRow({ team, flashed, category = 'total' }: Props) {
         <TeamAvatar size={36} />
       </td>
       <td className={CELL.NAME}>
-        <span title={team.displayName}>{team.displayName}</span>
+        <span title={team.displayName} className="blur-target">{team.displayName}</span>
       </td>
       {isTotal ? (
         <TotalCells team={team} accent={accent} />

@@ -30,7 +30,7 @@ export function PipeStep({ rank, team, ratio, points }: Props) {
         <div className="plaque w-full px-3 py-2 text-center relative mt-1">
           <span className="plaque-tape tight-px">RANK {rank}</span>
           <h2
-            className="font-pixel text-[8px] sm:text-[11px] lg:text-[12px] text-[color:var(--mario-ink)] leading-snug break-words mt-1"
+            className="font-pixel text-[8px] sm:text-[11px] lg:text-[12px] text-[color:var(--mario-ink)] leading-snug break-words mt-1 blur-target"
             title={team.displayName}
           >
             {team.displayName}

@@ -76,7 +76,7 @@ export function PanelStep({ rank, team, scale, points }: Props) {
           className={`
             ${NAME_TEXT[rank]}
             font-semibold text-ink-black dark:text-dark-text text-center
-            leading-snug break-words max-w-full
+            leading-snug break-words max-w-full blur-target
           `}
           title={team.displayName}
         >
