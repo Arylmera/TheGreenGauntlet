@@ -76,13 +76,13 @@ export function PanelStep({ rank, team, scale, points }: Props) {
           className={`
             ${NAME_TEXT[rank]}
             font-semibold text-ink-black dark:text-dark-text text-center
-            leading-snug break-words max-w-full
+            leading-snug break-words max-w-full blur-target
           `}
           title={team.displayName}
         >
           {team.displayName}
         </h2>
-        <p className={`mt-1 sm:mt-2 text-brand-green font-bold tabular ${POINTS_TEXT[rank]}`}>
+        <p className={`mt-1 sm:mt-2 text-brand-green font-bold tabular blur-target ${POINTS_TEXT[rank]}`}>
           {points.toLocaleString('en-US')}
         </p>
         <p className="hidden 2xl:block mt-0.5 sm:mt-1 text-ink-mid dark:text-dark-dim text-[10px] sm:text-xs 2xl:text-sm">

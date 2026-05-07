@@ -15,6 +15,7 @@ import {
   registerAdminAnnouncementRoutes,
   registerPublicAnnouncementRoute,
 } from './routes/admin/announcement.js';
+import { registerAdminBlurRoutes } from './routes/admin/blur.js';
 import { registerAdminExportRoutes } from './routes/admin/exportCsv.js';
 
 export type AppDeps = {
@@ -52,6 +53,11 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
       aggregator: deps.aggregator,
     });
     registerPublicAnnouncementRoute(app, deps.bonusDb);
+    registerAdminBlurRoutes(app, {
+      env: deps.env,
+      bonusDb: deps.bonusDb,
+      aggregator: deps.aggregator,
+    });
   }
   registerAdminExportRoutes(app, { env: deps.env, aggregator: deps.aggregator });
 

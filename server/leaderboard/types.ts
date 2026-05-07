@@ -31,6 +31,8 @@ export type LeaderboardPayload = {
   phase: Phase;
   eventWindow: EventWindow;
   teams: PublicTeam[];
+  /** Admin-controlled flag — when true, public clients should blur point values. */
+  blurPoints: boolean;
 };
 
 export type AccountSource = {

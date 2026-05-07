@@ -81,6 +81,7 @@ export class LeaderboardAggregator {
       phase: phaseFor(this.now(), this.env),
       eventWindow: this.eventWindow(),
       teams: rankTeams(accounts, bonusByTeamId),
+      blurPoints: this.bonusDb?.getBlurPoints().blurPoints ?? false,
     };
     const snapshot: InternalSnapshot = {
       payload: internalPayload,
@@ -146,6 +147,7 @@ export class LeaderboardAggregator {
       phase: phaseFor(this.now(), this.env),
       eventWindow: this.eventWindow(),
       teams: rankTeams(accounts, bonusByTeamId),
+      blurPoints: this.bonusDb?.getBlurPoints().blurPoints ?? false,
     };
     const snapshot: InternalSnapshot = {
       payload: internalPayload,
@@ -179,6 +181,7 @@ export class LeaderboardAggregator {
       phase: internal.phase,
       eventWindow: internal.eventWindow,
       teams: internal.teams.map(toPublicTeam),
+      blurPoints: this.bonusDb?.getBlurPoints().blurPoints ?? internal.blurPoints ?? false,
     };
   }
 
@@ -188,6 +191,7 @@ export class LeaderboardAggregator {
       phase,
       eventWindow: this.eventWindow(),
       teams: [],
+      blurPoints: this.bonusDb?.getBlurPoints().blurPoints ?? false,
     };
   }
 

@@ -192,6 +192,42 @@ export class BonusDb {
     return { message: trimmed, messageId, updatedAt: now, updatedBy };
   }
 
+  getBlurPoints(): {
+    blurPoints: boolean;
+    updatedAt: string;
+    updatedBy: string | null;
+  } {
+    const row = this.db
+      .prepare(
+        `SELECT blur_points, updated_at, updated_by FROM settings WHERE id = 1`,
+      )
+      .get() as
+      | { blur_points: number; updated_at: string; updated_by: string | null }
+      | undefined;
+    if (!row) {
+      const now = this.now();
+      return { blurPoints: false, updatedAt: now, updatedBy: null };
+    }
+    return {
+      blurPoints: row.blur_points === 1,
+      updatedAt: row.updated_at,
+      updatedBy: row.updated_by,
+    };
+  }
+
+  setBlurPoints(
+    blurPoints: boolean,
+    updatedBy: string,
+  ): { blurPoints: boolean; updatedAt: string; updatedBy: string } {
+    const now = this.now();
+    this.db
+      .prepare(
+        `UPDATE settings SET blur_points = ?, updated_at = ?, updated_by = ? WHERE id = 1`,
+      )
+      .run(blurPoints ? 1 : 0, now, updatedBy);
+    return { blurPoints, updatedAt: now, updatedBy };
+  }
+
   setActive(teamId: string, active: boolean, updatedBy: string): TeamBonusRow {
     const now = this.now();
     const res = this.db

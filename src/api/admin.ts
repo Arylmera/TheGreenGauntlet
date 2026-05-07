@@ -79,3 +79,20 @@ export async function setAdminAnnouncement(message: string): Promise<Announcemen
 export async function clearAdminAnnouncement(): Promise<AnnouncementResponse> {
   return jsonRequest<AnnouncementResponse>('/api/admin/announcement', { method: 'DELETE' });
 }
+
+export type BlurResponse = {
+  blurPoints: boolean;
+  updatedAt: string;
+  updatedBy: string | null;
+};
+
+export async function getAdminBlur(): Promise<BlurResponse> {
+  return jsonRequest<BlurResponse>('/api/admin/blur', { method: 'GET' });
+}
+
+export async function setAdminBlur(blurPoints: boolean): Promise<BlurResponse> {
+  return jsonRequest<BlurResponse>('/api/admin/blur', {
+    method: 'PUT',
+    body: JSON.stringify({ blurPoints }),
+  });
+}
