@@ -37,7 +37,7 @@ export function PipeStep({ rank, team, ratio, points }: Props) {
           </h2>
           <p className="mt-1 sm:mt-2 flex items-center justify-center gap-2">
             <span
-              className="num font-bold text-[color:var(--mario-ink)]"
+              className="num font-bold text-[color:var(--mario-ink)] blur-target"
               style={{ fontSize: 'clamp(20px, 2.2vw, 28px)', lineHeight: 1 }}
             >
               {points.toLocaleString('en-US')}

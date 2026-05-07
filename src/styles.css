@@ -741,3 +741,13 @@ html.dark .themed-scroll::-webkit-scrollbar-thumb:hover {
   :root[data-theme='mario'] .pill-arcade .live-dot,
   .mario-bounce { animation: none; }
 }
+
+/* Big-reveal: blur every numeric point cell on the public dashboard. */
+.blur-target {
+  transition: filter 220ms ease;
+}
+.gg-blur-points .blur-target {
+  filter: blur(12px) saturate(0.6);
+  user-select: none;
+  pointer-events: none;
+}

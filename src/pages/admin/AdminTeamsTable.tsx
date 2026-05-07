@@ -9,6 +9,7 @@ import { AdminSearchBar } from './AdminSearchBar';
 import { AdminTableHead } from './AdminTableHead';
 import { AnnouncementPanel } from './AnnouncementPanel';
 import { ApplyBar } from './ApplyBar';
+import { BlurToggle } from './BlurToggle';
 
 type Props = {
   onLoggedOut: () => void;
@@ -51,7 +52,14 @@ export function AdminTeamsTable({ onLoggedOut, theme, onSetTheme }: Props) {
       />
 
       <main className="relative z-10 flex-1 min-h-0 max-w-screen-2xl mx-auto w-full px-3 sm:px-6 py-4 sm:py-6 flex flex-col">
-        <AnnouncementPanel isMario={isMario} onUnauthorized={onLoggedOut} />
+        <div className="flex flex-col lg:flex-row gap-2 my-2 items-stretch">
+          <div className="lg:basis-2/3 lg:min-w-0 flex [&>section]:flex-1 [&>section]:my-0">
+            <AnnouncementPanel isMario={isMario} onUnauthorized={onLoggedOut} />
+          </div>
+          <div className="lg:basis-1/3 lg:min-w-0 flex [&>section]:flex-1 [&>section]:my-0">
+            <BlurToggle isMario={isMario} onUnauthorized={onLoggedOut} />
+          </div>
+        </div>
 
         <div className="my-3 flex items-center justify-between gap-3 flex-wrap">
           <AdminSearchBar isMario={isMario} value={query} onChange={setQuery} />

@@ -36,6 +36,8 @@ export type LeaderboardPayload = {
     endAt: string;
   };
   teams: Team[];
+  /** When true, public viewers should blur every point number. */
+  blurPoints: boolean;
 };
 
 /** Shape of each team on the admin `/api/admin/bonus` response. */

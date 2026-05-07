@@ -19,6 +19,13 @@ export const CREATE_ANNOUNCEMENT_TABLE_SQL = `CREATE TABLE IF NOT EXISTS announc
   updated_by  TEXT
 )`;
 
+export const CREATE_SETTINGS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS settings (
+  id            INTEGER PRIMARY KEY CHECK (id = 1),
+  blur_points   INTEGER NOT NULL DEFAULT 0,
+  updated_at    TEXT NOT NULL,
+  updated_by    TEXT
+)`;
+
 /**
  * v1 schema had a single `points` column. v1.1 replaces it with three
  * per-category columns. No prior event has been run on v1, so the safe
@@ -38,8 +45,14 @@ export function migrate(db: Db): void {
   }
   db.exec(CREATE_TABLE_SQL);
   db.exec(CREATE_ANNOUNCEMENT_TABLE_SQL);
+  db.exec(CREATE_SETTINGS_TABLE_SQL);
+  const now = new Date().toISOString();
   db.prepare(
     `INSERT OR IGNORE INTO announcement (id, message, message_id, updated_at, updated_by)
      VALUES (1, NULL, NULL, ?, ?)`,
-  ).run(new Date().toISOString(), 'system');
+  ).run(now, 'system');
+  db.prepare(
+    `INSERT OR IGNORE INTO settings (id, blur_points, updated_at, updated_by)
+     VALUES (1, 0, ?, ?)`,
+  ).run(now, 'system');
 }

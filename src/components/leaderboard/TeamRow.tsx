@@ -84,7 +84,7 @@ export function TeamRow({ team, flashed, category = 'total' }: Props) {
         <TotalCells team={team} accent={accent} />
       ) : (
         <td className={CELL.TOTAL}>
-          <span className={`${accent} inline-flex items-center gap-1 justify-end`}>
+          <span className={`${accent} inline-flex items-center gap-1 justify-end blur-target`}>
             {categoryPoints.toLocaleString('en-US')}
           </span>
         </td>
@@ -97,7 +97,9 @@ export function TeamRow({ team, flashed, category = 'total' }: Props) {
 function TotalCells({ team, accent }: { team: Team; accent: string }) {
   return (
     <>
-      <td className={CELL.IL}>{team.il_points.toLocaleString('en-US')}</td>
+      <td className={CELL.IL}>
+        <span className="blur-target">{team.il_points.toLocaleString('en-US')}</span>
+      </td>
       <td className={CELL.MARIO}>
         <BonusCell value={team.mario_points} />
       </td>
@@ -105,7 +107,7 @@ function TotalCells({ team, accent }: { team: Team; accent: string }) {
         <BonusCell value={team.crokinole_points} />
       </td>
       <td className={CELL.TOTAL}>
-        <span className={`${accent} inline-flex items-center gap-1 justify-end`}>
+        <span className={`${accent} inline-flex items-center gap-1 justify-end blur-target`}>
           {team.total.toLocaleString('en-US')}
         </span>
       </td>
@@ -115,5 +117,9 @@ function TotalCells({ team, accent }: { team: Team; accent: string }) {
 
 function BonusCell({ value }: { value: number }) {
   if (value <= 0) return <span>—</span>;
-  return <span className="text-brand-green font-medium">+{value.toLocaleString('en-US')}</span>;
+  return (
+    <span className="text-brand-green font-medium blur-target">
+      +{value.toLocaleString('en-US')}
+    </span>
+  );
 }

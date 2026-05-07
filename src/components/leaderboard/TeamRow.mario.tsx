@@ -51,24 +51,28 @@ export function MarioTeamRow({ team, category, bounce, flashClass, isTopThree }:
       </td>
       {isTotal ? (
         <>
-          <td className={MARIO_CELL.IL}>{team.il_points.toLocaleString('en-US')}</td>
+          <td className={MARIO_CELL.IL}>
+            <span className="blur-target">{team.il_points.toLocaleString('en-US')}</span>
+          </td>
           <td className={MARIO_CELL.MARIO}>
             {team.mario_points > 0 ? (
-              <span className="delta">+{team.mario_points.toLocaleString('en-US')}</span>
+              <span className="delta blur-target">+{team.mario_points.toLocaleString('en-US')}</span>
             ) : (
               <span className="text-[color:var(--mario-ink-soft)] opacity-40">—</span>
             )}
           </td>
           <td className={MARIO_CELL.CROKINOLE}>
             {team.crokinole_points > 0 ? (
-              <span className="delta">+{team.crokinole_points.toLocaleString('en-US')}</span>
+              <span className="delta blur-target">
+                +{team.crokinole_points.toLocaleString('en-US')}
+              </span>
             ) : (
               <span className="text-[color:var(--mario-ink-soft)] opacity-40">—</span>
             )}
           </td>
           <td className={MARIO_CELL.TOTAL}>
             <span className="inline-flex items-center gap-2 justify-end">
-              {team.total.toLocaleString('en-US')}
+              <span className="blur-target">{team.total.toLocaleString('en-US')}</span>
               <CoinIcon coinSize={isTopThree ? 'md' : 'sm'} spin={isTopThree} />
             </span>
           </td>
@@ -76,7 +80,7 @@ export function MarioTeamRow({ team, category, bounce, flashClass, isTopThree }:
       ) : (
         <td className={MARIO_CELL.TOTAL}>
           <span className="inline-flex items-center gap-2 justify-end">
-            {categoryPoints.toLocaleString('en-US')}
+            <span className="blur-target">{categoryPoints.toLocaleString('en-US')}</span>
             <CoinIcon coinSize={isTopThree ? 'md' : 'sm'} spin={isTopThree} />
           </span>
         </td>

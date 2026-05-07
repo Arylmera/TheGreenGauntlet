@@ -42,7 +42,11 @@ export function PublicDashboard() {
 
   return (
     <ArcadeProvider value={arcadeValue}>
-      <div className="h-screen overflow-hidden flex flex-col bg-surface-off dark:bg-dark-page relative">
+      <div
+        className={`h-screen overflow-hidden flex flex-col bg-surface-off dark:bg-dark-page relative${
+          data?.blurPoints ? ' gg-blur-points' : ''
+        }`}
+      >
         {theme === 'mario' && <SkyStage />}
         <Header
           updatedAt={updatedAt}
