@@ -256,11 +256,11 @@ describe('admin routes', () => {
     expect(res.headers['content-type']).toMatch(/text\/csv/);
     const body = res.body;
     expect(body).toMatch(
-      /^team_id,team_name,immersivelab_points,helping_points,mario_points,crokinole_points,total,rank/,
+      /^team_id,team_name,immersivelab_points,helping_points,mario_points,crokinole_points,mortalcombat_points,total,rank/,
     );
     // t1 total = 100 (IL) + 80 (helping) + 120 (mario) = 300, ranks #1 over t2 (200).
     const lines = body.trim().split('\n');
-    expect(lines[1]).toMatch(/t1,Team One,100,80,120,0,300,1/);
+    expect(lines[1]).toMatch(/t1,Team One,100,80,120,0,0,300,1/);
   });
 
   it('login rate-limiter returns 429 after 20 failed attempts in window', async () => {

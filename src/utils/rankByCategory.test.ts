@@ -10,6 +10,7 @@ function team(overrides: Partial<Team> & { displayName: string }): Team {
     il_points: 0,
     mario_points: 0,
     crokinole_points: 0,
+    mortalcombat_points: 0,
     total: 0,
     lastActivityAt: null,
     ...overrides,

@@ -4,6 +4,7 @@ const CATEGORY_LABELS: Record<Exclude<Category, 'total'>, { std: string; mario: 
   immersivelab_points: { std: 'Immersive Lab', mario: 'IMMERSIVE LAB' },
   mario_points: { std: 'Mario', mario: 'MARIO' },
   crokinole_points: { std: 'Crokinole', mario: 'CROKINOLE' },
+  mortalcombat_points: { std: 'Mortal Kombat', mario: 'MORTAL KOMBAT' },
 };
 
 type Props = { isMario: boolean; category: Category };
@@ -39,6 +40,9 @@ export function LeaderboardTableHead({ isMario, category }: Props) {
             </th>
             <th className="hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-3 text-center w-32 whitespace-nowrap">
               {isMario ? 'CROKINOLE' : 'Crokinole'}
+            </th>
+            <th className="hidden lg:table-cell px-3 sm:px-6 py-2 sm:py-3 text-center w-48 whitespace-nowrap">
+              {isMario ? 'MORTAL KOMBAT' : 'Mortal Kombat'}
             </th>
             <th className="px-2 sm:px-4 py-2 sm:py-3 text-center w-24 sm:w-32">
               {isMario ? 'TOTAL' : 'Total'}

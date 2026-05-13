@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import type { Env } from '../../env.js';
 import type { BonusDb } from '../../bonus/db.js';
 import type { LeaderboardAggregator } from '../../leaderboard/aggregator.js';
+import type { LeaderboardEvents } from '../../leaderboard/events.js';
 import { requireAdmin } from './auth.js';
 
 export const ANNOUNCEMENT_MAX_LENGTH = 280;
@@ -10,6 +11,7 @@ export type AdminAnnouncementDeps = {
   env: Env;
   bonusDb: BonusDb;
   aggregator: LeaderboardAggregator;
+  events?: LeaderboardEvents | undefined;
 };
 
 type AnnouncementDto = {
@@ -32,7 +34,7 @@ export function registerAdminAnnouncementRoutes(
   app: FastifyInstance,
   deps: AdminAnnouncementDeps,
 ): void {
-  const { env, bonusDb, aggregator } = deps;
+  const { env, bonusDb, events } = deps;
   const auth = requireAdmin(env);
 
   app.get('/api/admin/announcement', { preHandler: auth }, async () => toDto(bonusDb.getAnnouncement()));
@@ -51,14 +53,16 @@ export function registerAdminAnnouncementRoutes(
       });
     }
     const next = bonusDb.setAnnouncement(body.message, 'admin');
-    aggregator.invalidate();
-    return toDto(next);
+    const dto = toDto(next);
+    events?.emitAnnouncement(dto);
+    return dto;
   });
 
   app.delete('/api/admin/announcement', { preHandler: auth }, async () => {
     const next = bonusDb.setAnnouncement(null, 'admin');
-    aggregator.invalidate();
-    return toDto(next);
+    const dto = toDto(next);
+    events?.emitAnnouncement(dto);
+    return dto;
   });
 }
 

@@ -14,7 +14,7 @@ export function registerAdminExportRoutes(app: FastifyInstance, deps: AdminExpor
   app.get('/api/admin/export.csv', { preHandler: auth }, async (_req, reply) => {
     const admin = await deps.aggregator.getAdminTeams();
     const header =
-      'team_id,team_name,immersivelab_points,helping_points,mario_points,crokinole_points,total,rank';
+      'team_id,team_name,immersivelab_points,helping_points,mario_points,crokinole_points,mortalcombat_points,total,rank';
     const rows = admin.teams.map((t) =>
       [
         t.uuid,
@@ -23,6 +23,7 @@ export function registerAdminExportRoutes(app: FastifyInstance, deps: AdminExpor
         t.helping_points,
         t.mario_points,
         t.crokinole_points,
+        t.mortalcombat_points,
         t.total,
         t.rank,
       ].join(','),

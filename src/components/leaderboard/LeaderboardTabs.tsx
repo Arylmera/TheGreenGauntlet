@@ -14,6 +14,7 @@ const TABS: { key: Category; label: string; marioLabel: string }[] = [
   { key: 'immersivelab_points', label: 'Immersive Lab', marioLabel: 'IMMERSIVE LAB' },
   { key: 'mario_points', label: 'Mario', marioLabel: 'MARIO' },
   { key: 'crokinole_points', label: 'Crokinole', marioLabel: 'CROKINOLE' },
+  { key: 'mortalcombat_points', label: 'Mortal Kombat', marioLabel: 'MORTAL KOMBAT' },
 ];
 
 function tabId(key: Category): string {

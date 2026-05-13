@@ -17,7 +17,7 @@ export function parseBatchBody(
       return { ok: false, error: err('teamId required') };
     }
     if (!isBonusCategory(u.category)) {
-      return { ok: false, error: err('category must be one of mario | crokinole | helping') };
+      return { ok: false, error: err('category must be one of mario | crokinole | mortalcombat | helping') };
     }
     if (typeof u.delta !== 'number' || !Number.isInteger(u.delta)) {
       return { ok: false, error: err('delta must be an integer') };

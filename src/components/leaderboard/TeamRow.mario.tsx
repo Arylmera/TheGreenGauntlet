@@ -11,6 +11,7 @@ const MARIO_CELL = {
   IL: 'hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-2.5 text-center num text-xl text-[color:var(--mario-ink-soft)] w-44',
   MARIO: 'hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-2.5 text-center num text-xl w-24',
   CROKINOLE: 'hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-2.5 text-center num text-xl w-32',
+  MORTALCOMBAT: 'hidden lg:table-cell px-3 sm:px-6 py-2 sm:py-2.5 text-center num text-xl w-48',
   TOTAL: 'px-2 sm:px-4 py-2 sm:py-2.5 text-center num font-bold text-2xl lg:text-3xl text-[color:var(--mario-ink)] w-24 sm:w-32',
   ACTIVITY: 'hidden md:table-cell px-4 py-2 sm:py-2.5 text-right font-crt text-lg text-[color:var(--mario-ink-soft)] w-40',
 } as const;
@@ -65,6 +66,15 @@ export function MarioTeamRow({ team, category, bounce, flashClass, isTopThree }:
             {team.crokinole_points > 0 ? (
               <span className="delta blur-target">
                 +{team.crokinole_points.toLocaleString('en-US')}
+              </span>
+            ) : (
+              <span className="text-[color:var(--mario-ink-soft)] opacity-40">—</span>
+            )}
+          </td>
+          <td className={MARIO_CELL.MORTALCOMBAT}>
+            {team.mortalcombat_points > 0 ? (
+              <span className="delta blur-target">
+                +{team.mortalcombat_points.toLocaleString('en-US')}
               </span>
             ) : (
               <span className="text-[color:var(--mario-ink-soft)] opacity-40">—</span>

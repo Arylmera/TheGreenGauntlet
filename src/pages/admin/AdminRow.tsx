@@ -1,9 +1,10 @@
 import type { AdminBonusTeam, BonusCategory } from '../../types';
 
-export const CATEGORIES: readonly BonusCategory[] = ['mario', 'crokinole', 'helping'];
+export const CATEGORIES: readonly BonusCategory[] = ['mario', 'crokinole', 'mortalcombat', 'helping'];
 export const CATEGORY_LABEL: Record<BonusCategory, string> = {
   mario: 'Mario',
   crokinole: 'Crokinole',
+  mortalcombat: 'Mortal Kombat',
   helping: 'Helping',
 };
 
@@ -55,6 +56,7 @@ export function AdminRow({ team, deltas, onDeltaChange, onToggleActive, isMario 
       <td className={numCls}>{team.immersivelab_points.toLocaleString('en-US')}</td>
       <td className={numCls}>{team.mario_points.toLocaleString('en-US')}</td>
       <td className={numCls}>{team.crokinole_points.toLocaleString('en-US')}</td>
+      <td className={numCls}>{team.mortalcombat_points.toLocaleString('en-US')}</td>
       <td className={numCls}>{team.helping_points.toLocaleString('en-US')}</td>
       {CATEGORIES.map((category) => (
         <td key={category} className="px-3 py-2 sm:py-3 text-center">

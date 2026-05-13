@@ -15,7 +15,7 @@ function coerce(stored: string | null): Theme | null {
 }
 
 function systemDefault(): Theme {
-  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  return 'mario';
 }
 
 function apply(theme: Theme): void {

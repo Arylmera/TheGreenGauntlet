@@ -48,7 +48,17 @@ export function useAnnouncement(): {
     let es: EventSource | null = null;
     try {
       es = new EventSource('/api/leaderboard/stream');
-      es.addEventListener('leaderboard-updated', () => {
+      es.addEventListener('announcement-updated', (ev) => {
+        const raw = (ev as MessageEvent).data;
+        try {
+          const payload = JSON.parse(raw) as PublicAnnouncement;
+          if (payload && typeof payload.updatedAt === 'string') {
+            setData(payload);
+            return;
+          }
+        } catch {
+          // Fall through to re-fetch.
+        }
         void load();
       });
     } catch {

@@ -1,14 +1,15 @@
 import type { Database as Db } from 'better-sqlite3';
 
 export const CREATE_TABLE_SQL = `CREATE TABLE IF NOT EXISTS team_bonus (
-  team_id          TEXT PRIMARY KEY,
-  team_name        TEXT NOT NULL,
-  mario_points     INTEGER NOT NULL DEFAULT 0,
-  crokinole_points INTEGER NOT NULL DEFAULT 0,
-  helping_points   INTEGER NOT NULL DEFAULT 0,
-  active           INTEGER NOT NULL DEFAULT 1,
-  updated_at       TEXT NOT NULL,
-  updated_by       TEXT
+  team_id              TEXT PRIMARY KEY,
+  team_name            TEXT NOT NULL,
+  mario_points         INTEGER NOT NULL DEFAULT 0,
+  crokinole_points     INTEGER NOT NULL DEFAULT 0,
+  mortalcombat_points  INTEGER NOT NULL DEFAULT 0,
+  helping_points       INTEGER NOT NULL DEFAULT 0,
+  active               INTEGER NOT NULL DEFAULT 1,
+  updated_at           TEXT NOT NULL,
+  updated_by           TEXT
 )`;
 
 export const CREATE_ANNOUNCEMENT_TABLE_SQL = `CREATE TABLE IF NOT EXISTS announcement (
@@ -41,6 +42,8 @@ export function migrate(db: Db): void {
     const hasLegacy = names.has('points') && !names.has('mario_points');
     if (hasLegacy) {
       db.exec('DROP TABLE team_bonus');
+    } else if (!names.has('mortalcombat_points')) {
+      db.exec('ALTER TABLE team_bonus ADD COLUMN mortalcombat_points INTEGER NOT NULL DEFAULT 0');
     }
   }
   db.exec(CREATE_TABLE_SQL);
