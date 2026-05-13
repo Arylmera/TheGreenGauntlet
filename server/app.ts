@@ -51,6 +51,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
       env: deps.env,
       bonusDb: deps.bonusDb,
       aggregator: deps.aggregator,
+      events: deps.events,
     });
     registerPublicAnnouncementRoute(app, deps.bonusDb);
     registerAdminBlurRoutes(app, {
