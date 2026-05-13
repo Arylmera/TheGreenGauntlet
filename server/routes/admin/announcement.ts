@@ -11,7 +11,7 @@ export type AdminAnnouncementDeps = {
   env: Env;
   bonusDb: BonusDb;
   aggregator: LeaderboardAggregator;
-  events?: LeaderboardEvents;
+  events?: LeaderboardEvents | undefined;
 };
 
 type AnnouncementDto = {
