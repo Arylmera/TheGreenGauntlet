@@ -8,6 +8,7 @@ const SLUG_TO_CATEGORY: Record<string, Category> = {
   il: 'immersivelab_points',
   mario: 'mario_points',
   crokinole: 'crokinole_points',
+  mk: 'mortalcombat_points',
 };
 
 const CATEGORY_TO_SLUG: Record<Category, string> = {
@@ -15,6 +16,7 @@ const CATEGORY_TO_SLUG: Record<Category, string> = {
   immersivelab_points: 'il',
   mario_points: 'mario',
   crokinole_points: 'crokinole',
+  mortalcombat_points: 'mk',
 };
 
 function readFromUrl(): Category {

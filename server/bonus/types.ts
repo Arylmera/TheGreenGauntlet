@@ -1,9 +1,10 @@
-export const BONUS_CATEGORIES = ['mario', 'crokinole', 'helping'] as const;
+export const BONUS_CATEGORIES = ['mario', 'crokinole', 'mortalcombat', 'helping'] as const;
 export type BonusCategory = (typeof BONUS_CATEGORIES)[number];
 
 export const CATEGORY_COLUMNS: Record<BonusCategory, string> = {
   mario: 'mario_points',
   crokinole: 'crokinole_points',
+  mortalcombat: 'mortalcombat_points',
   helping: 'helping_points',
 };
 
@@ -16,6 +17,7 @@ export type TeamBonusRow = {
   team_name: string;
   mario_points: number;
   crokinole_points: number;
+  mortalcombat_points: number;
   helping_points: number;
   active: number;
   updated_at: string;

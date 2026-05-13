@@ -25,6 +25,7 @@ export function rankTeams(
     const helping = bonus ? bonus.helping_points : 0;
     const mario = bonus ? bonus.mario_points : 0;
     const crokinole = bonus ? bonus.crokinole_points : 0;
+    const mortalcombat = bonus ? bonus.mortalcombat_points : 0;
     const il = raw + helping;
     drafts.push({
       uuid: a.uuid,
@@ -34,7 +35,8 @@ export function rankTeams(
       il_points: il,
       mario_points: mario,
       crokinole_points: crokinole,
-      total: il + mario + crokinole,
+      mortalcombat_points: mortalcombat,
+      total: il + mario + crokinole + mortalcombat,
       lastActivityAt: a.lastActivityAt ?? null,
     });
   }

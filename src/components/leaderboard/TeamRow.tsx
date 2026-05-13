@@ -32,6 +32,8 @@ const CELL = {
     'hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-2.5 text-center tabular text-sm 2xl:text-base text-ink-mid dark:text-dark-dim w-24',
   CROKINOLE:
     'hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-2.5 text-center tabular text-sm 2xl:text-base text-ink-mid dark:text-dark-dim w-32',
+  MORTALCOMBAT:
+    'hidden lg:table-cell px-3 sm:px-6 py-2 sm:py-2.5 text-center tabular text-sm 2xl:text-base text-ink-mid dark:text-dark-dim w-48',
   TOTAL:
     'px-2 sm:px-4 py-2 sm:py-2.5 text-center tabular font-bold text-base sm:text-lg 2xl:text-2xl w-24 sm:w-32',
   ACTIVITY:
@@ -105,6 +107,9 @@ function TotalCells({ team, accent }: { team: Team; accent: string }) {
       </td>
       <td className={CELL.CROKINOLE}>
         <BonusCell value={team.crokinole_points} />
+      </td>
+      <td className={CELL.MORTALCOMBAT}>
+        <BonusCell value={team.mortalcombat_points} />
       </td>
       <td className={CELL.TOTAL}>
         <span className={`${accent} inline-flex items-center gap-1 justify-end blur-target`}>

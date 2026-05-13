@@ -39,8 +39,13 @@ export function registerLeaderboardRoute(
       // Initial snapshot unavailable; client will fall back to its poll.
     }
 
-    const unsubscribe = events.onUpdate((payload) => {
+    const unsubscribeUpdate = events.onUpdate((payload) => {
       reply.raw.write(`event: leaderboard-updated\n`);
+      reply.raw.write(`data: ${JSON.stringify(payload)}\n\n`);
+    });
+
+    const unsubscribeAnnouncement = events.onAnnouncement((payload) => {
+      reply.raw.write(`event: announcement-updated\n`);
       reply.raw.write(`data: ${JSON.stringify(payload)}\n\n`);
     });
 
@@ -50,7 +55,8 @@ export function registerLeaderboardRoute(
 
     const cleanup = (): void => {
       clearInterval(keepalive);
-      unsubscribe();
+      unsubscribeUpdate();
+      unsubscribeAnnouncement();
       reply.raw.end();
     };
     req.raw.on('close', cleanup);

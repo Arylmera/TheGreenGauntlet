@@ -14,6 +14,7 @@ export type Team = {
   il_points: number;
   mario_points: number;
   crokinole_points: number;
+  mortalcombat_points: number;
   total: number;
   lastActivityAt: string | null;
 };

@@ -52,8 +52,8 @@ export class BonusDb {
   getAll(): TeamBonusRow[] {
     return this.db
       .prepare(
-        `SELECT team_id, team_name, mario_points, crokinole_points, helping_points,
-                active, updated_at, updated_by
+        `SELECT team_id, team_name, mario_points, crokinole_points, mortalcombat_points,
+                helping_points, active, updated_at, updated_by
          FROM team_bonus
          ORDER BY team_name`,
       )
@@ -70,7 +70,7 @@ export class BonusDb {
     if (deltas.length === 0) return [];
 
     const getRow = this.db.prepare(
-      `SELECT team_id, team_name, mario_points, crokinole_points, helping_points,
+      `SELECT team_id, team_name, mario_points, crokinole_points, mortalcombat_points, helping_points,
               active, updated_at, updated_by
        FROM team_bonus WHERE team_id = ?`,
     );
@@ -110,13 +110,14 @@ export class BonusDb {
         this.db
           .prepare(
             `UPDATE team_bonus
-             SET mario_points = ?, crokinole_points = ?, helping_points = ?,
-                 updated_at = ?, updated_by = ?
+             SET mario_points = ?, crokinole_points = ?, mortalcombat_points = ?,
+                 helping_points = ?, updated_at = ?, updated_by = ?
              WHERE team_id = ?`,
           )
           .run(
             row.mario_points,
             row.crokinole_points,
+            row.mortalcombat_points,
             row.helping_points,
             row.updated_at,
             row.updated_by,
